@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة الاختبارات الذكية المطورة</title>
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-hover: #059669;
+            --bg: #0f172a;
+            --card-bg: #1e293b;
+            --text: #f8fafc;
+            --text-muted: #94a3b8;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 90vh;
+            margin: 0;
+            padding: 15px;
+        }
+        .quiz-card {
+            background-color: var(--card-bg);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 450px;
+            padding: 25px;
+            box-sizing: border-box;
+            border: 1px solid #334155;
+        }
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: var(--text-muted);
+            border-bottom: 1px solid #334155;
+            padding-bottom: 10px;
+        }
+        h2 {
+            font-size: 20px;
+            margin: 0 0 25px 0;
+            line-height: 1.6;
+            text-align: center;
+        }
+        .grid-layout {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .btn {
+            background: #334155;
+            color: var(--text);
+            border: 2px solid transparent;
+            padding: 14px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            text-align: right;
+            transition: all 0.2s ease;
+        }
+        .btn:hover { background: #475569; }
+        .chapter-btn {
+            text-align: center;
+            background: #1e293b;
+            border: 2px solid #334155;
+            color: #38bdf8;
+        }
+        .chapter-btn:hover { border-color: #38bdf8; background: #0f172a; }
+        .correct-anim { background: #065f46 !important; border-color: #10b981 !important; }
+        .wrong-anim { background: #991b1b !important; border-color: #ef4444 !important; }
+        #result-status { text-align: center; font-size: 18px; font-weight: bold; margin-top: 15px; }
+        .explanation-box {
+            background: #0f172a;
+            border-right: 4px solid #38bdf8;
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 15px;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #cbd5e1;
+            display: none;
+        }
+        .score-screen { text-align: center; }
+        .score-num { font-size: 45px; font-weight: bold; color: var(--primary); margin: 20px 0; }
+        .action-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            text-align: center;
+        }
+        .action-btn:hover { background: var(--primary-hover); }
+    </style>
+</head>
+<body>
+<div class="quiz-card">
+    <div id="category-screen">
+        <h2>📚 اختر القسم المُراد اختباره:</h2>
+        <div class="grid-layout" id="chapters-box"></div>
+    </div>
+    <div id="quiz-play" style="display: none;">
+        <div class="header-info">
+            <span id="progress">السؤال 1 من 3</span>
+            <span id="current-chapter-name" style="color: #38bdf8;">اسم القسم</span>
+        </div>
+        <h2 id="question-text">جاري تحميل السؤال...</h2>
+        <div class="grid-layout" id="options-box"></div>
+        <div id="result-status"></div>
+        <div class="explanation-box" id="explanation-box"></div>
+    </div>
+    <div id="quiz-result" class="score-screen" style="display: none;">
+        <h2>🏁 انتهى الاختبار!</h2>
+        <p>النتيجة النهائية في هذا القسم:</p>
+        <div class="score-num" id="final-score">0 / 0</div>
+        <p id="feedback-text">تقييمك</p>
+        <button class="action-btn" onclick="showChaptersScreen()">العودة للأقسام ↩️</button>
+    </div>
+</div>
+<script>
+    const quizData = {
+        "الفصل الأول: تكنولوجيا المعلومات": [
+            {
+                q: "أي من التقنيات التالية تُستخدم لبناء هيكل صفحات الويب الأساسي؟",
+                options: ["Python", "HTML", "C++", "CSS"],
+                correct: 1,
+                explanation: "💡 الشرح: لغة HTML هي المسؤولة عن بناء الهيكل والأساس لأي صفحة ويب، بينما CSS للتلوين والتصميم، والـ Python لبرمجة السيرفرات."
+            },
+            {
+                q: "ما هي وظيفة الـ JavaScript الأساسية في تطوير المواقع؟",
+                options: ["تلوين وتنسيق الخطوط", "جعل الصفحة تفاعلية وحركية", "حجز اسم النطاق (الدومين)"],
+                correct: 1,
+                explanation: "💡 الشرح: الـ JavaScript بتدي الروح للموقع وتخليه يتفاعل مع ضغطات المستخدم."
+            }
+        ],
+        "الفصل الثاني: الرياضيات والمصفوفات": [
+            {
+                q: "إذا كانت المصفوفة تحتوي على عدد صفوف يساوي عدد الأعمدة، تسمى مصفوفة...؟",
+                options: ["قطرية", "صفية", "مربعة", "صفرية"],
+                correct: 2,
+                explanation: "💡 الشرح: المصفوفة المربعة هي اللي بيكون فيها عدد الصفوف مساوي تماماً لعدد الأعمدة، مثل مصفوفة 2×2."
+            }
+        ]
+    };
+    let currentCategory = ""; let currentQ = 0; let score = 0;
+    function showChaptersScreen() {
+        document.getElementById('category-screen').style.display = "block";
+        document.getElementById('quiz-play').style.display = "none";
+        document.getElementById('quiz-result').style.display = "none";
+        const chaptersBox = document.getElementById('chapters-box');
+        chaptersBox.innerHTML = "";
+        Object.keys(quizData).forEach(chapterName => {
+            const btn = document.createElement('button');
+            btn.className = "btn chapter-btn";
+            btn.innerText = chapterName;
+            btn.onclick = () => startQuizForCategory(chapterName);
+            chaptersBox.appendChild(btn);
+        });
+    }
+    function startQuizForCategory(category) {
+        currentCategory = category; currentQ = 0; score = 0;
+        document.getElementById('category-screen').style.display = "none";
+        document.getElementById('quiz-play').style.display = "block";
+        document.getElementById('current-chapter-name').innerText = category;
+        loadQuestion();
+    }
+    function loadQuestion() {
+        const activeQuestions = quizData[currentCategory];
+        if (currentQ >= activeQuestions.length) { showEndScreen(); return; }
+        const currentData = activeQuestions[currentQ];
+        document.getElementById('progress').innerText = `السؤال ${currentQ + 1} من ${activeQuestions.length}`;
+        document.getElementById('question-text').innerText = currentData.q;
+        document.getElementById('result-status').innerText = "";
+        const expBox = document.getElementById('explanation-box');
+        expBox.style.display = "none";
+        const optionsBox = document.getElementById('options-box');
+        optionsBox.innerHTML = "";
+        currentData.options.forEach((opt, idx) => {
+            const btn = document.createElement('button');
+            btn.className = "btn"; btn.innerText = opt;
+            btn.onclick = () => handleAnswer(idx);
+            optionsBox.appendChild(btn);
+        });
+    }
+    function handleAnswer(selectedIdx) {
+        const activeQuestions = quizData[currentCategory];
+        const currentData = activeQuestions[currentQ];
+        const buttons = document.querySelectorAll('#options-box .btn');
+        buttons.forEach(b => b.style.pointerEvents = "none");
+        const expBox = document.getElementById('explanation-box');
+        expBox.innerText = currentData.explanation; expBox.style.display = "block";
+        if (selectedIdx === currentData.correct) {
+            score++; buttons[selectedIdx].classList.add('correct-anim');
+            document.getElementById('result-status').innerHTML = "<span style='color: #10b981;'>إجابة صحيحة! 🎉</span>";
+        } else {
+            buttons[selectedIdx].classList.add('wrong-anim'); buttons[currentData.correct].classList.add('correct-anim');
+            document.getElementById('result-status').innerHTML = "<span style='color: #ef4444;'>إجابة خاطئة ❌</span>";
+        }
+        setTimeout(() => { currentQ++; loadQuestion(); }, 4500);
+    }
+    function showEndScreen() {
+        const activeQuestions = quizData[currentCategory];
+        document.getElementById('quiz-play').style.display = "none";
+        document.getElementById('quiz-result').style.display = "block";
+        document.getElementById('final-score').innerText = `${score} / ${activeQuestions.length}`;
+        let feedback = ""; let percent = (score / activeQuestions.length) * 100;
+        if (percent === 100) feedback = "امتياز! التقفيل عاده عندك يا بطل 👑";
+        else if (percent >= 50) feedback = "عاش جداً! غلطات بسيطة والشرح هيظبطهالك 👍";
+        else feedback = "محاولة طيبة، اقرأ التفسيرات كويس وجرب تاني 📚";
+        document.getElementById('feedback-text').innerText = feedback;
+    }
+    showChaptersScreen();
+</script>
+</body>
+</html>
