@@ -500,6 +500,11 @@
         else if (percent >= 50) feedback = "عاش يا بطل! أداء جيد جداً 👍 واقرأ الأخطاء لتتحسن.";
         else feedback = "محاولة طيبة، راجع تقرير الأخطاء بالأسفل وأعد الاختبار 📚";
         document.getElementById('feedback-text').innerText = feedback;
+        // حفظ النتيجة في الفايربيز
+        if (typeof window.saveStudentResult === 'function') {
+            // تأكد إن أسماء المتغيرات دي موجودة عندك في الكود (اسم الطالب، والدرجة، واسم الفصل)
+            window.saveStudentResult("اسم الطالب", score, activeQuestions.length, "اسم الفصل");
+        }
 
         // بناء صفحة مراجعة الأخطاء
         const reviewBox = document.getElementById('wrong-review-box');
