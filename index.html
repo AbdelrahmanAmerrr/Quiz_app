@@ -270,7 +270,7 @@
         ],
         "الفصل الثاني: الفائدة المركبة": [
             {
-                q: "ما هو القانون الأساسي لحساب جملة المبلغ بالفائدة المركبة؟",
+                q: "ما هو القانون الأساسي لحساب جملة المبلغ بالفائدة المركبة? ",
                 options: ["جـ = أ × ع × ن", "جـ = أ (1 + ع)^ن", "جـ = أ / (1 + ع)^ن", "جـ = أ + (ع)^ن"],
                 correct: 1,
                 explanation: "💡 الحل: الفائدة المركبة تحسب الفائدة على الأصل والفوائد المتراكمة السابقة، وقانونها: جـ = أ (1 + ع)^ن."
@@ -289,7 +289,7 @@
             },
             {
                 q: "القيمة الحالية بمعدل فائدة مركبة تعني:",
-                options: ["جملة المبالغ المستقبلية", "قيمة المبلغ المخصوم حالياً", "مجموع الفوائد فقط", "الأصل مضروباً في ن"],
+                options: ["جملة Mبالغ المستقبلية", "قيمة المبلغ المخصوم حالياً", "مجموع الفوائد فقط", "الأصل مضروباً في ن"],
                 correct: 1,
                 explanation: "💡 الحل: القيمة الحالية هي القيمة الحقيقية الآن لمبلغ يستحق الدفع في المستقبل بعد استبعاد الفوائد المركبة منه."
             },
@@ -335,7 +335,7 @@
                 q: "إذا كانت الدفعة السنوية 1,000 جنيه لمدة 5 سنوات، فإن مجموع المبالغ المدفوعة بدون فوائد هو:",
                 options: ["1,000 جنيه", "6,000 جنيه", "5,000 جنيه", "5,500 جنيه"],
                 correct: 2,
-                explanation: "💡 الحل: المجموع الاسمي البسيط للدفعات هو قيمة الدفعة مضروبة في عددها: 1,000 × 5 = 5,000 جنيه."
+                explanation: "💡 الحل: المجموع الاسمي البسيط للدفعات هو قيمة الدفعة مضروبة in عددها: 1,000 × 5 = 5,000 جنيه."
             },
             {
                 q: "الرمز المستعمل عادة للتعبير عن قيمة الدفعة الدورية في القوانين هو:",
@@ -500,10 +500,11 @@
         else if (percent >= 50) feedback = "عاش يا بطل! أداء جيد جداً 👍 واقرأ الأخطاء لتتحسن.";
         else feedback = "محاولة طيبة، راجع تقرير الأخطاء بالأسفل وأعد الاختبار 📚";
         document.getElementById('feedback-text').innerText = feedback;
-    // حفظ النتيجة في الفايربيز
-    if (typeof window.saveStudentResult === 'function') {
-        window.saveStudentResult("طالب", score, activeQuestions.length, currentCategory);
-    }
+
+        // إرسال النتيجة إلى Firebase تلقائياً عند نهاية الاختبار
+        if (typeof window.saveStudentResult === 'function') {
+            window.saveStudentResult("طالب", score, activeQuestions.length, currentCategory);
+        }
 
         // بناء صفحة مراجعة الأخطاء
         const reviewBox = document.getElementById('wrong-review-box');
@@ -543,49 +544,38 @@
     // تشغيل التطبيق أول مرة
     showChaptersScreen();
 </script>
-    <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-  // إعدادات الفايربيز المأخوذة من مشروعك مباشرة
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
   const firebaseConfig = {
-    apiKey: "AIzaSyA7VLILoU_7jbHuexgC4oQUZ6Mj", 
+    apiKey: "AIzaSyA7VLIloU_7jbHueH6LwYq0HnI7-5-K-qY",
     authDomain: "amer-quiz-65ce2.firebaseapp.com",
     projectId: "amer-quiz-65ce2",
     storageBucket: "amer-quiz-65ce2.appspot.com",
-    messagingSenderId: "715423851508",
-    appId: "1:715423851508:web:75704bbd2d3a37b12cb7ee"
+    messagingSenderId: "14966645412",
+    appId: "1:14966645412:web:e6c8dee237d9caa6a03c31",
+    measurementId: "G-SG2TRRZEL"
   };
 
-  // بدء تشغيل الفايربيز وقاعدة البيانات
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // دالة عالمية لحفظ نتيجة الطالب تقدر تناديها من أي مكان في موقعك
-  window.saveStudentResult = async function(studentName, score, totalQuestions, chapterName) {
-    if (!studentName || studentName.trim() === "") {
-      alert("تنبيه: لم يتم العثور على اسم الطالب لحفظ النتيجة!");
-      return false;
-    }
-
+  window.saveStudentResult = async (studentName, score, totalQuestions, category) => {
     try {
-      // إرسال البيانات لجدول أو مجموعة اسمها students_results
-      const docRef = await addDoc(collection(db, "students_results"), {
+      await setDoc(doc(db, "students_results", studentName + "_" + Date.now()), {
         name: studentName,
         score: score,
         total: totalQuestions,
-        chapter: chapterName,
-        date: serverTimestamp()
+        category: category,
+        date: new Date().toISOString()
       });
-      console.log("تم حفظ النتيجة بنجاح في الفايربيز! معرف المستند:", docRef.id);
-      return true;
-    } catch (error) {
-      console.error("خطأ أثناء الحفظ في قاعدة البيانات:", error);
-      alert("حدث خطأ أثناء حفظ النتيجة، يرجى التحقق من الاتصال.");
-      return false;
+      console.log("تم حفظ النتيجة بنجاح في الفايربيز!");
+    } catch (e) {
+      console.error("خطأ أثناء حفظ البيانات: ", e);
     }
   };
 </script>
-
 </body>
 </html>
