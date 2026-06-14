@@ -3,37 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة الاختبارات الذكية المطورة</title>
+    <title>منصة اختبارات الرياضة والتأمين</title>
     <style>
+        /* إعدادات الألوان الافتراضية - الوضع الفاتح (أبيض ولبني) */
         :root {
-            --primary: #10b981;
-            --primary-hover: #059669;
+            --bg: #f0f9ff;
+            --card-bg: #ffffff;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --text: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --btn-bg: #e0f2fe;
+            --btn-text: #0369a1;
+        }
+
+        /* ألوان الوضع الداكن */
+        [data-theme="dark"] {
             --bg: #0f172a;
             --card-bg: #1e293b;
+            --primary: #38bdf8;
+            --primary-hover: #7dd3fc;
             --text: #f8fafc;
             --text-muted: #94a3b8;
+            --border: #334155;
+            --btn-bg: #334155;
+            --btn-text: #f8fafc;
         }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            min-height: 90vh;
+            min-height: 95vh;
             margin: 0;
             padding: 15px;
+            transition: background 0.3s ease, color 0.3s ease;
         }
+
+        /* زر تبديل الوضع */
+        .theme-switch {
+            align-self: flex-end;
+            max-width: 450px;
+            width: 100%;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .theme-btn {
+            background: var(--card-bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
+
         .quiz-card {
             background-color: var(--card-bg);
             border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 450px;
             padding: 25px;
             box-sizing: border-box;
-            border: 1px solid #334155;
+            border: 1px solid var(--border);
+            transition: background 0.3s ease, border 0.3s ease;
         }
+
         .header-info {
             display: flex;
             justify-content: space-between;
@@ -41,127 +85,319 @@
             margin-bottom: 20px;
             font-size: 14px;
             color: var(--text-muted);
-            border-bottom: 1px solid #334155;
+            border-bottom: 1px solid var(--border);
             padding-bottom: 10px;
         }
+
         h2 {
             font-size: 20px;
-            margin: 0 0 25px 0;
+            margin: 0 0 22px 0;
             line-height: 1.6;
             text-align: center;
         }
+
         .grid-layout {
             display: flex;
             flex-direction: column;
             gap: 12px;
         }
+
         .btn {
-            background: #334155;
-            color: var(--text);
+            background: var(--btn-bg);
+            color: var(--btn-text);
             border: 2px solid transparent;
             padding: 14px 20px;
             border-radius: 12px;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             text-align: right;
             transition: all 0.2s ease;
         }
-        .btn:hover { background: #475569; }
+        .btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
         .chapter-btn {
             text-align: center;
-            background: #1e293b;
-            border: 2px solid #334155;
-            color: #38bdf8;
+            background: var(--card-bg);
+            border: 2px solid var(--primary);
+            color: var(--primary);
         }
-        .chapter-btn:hover { border-color: #38bdf8; background: #0f172a; }
-        .correct-anim { background: #065f46 !important; border-color: #10b981 !important; }
-        .wrong-anim { background: #991b1b !important; border-color: #ef4444 !important; }
+        .chapter-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        .correct-anim { background: #065f46 !important; color: white !important; border-color: #10b981 !important; }
+        .wrong-anim { background: #991b1b !important; color: white !important; border-color: #ef4444 !important; }
+        
         #result-status { text-align: center; font-size: 18px; font-weight: bold; margin-top: 15px; }
+        
         .explanation-box {
-            background: #0f172a;
-            border-right: 4px solid #38bdf8;
-            padding: 12px;
+            background: var(--bg);
+            border-right: 4px solid var(--primary);
+            padding: 14px;
             border-radius: 8px;
             margin-top: 15px;
             font-size: 14px;
-            line-height: 1.5;
-            color: #cbd5e1;
+            line-height: 1.6;
+            color: var(--text);
             display: none;
         }
-        .score-screen { text-align: center; }
-        .score-num { font-size: 45px; font-weight: bold; color: var(--primary); margin: 20px 0; }
-        .action-btn {
+
+        /* زر التالي */
+        .next-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 12px 25px;
+            padding: 12px;
             border-radius: 10px;
             font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 15px;
+            width: 100%;
+            display: none;
             text-align: center;
         }
-        .action-btn:hover { background: var(--primary-hover); }
+        .next-btn:hover { background: var(--primary-hover); }
+
+        .score-screen { text-align: center; }
+        .score-num { font-size: 45px; font-weight: bold; color: var(--primary); margin: 15px 0; }
+        
+        /* مراجعة الأخطاء */
+        .review-section {
+            margin-top: 25px;
+            text-align: right;
+            border-top: 2px dashed var(--border);
+            padding-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .review-item {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border);
+            font-size: 14px;
+        }
+        .review-q { font-weight: bold; margin-bottom: 6px; color: var(--text); }
+        .review-answers { margin-bottom: 6px; font-size: 13px; }
     </style>
 </head>
 <body>
+
+<div class="theme-switch">
+    <button class="theme-btn" onclick="toggleTheme()">🌓 تبديل الوضع (داكن/فاتح)</button>
+</div>
+
 <div class="quiz-card">
     <div id="category-screen">
-        <h2>📚 اختر القسم المُراد اختباره:</h2>
+        <h2>📚 مادة الرياضة والتأمين - اختر الفصل:</h2>
         <div class="grid-layout" id="chapters-box"></div>
     </div>
+
     <div id="quiz-play" style="display: none;">
         <div class="header-info">
-            <span id="progress">السؤال 1 من 3</span>
-            <span id="current-chapter-name" style="color: #38bdf8;">اسم القسم</span>
+            <span id="progress">السؤال 1 من 6</span>
+            <span id="current-chapter-name" style="color: var(--primary);">اسم الفصل</span>
         </div>
         <h2 id="question-text">جاري تحميل السؤال...</h2>
         <div class="grid-layout" id="options-box"></div>
         <div id="result-status"></div>
         <div class="explanation-box" id="explanation-box"></div>
+        <button class="next-btn" id="next-btn" onclick="goToNextQuestion()">السؤال التالي ➡️</button>
     </div>
+
     <div id="quiz-result" class="score-screen" style="display: none;">
         <h2>🏁 انتهى الاختبار!</h2>
-        <p>النتيجة النهائية في هذا القسم:</p>
+        <p>نتيجتك في هذا الفصل:</p>
         <div class="score-num" id="final-score">0 / 0</div>
         <p id="feedback-text">تقييمك</p>
-        <button class="action-btn" onclick="showChaptersScreen()">العودة للأقسام ↩️</button>
+        
+        <div id="wrong-review-box" class="review-section" style="display: none;">
+            <h3 style="font-size: 16px; margin-top: 0; color: #ef4444;">🔍 تقرير مراجعة الأخطاء:</h3>
+            <div id="review-list"></div>
+        </div>
+
+        <button class="btn chapter-btn" style="width:100%; margin-top:20px;" onclick="showChaptersScreen()">العودة للفصول ↩️</button>
     </div>
 </div>
+
 <script>
+    // بنك أسئلة مادة الرياضة والتأمين (4 فصول × 6 أسئلة)
     const quizData = {
-        "الفصل الأول: تكنولوجيا المعلومات": [
+        "الفصل الأول: الفائدة البسيطة": [
             {
-                q: "أي من التقنيات التالية تُستخدم لبناء هيكل صفحات الويب الأساسي؟",
-                options: ["Python", "HTML", "C++", "CSS"],
+                q: "ما هي الفائدة البسيطة لمبلغ 10,000 جنيه مستثمر بمعدل فائدة سنوي 10% لمدة سنتين؟",
+                options: ["1,000 جنيه", "2,000 جنيه", "12,000 جنيه", "500 جنيه"],
                 correct: 1,
-                explanation: "💡 الشرح: لغة HTML هي المسؤولة عن بناء الهيكل والأساس لأي صفحة ويب، بينما CSS للتلوين والتصميم، والـ Python لبرمجة السيرفرات."
+                explanation: "💡 الحل: قانون الفائدة البسيطة (ف = أ × ع × ن). إذن: 10,000 × 0.10 × 2 = 2,000 جنيه."
             },
             {
-                q: "ما هي وظيفة الـ JavaScript الأساسية في تطوير المواقع؟",
-                options: ["تلوين وتنسيق الخطوط", "جعل الصفحة تفاعلية وحركية", "حجز اسم النطاق (الدومين)"],
+                q: "إذا كانت الفائدة التجارية تُحسب على أساس عدد أيام السنة التجارية، فما هو عدد الأيام المعتمد؟",
+                options: ["365 يومًا", "366 يومًا", "360 يومًا", "300 يومًا"],
+                correct: 2,
+                explanation: "💡 الحل: الفائدة التجارية تفرض دائمًا أن السنة تساوي 360 يومًا بالتساوي لتسهيل الحسابات البنكية."
+            },
+            {
+                q: "أصل المبلغ المستثمر يسمى برمجياً ومالياً بـ:",
+                options: ["الفائدة (Interest)", "القيمة الحالية أو الأصل (Principal)", "الجملة (Amount)", "المعدل (Rate)"],
                 correct: 1,
-                explanation: "💡 الشرح: الـ JavaScript بتدي الروح للموقع وتخليه يتفاعل مع ضغطات المستخدم."
+                explanation: "💡 الحل: الأصل أو القيمة الحالية هو المبلغ الأساسي الذي تبدأ به العملية الاستثمارية قبل إضافة الفوائد."
+            },
+            {
+                q: "ما هو قانون حساب جملة المبلغ في الفائدة البسيطة؟",
+                options: ["جـ = أ (1 + ع ن)", "جـ = أ + ع + ن", "جـ = أ × ع × ن", "جـ = أ / (1 + ع)"],
+                correct: 0,
+                explanation: "💡 الحل: الجملة تساوي الأصل زائد الفائدة، وبأخذ الأصل كعامل مشترك نصل للقانون: جـ = أ (1 + ع ن)."
+            },
+            {
+                q: "إذا بلغت فائدة مبلغ ما بعد سنة واحدة 500 جنيه بمعدل 5%، فما هو أصل المبلغ؟",
+                options: ["5,000 جنيه", "10,000 جنيه", "2,500 جنيه", "15,000 جنيه"],
+                correct: 1,
+                explanation: "💡 الحل: أ = ف / (ع × ن) = 500 / (0.05 × 1) = 10,000 جنيه."
+            },
+            {
+                q: "الفرق بين الفائدة التجارية والفائدة الصحيحة لنفس المبلغ والمعدل والمدة يكون دائمًا لصالح:",
+                options: ["الفائدة الصحيحة", "متساويان تماماً", "الفائدة التجارية", "ليس لهما علاقة"],
+                correct: 2,
+                explanation: "💡 الحل: الفائدة التجارية تكون دائمًا أكبر من الصحيحة لأننا نقسم على مقام أصغر (360 بدلاً من 365)."
             }
         ],
-        "الفصل الثاني: الرياضيات والمصفوفات": [
+        "الفصل الثاني: الفائدة المركبة": [
             {
-                q: "إذا كانت المصفوفة تحتوي على عدد صفوف يساوي عدد الأعمدة، تسمى مصفوفة...؟",
-                options: ["قطرية", "صفية", "مربعة", "صفرية"],
+                q: "ما هو القانون الأساسي لحساب جملة المبلغ بالفائدة المركبة؟",
+                options: ["جـ = أ × ع × ن", "جـ = أ (1 + ع)^ن", "جـ = أ / (1 + ع)^ن", "جـ = أ + (ع)^ن"],
+                correct: 1,
+                explanation: "💡 الحل: الفائدة المركبة تحسب الفائدة على الأصل والفوائد المتراكمة السابقة، وقانونها: جـ = أ (1 + ع)^ن."
+            },
+            {
+                q: "استثمر شخص مبلغ 5,000 جنيه لمدة سنتين بمعدل فائدة مركبة 10% سنويًا، فما جملة مبلغه؟",
+                options: ["6,000 جنيه", "5,500 جنيه", "6,050 جنيه", "6,100 جنيه"],
                 correct: 2,
-                explanation: "💡 الشرح: المصفوفة المربعة هي اللي بيكون فيها عدد الصفوف مساوي تماماً لعدد الأعمدة، مثل مصفوفة 2×2."
+                explanation: "💡 الحل: جـ = 5,000 × (1.10)^2 = 5,000 × 1.21 = 6,050 جنيه."
+            },
+            {
+                q: "إذا كانت الفائدة المركبة تضاف نصف سنويًا، وكان المعدل السنوي 12%، فما هو المعدل المستخدم في الفترة الواحدة؟",
+                options: *["12%", "6%", "4%", "3%"],*
+                correct: 1,
+                explanation: "💡 الحل: بما أن الفائدة تضاف مرتين في السنة (نصف سنوي)، نقسم المعدل السنوي على 2: (12% / 2 = 6%)."
+            },
+            {
+                q: "القيمة الحالية بمعدل فائدة مركبة تعني:",
+                options: ["جملة المبالغ المستقبلية", "قيمة المبلغ المخصوم حالياً", "مجموع الفوائد فقط", "الأصل مضروباً في ن"],
+                correct: 1,
+                explanation: "💡 الحل: القيمة الحالية هي القيمة الحقيقية الآن لمبلغ يستحق الدفع في المستقبل بعد استبعاد الفوائد المركبة منه."
+            },
+            {
+                q: "ما هو الخصم المركب؟",
+                options: ["الفرق بين القيمة الاسمية والقيمة الحالية المركبة", "مجموع الفائدة والأصل", "الضرب المستمر للمعدل", "قيمة القسط التأميني"],
+                correct: 0,
+                explanation: "💡 الحل: الخصم المركب هو مقدار النقص من القيمة المستقبلية (الاسمية) للوصول للقيمة الحالية: الخصم = جـ - ح."
+            },
+            {
+                q: "أي من الفوائد تعطي عائداً أكبر للمستثمر على المدى الطويل عند ثبات الأصل والمعدل والمدة؟",
+                options: ["الفائدة البسيطة", "الفائدة المركبة", "الفائدة التجارية الأسبوعية", "متساويتان دائماً"],
+                correct: 1,
+                explanation: "💡 الحل: الفائدة المركبة تنمو بشكل أسي لأن الفوائد تولد فوائد جديدة كل فترة، عكس البسيطة التي تظل ثابتة."
+            }
+        ],
+        "الفصل الثالث: الدفعات المالية": [
+            {
+                q: "ما هي الدفعات العادية (دفعات السداد)؟",
+                options: ["تدفع في أول كل فترة", "تدفع في منتصف الفترة", "تدفع في نهاية كل فترة", "تدفع مرة واحدة في العمر"],
+                correct: 2,
+                explanation: "💡 الحل: الدفعات العادية يتم إيداعها أو سدادها في نهاية كل فترة زمنية (مثل نهاية كل شهر أو سنة)."
+            },
+            {
+                q: "ما هي الدفعات الفورية (دفعات الاستثمار)؟",
+                options: ["تودع في بداية كل فترة", "تودع في نهاية الفترة", "تودع حسب الرغبة عشوائياً", "دفعات تسقط بالوفاة"],
+                correct: 0,
+                explanation: "💡 الحل: الدفعات الفورية تبدأ من أول يوم في الفترة، وبالتالي تحسب لها فائدة عن الفترة الأولى كاملة."
+            },
+            {
+                q: "عند حساب جملة الدفعات الفورية، فإن مدة استثمار الدفعة الأولى تكون:",
+                options: ["المدة كلها (ن)", "ن - 1", "صفر", "نصف المدة"],
+                correct: 0,
+                explanation: "💡 الحل: لأنها تودع في أول يوم، فإنها تظل مستثمرة طوال مدة الدفعات كاملة (ن)."
+            },
+            {
+                q: "تُستخدم القيمة الحالية للدفعات المالية بشكل أساسي في حساب:",
+                options: ["أرباح الأسهم المتغيرة", "إطفاء واستهلاك القروض (الأقساط)", "فوائد شهادات الاستثمار البسيطة", "معدل التضخم السنوي"],
+                correct: 1,
+                explanation: "💡 الحل: عندما تأخذ قرضًا، يحسب البنك القيمة الحالية للدفعات المتساوية التي ستسددها لتغطي أصل القرض."
+            },
+            {
+                q: "إذا كانت الدفعة السنوية 1,000 جنيه لمدة 5 سنوات، فإن مجموع المبالغ المدفوعة بدون فوائد هو:",
+                options: ["1,000 جنيه", "6,000 جنيه", "5,000 جنيه", "5,500 جنيه"],
+                correct: 2,
+                explanation: "💡 الحل: المجموع الاسمي البسيط للدفعات هو قيمة الدفعة مضروبة في عددها: 1,000 × 5 = 5,000 جنيه."
+            },
+            {
+                q: "الرمز المستعمل عادة للتعبير عن قيمة الدفعة الدورية في القوانين هو:",
+                options: ["أ (الأصل)", "ع (المعدل)", "د (الدفعة)", "جـ (الجملة)"],
+                correct: 2,
+                explanation: "💡 الحل: الحرف (د) يرمز لـ قيمة الدفعة الواحدة المتكررة بانتظام."
+            }
+        ],
+        "الفصل الرابع: مبادئ التأمين": [
+            {
+                q: "يعتمد التأمين في رياضياته الأساسية على نظرية:",
+                options: ["النسبية", "الاحتمالات وقانون الأعداد الكبيرة", "المصفوفات والمحددات", "المعادلات التفاضلية"],
+                correct: 1,
+                explanation: "💡 الحل: التأمين يقوم على توقع حدوث الخطر باستخدام حساب الاحتمالات الإحصائية، وقانون الأعداد الكبيرة لتقليل الانحرافات."
+            },
+            {
+                q: "ما هو 'القسط الصافي' في التأمين؟",
+                options: ["القسط مضافاً إليه المصاريف الإدارية والربح", "القسط المخصص لمواجهة الخطر فقط دون أرباح للشركة", "مبلغ التعويض المدفوع للمتضرر", "قيمة مبيعات بوليسة التأمين"],
+                correct: 1,
+                explanation: "💡 الحل: القسط الصافي هو القيمة الرياضية البحتة اللازمة لتغطية الخسائر المتوقعة بناءً على الاحتمالات فقط."
+            },
+            {
+                q: "ما هو جدول الحياة والوفاة؟",
+                options: ["جدول لتسجيل الحوادث المرورية", "جدول إحصائي يوضح احتمالات البقاء على قيد الحياة أو الوفاة لكل عمر", "جدول يوضح أرباح شركات التأمين", "الميزانية العمومية للبنك المركزي"],
+                correct: 2,
+                explanation: "💡 الحل: جدول الحياة هو الأداة الرئيسية للخبير الاكتواري لتقدير أعمار ومعدلات وفيات الأفراد لتسعير عقود تأمين الحياة."
+            },
+            {
+                q: "مبدأ التعويض في التأمين يعني أن المؤمن له يحصل على تعويض:",
+                options: ["يجعله غنياً ويحقق له ربحاً كبيراً", "يعيده إلى نفس حالته المالية قبل وقوع الحادث دون تربّح", "ثابت لجميع أنواع الحوادث", "ضعف قيمة الشيء المؤمن عليه دائماً"],
+                correct: 1,
+                explanation: "💡 الحل: التأمين (غير تأمين الحياة) ليس وسيلة للتربح بل لإصلاح الضرر المالي فقط، فلا يجوز أن يتقاضى المستفيد أكثر من قيمة الخسارة الفعلية."
+            },
+            {
+                q: "شخص عمره (س)، يرمز لاحتمال بقائه على قيد الحياة لمدة سنة واحدة بالرمز الـرياضي الحيوى البسيط:",
+                options: ["فاقد (ق_س)", "ح_س", "ل_س", "ف_س"],
+                correct: 2,
+                explanation: "💡 الحل: يرمز لاحتمال الحياة بالرمز (ل_س)، بينما احتمال الوفاة يرمز له بالرمز (ف_س)."
+            },
+            {
+                q: "ماذا يقصد بـ الخطر في المفهوم التأميني؟",
+                options: ["الخسارة المؤكدة 100%", "عدم التأكد من وقوع حدث مستقبلي ضار (احتمالي)", "الحدث السعيد غير المتوقع", "الاستثمار في البورصة بمبالغ فائضة"],
+                correct: 1,
+                explanation: "💡 الحل: الخطر يجب أن يكون احتماليًا؛ لو كان مستحيلاً لا يُؤمّن عليه، ولو كان مؤكداً تماماً لا يُقبل التأمين عليه."
             }
         ]
     };
-    let currentCategory = ""; let currentQ = 0; let score = 0;
+
+    let currentCategory = ""; 
+    let currentQ = 0; 
+    let score = 0;
+    let wrongAnswersList = []; // لتخزين الأخطاء وحفظها للمراجعة
+
+    // إعداد وتشغيل الأقسام
     function showChaptersScreen() {
         document.getElementById('category-screen').style.display = "block";
         document.getElementById('quiz-play').style.display = "none";
         document.getElementById('quiz-result').style.display = "none";
+        
         const chaptersBox = document.getElementById('chapters-box');
         chaptersBox.innerHTML = "";
+        
         Object.keys(quizData).forEach(chapterName => {
             const btn = document.createElement('button');
             btn.className = "btn chapter-btn";
@@ -170,58 +406,137 @@
             chaptersBox.appendChild(btn);
         });
     }
+
     function startQuizForCategory(category) {
-        currentCategory = category; currentQ = 0; score = 0;
+        currentCategory = category; 
+        currentQ = 0; 
+        score = 0;
+        wrongAnswersList = []; // إعادة تصفير القائمة
+        
         document.getElementById('category-screen').style.display = "none";
         document.getElementById('quiz-play').style.display = "block";
         document.getElementById('current-chapter-name').innerText = category;
         loadQuestion();
     }
+
     function loadQuestion() {
         const activeQuestions = quizData[currentCategory];
-        if (currentQ >= activeQuestions.length) { showEndScreen(); return; }
+        
+        // إخفاء زر التالي والشرح عند تحميل سؤال جديد
+        document.getElementById('next-btn').style.display = "none";
+        document.getElementById('explanation-box').style.display = "none";
+        document.getElementById('result-status').innerText = "";
+
+        if (currentQ >= activeQuestions.length) { 
+            showEndScreen(); 
+            return; 
+        }
+        
         const currentData = activeQuestions[currentQ];
         document.getElementById('progress').innerText = `السؤال ${currentQ + 1} من ${activeQuestions.length}`;
         document.getElementById('question-text').innerText = currentData.q;
-        document.getElementById('result-status').innerText = "";
-        const expBox = document.getElementById('explanation-box');
-        expBox.style.display = "none";
+        
         const optionsBox = document.getElementById('options-box');
         optionsBox.innerHTML = "";
+        
         currentData.options.forEach((opt, idx) => {
             const btn = document.createElement('button');
-            btn.className = "btn"; btn.innerText = opt;
+            btn.className = "btn"; 
+            btn.innerText = opt;
             btn.onclick = () => handleAnswer(idx);
             optionsBox.appendChild(btn);
         });
     }
+
     function handleAnswer(selectedIdx) {
         const activeQuestions = quizData[currentCategory];
         const currentData = activeQuestions[currentQ];
         const buttons = document.querySelectorAll('#options-box .btn');
+        
+        // قفل الضغط على بقية الأزرار
         buttons.forEach(b => b.style.pointerEvents = "none");
+        
+        // إظهار الشرح والتفسير العلمي
         const expBox = document.getElementById('explanation-box');
-        expBox.innerText = currentData.explanation; expBox.style.display = "block";
+        expBox.innerText = currentData.explanation; 
+        expBox.style.display = "block";
+        
         if (selectedIdx === currentData.correct) {
-            score++; buttons[selectedIdx].classList.add('correct-anim');
+            score++; 
+            buttons[selectedIdx].classList.add('correct-anim');
             document.getElementById('result-status').innerHTML = "<span style='color: #10b981;'>إجابة صحيحة! 🎉</span>";
         } else {
-            buttons[selectedIdx].classList.add('wrong-anim'); buttons[currentData.correct].classList.add('correct-anim');
+            buttons[selectedIdx].classList.add('wrong-anim'); 
+            buttons[currentData.correct].classList.add('correct-anim');
             document.getElementById('result-status').innerHTML = "<span style='color: #ef4444;'>إجابة خاطئة ❌</span>";
+            
+            // حفظ السؤال في قائمة الأخطاء للمراجعة اللاحقة
+            wrongAnswersList.push({
+                question: currentData.q,
+                userAnswer: currentData.options[selectedIdx],
+                correctAnswer: currentData.options[currentData.correct],
+                exp: currentData.explanation
+            });
         }
-        setTimeout(() => { currentQ++; loadQuestion(); }, 4500);
+        
+        // إظهار زر "التالي" ليتحكم الطالب في وقت الانتقال بنفسه
+        document.getElementById('next-btn').style.display = "block";
     }
+
+    function goToNextQuestion() {
+        currentQ++;
+        loadQuestion();
+    }
+
     function showEndScreen() {
         const activeQuestions = quizData[currentCategory];
         document.getElementById('quiz-play').style.display = "none";
         document.getElementById('quiz-result').style.display = "block";
         document.getElementById('final-score').innerText = `${score} / ${activeQuestions.length}`;
-        let feedback = ""; let percent = (score / activeQuestions.length) * 100;
-        if (percent === 100) feedback = "امتياز! التقفيل عاده عندك يا بطل 👑";
-        else if (percent >= 50) feedback = "عاش جداً! غلطات بسيطة والشرح هيظبطهالك 👍";
-        else feedback = "محاولة طيبة، اقرأ التفسيرات كويس وجرب تاني 📚";
+        
+        let percent = (score / activeQuestions.length) * 100;
+        let feedback = "";
+        if (percent === 100) feedback = "امتياز! عبقري في الرياضة والتأمين 👑";
+        else if (percent >= 50) feedback = "عاش يا بطل! أداء جيد جداً 👍 واقرأ الأخطاء لتتحسن.";
+        else feedback = "محاولة طيبة، راجع تقرير الأخطاء بالأسفل وأعد الاختبار 📚";
         document.getElementById('feedback-text').innerText = feedback;
+
+        // بناء صفحة مراجعة الأخطاء
+        const reviewBox = document.getElementById('wrong-review-box');
+        const reviewList = document.getElementById('review-list');
+        reviewList.innerHTML = ""; // تصفير القديم
+
+        if (wrongAnswersList.length > 0) {
+            reviewBox.style.display = "block";
+            wrongAnswersList.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = "review-item";
+                div.innerHTML = `
+                    <div class="review-q">${index + 1}. ${item.question}</div>
+                    <div class="review-answers">
+                        <span style="color:#ef4444;">❌ إجابتك: ${item.userAnswer}</span> | 
+                        <span style="color:#10b981;">✅ الإجابة الصحيحة: ${item.correctAnswer}</span>
+                    </div>
+                    <div style="font-size:12px; color: var(--text-muted); margin-top:4px;">${item.exp}</div>
+                `;
+                reviewList.appendChild(div);
+            });
+        } else {
+            reviewBox.style.display = "none"; // مفيش أخطاء خالص
+        }
     }
+
+    // وظيفة تبديل الوضع الداكن والفاتح
+    function toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        if (currentTheme === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.setAttribute('data-theme', 'dark');
+        }
+    }
+
+    // تشغيل التطبيق أول مرة
     showChaptersScreen();
 </script>
 </body>
