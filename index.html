@@ -539,5 +539,49 @@
     // تشغيل التطبيق أول مرة
     showChaptersScreen();
 </script>
+    <script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+  import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  // إعدادات الفايربيز المأخوذة من مشروعك مباشرة
+  const firebaseConfig = {
+    apiKey: "AIzaSyA7VLILoU_7jbHuexgC4oQUZ6Mj", 
+    authDomain: "amer-quiz-65ce2.firebaseapp.com",
+    projectId: "amer-quiz-65ce2",
+    storageBucket: "amer-quiz-65ce2.appspot.com",
+    messagingSenderId: "715423851508",
+    appId: "1:715423851508:web:75704bbd2d3a37b12cb7ee"
+  };
+
+  // بدء تشغيل الفايربيز وقاعدة البيانات
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  // دالة عالمية لحفظ نتيجة الطالب تقدر تناديها من أي مكان في موقعك
+  window.saveStudentResult = async function(studentName, score, totalQuestions, chapterName) {
+    if (!studentName || studentName.trim() === "") {
+      alert("تنبيه: لم يتم العثور على اسم الطالب لحفظ النتيجة!");
+      return false;
+    }
+
+    try {
+      // إرسال البيانات لجدول أو مجموعة اسمها students_results
+      const docRef = await addDoc(collection(db, "students_results"), {
+        name: studentName,
+        score: score,
+        total: totalQuestions,
+        chapter: chapterName,
+        date: serverTimestamp()
+      });
+      console.log("تم حفظ النتيجة بنجاح في الفايربيز! معرف المستند:", docRef.id);
+      return true;
+    } catch (error) {
+      console.error("خطأ أثناء الحفظ في قاعدة البيانات:", error);
+      alert("حدث خطأ أثناء حفظ النتيجة، يرجى التحقق من الاتصال.");
+      return false;
+    }
+  };
+</script>
+
 </body>
 </html>
