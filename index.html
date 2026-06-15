@@ -3,252 +3,373 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>منصة اختبارات الرياضة والتأمين</title>
+    <title>AmerQuiz - منصة الاختبارات</title>
     
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
+        /* الألوان وإعدادات الوضع النهاري والليلي */
         :root {
-            --bg: #f0f9ff;
+            --bg-color: #f1f5f9;
             --card-bg: #ffffff;
-            --primary: #0284c7;
-            --primary-hover: #0369a1;
-            --text: #0f172a;
-            --text-muted: #64748b;
-            --border: #e2e8f0;
-            --btn-bg: #e0f2fe;
-            --btn-text: #0369a1;
+            --text-color: #1e293b;
+            --primary-color: #2563eb;
+            --border-color: #e2e8f0;
+            --brand-color: #3b82f6;
         }
-        [data-theme="dark"] {
-            --bg: #0f172a;
+        
+        body.dark-mode {
+            --bg-color: #0f172a;
             --card-bg: #1e293b;
-            --primary: #38bdf8;
-            --primary-hover: #7dd3fc;
-            --text: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: #334155;
+            --text-color: #f8fafc;
+            --primary-color: #3b82f6;
+            --border-color: #334155;
+            --brand-color: #60a5fa;
         }
+
         body {
-            font-family: sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
             padding: 20px;
-            text-align: center;
+            transition: all 0.3s ease;
         }
+
         .container {
-            max-width: 600px;
-            margin: auto;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
+            max-width: 650px;
+            margin: 20px auto;
+            background-color: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+            border: 1px solid var(--border-color);
         }
-        button {
-            background-color: var(--primary);
+
+        /* تصميم شعار الموقع الجذاب */
+        .brand-header {
+            font-size: 32px;
+            font-weight: 800;
+            color: transparent;
+            background: linear-gradient(45deg, #2563eb, #ec4899);
+            -webkit-background-clip: text;
+            background-clip: text;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+        body.dark-mode .brand-header {
+            background: linear-gradient(45deg, #60a5fa, #f472b6);
+            -webkit-background-clip: text;
+        }
+
+        .tagline {
+            font-size: 14px;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-bottom: 25px;
+        }
+
+        /* زرار الوضع الليلي */
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0 20px 0;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-color);
+            box-sizing: border-box;
+        }
+
+        button.main-btn {
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
-            cursor: pointer;
-            border-radius: 5px;
+            padding: 12px 24px;
             font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
         }
-        button:hover {
-            background-color: var(--primary-hover);
+        button.main-btn:hover { opacity: 0.9; }
+
+        .option-btn {
+            background: var(--bg-color);
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            margin: 8px 0;
+            width: 100%;
+            text-align: right;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background 0.2s;
         }
+        .option-btn:hover { background: var(--primary-color); color: white; }
+
+        /* ستايل منصة الأوائل */
+        .leaderboard-title {
+            margin-top: 30px;
+            border-top: 2px dashed var(--border-color);
+            padding-top: 20px;
+            color: var(--primary-color);
+        }
+        .leaderboard-list {
+            text-align: right;
+            margin-top: 15px;
+        }
+        .student-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+        
+        /* شروط التصنيف والخطوط والألوان للأوائل */
+        .top-10 {
+            font-weight: bold;
+            font-size: 17px;
+        }
+        .rank-1 { color: #eab308; background: rgba(234, 179, 8, 0.1); border-radius: 5px; } /* ذهبي */
+        .rank-2 { color: #94a3b8; background: rgba(148, 163, 184, 0.1); border-radius: 5px; } /* فضي */
+        .rank-3 { color: #b45309; background: rgba(180, 83, 9, 0.1); border-radius: 5px; } /* برونزي */
+
+        /* مراجعة الأخطاء */
         .review-item {
             text-align: right;
-            border-bottom: 1px solid var(--border);
-            padding: 10px 0;
+            background: rgba(239, 68, 68, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            border-right: 4px solid #ef4444;
+        }
+        .review-exp {
+            font-size: 13px;
+            color: #10b981;
+            margin-top: 5px;
+            font-style: italic;
         }
     </style>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-
-        // إعدادات مشروعك الحقيقي الحالية
-        const firebaseConfig = {
-            apiKey: "AIzaSyA7VLIloU_7jbHuexgC4oQUZ6Mj1dwCu1M",
-            authDomain: "amer-quiz-65ce2.firebaseapp.com",
-            projectId: "amer-quiz-65ce2",
-            storageBucket: "amer-quiz-65ce2.firebasestorage.app",
-            messagingSenderId: "14966645412",
-            appId: "1:14966645412:web:e6c8dee237d9caa6a03c31",
-            measurementId: "G-SG2TRRSZEL"
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // دالة إرسال البيانات المربوطة بالنافذة العالمية للمتصفح
-        window.saveStudentResult = async (studentName, studentScore, totalQuestions) => {
-            try {
-                await addDoc(collection(db, "students_results"), {
-                    name: studentName,
-                    score: studentScore,
-                    total: totalQuestions,
-                    date: new Date().toLocaleString('ar-EG')
-                });
-                console.log("تم إرسال النتيجة إلى Firebase بنجاح!");
-            } catch (error) {
-                console.error("حدث خطأ أثناء الإرسال: ", error);
-            }
-        };
-    </script>
 </head>
 <body>
 
+    <button class="theme-toggle" onclick="toggleTheme()">🌙 الوضع الليلي</button>
+
     <div class="container">
+        <div class="brand-header">AmerQuiz</div>
+        <div class="tagline">منصة التميز والتنافس العلمي 🚀</div>
+
         <div id="quiz-login">
-            <h2>مرحباً بك في منصة الاختبارات</h2>
-            <input type="text" id="student-name" placeholder="اكتب اسمك الثلاثي هنا..." style="padding:10px; width:80%; margin-bottom:15px; border-radius:5px; border:1px solid #ccc;"><br>
-            <button onclick="startQuiz()">بدء الاختبار</button>
+            <label>اسم الطالب الثلاثي:</label>
+            <input type="text" id="student-name" placeholder="اكتب اسمك هنا بدقة...">
+
+            <label>اختر المادة الحالية:</label>
+            <select id="quiz-category">
+                <option value="math">الرياضة والتأمين</option>
+                <option value="english">مصطلحات أجنبية</option>
+                <option value="economics">الاقتصاد</option>
+                <option value="management">الإدارة</option>
+                <option value="office">حزم تطبيقية</option>
+            </select>
+
+            <button class="main-btn" onclick="startQuiz()">بدء التحدي والاختبار</button>
+            
+            <h3 class="leaderboard-title">🏆 أوائل المنصة (أعلى 100 طالب)</h3>
+            <div id="leaderboard-box" class="leaderboard-list">جاري تحميل لوحة الشرف...</div>
         </div>
 
         <div id="quiz-play" style="display: none;">
-            <h2 id="question-text">جاري تحميل السؤال...</h2>
+            <h3 id="question-text">السؤال يظهر هنا...</h3>
             <div id="options-container"></div>
-            <br>
-            <button id="next-btn" onclick="goToNextQuestion()">التالي</button>
         </div>
 
         <div id="quiz-result" style="display: none;">
-            <h2 id="feedback-text">النظام يحسب نتيجتك...</h2>
-            <h3>درجتك الحالية هي: <span id="final-score">0</span></h3>
+            <h2 id="feedback-text">انتهى الاختبار!</h2>
+            <h3>درجتك هي: <span id="final-score">0</span></h3>
             
-            <div id="wrong-review-box" style="display: none; margin-top: 20px;">
-                <h3>تقرير مراجعة الأخطاء:</h3>
+            <div id="wrong-review-box" style="display: none;">
+                <h4>🔍 مراجعة الأخطاء والتوضيح:</h4>
                 <div id="review-list"></div>
             </div>
             <br>
-            <button onclick="location.reload()">إعادة الاختبار 🔄</button>
+            <button class="main-btn" onclick="location.reload()">العودة للرئيسية 🔄</button>
         </div>
     </div>
 
     <script>
-        // متغيرات اللعبة الأساسية
-        let score = 0;
-        let currentQuestionIndex = 0;
-        let currentCategory = "math"; 
-        let wrongAnswersList = []; 
+        // تهيئة الفايربيز الأساسي الخاص بمشروعك
+        var firebaseConfig = {
+          apiKey: "AIzaSyA7VLIloU_7jbHuexgC4oQUZ6Mj1dwCu1M",
+          authDomain: "amer-quiz-65ce2.firebaseapp.com",
+          projectId: "amer-quiz-65ce2",
+          storageBucket: "amer-quiz-65ce2.firebasestorage.app",
+          messagingSenderId: "14966645412",
+          appId: "1:14966645412:web:e6c8dee237d9caa6a03c31",
+          measurementId: "G-SG2TRRSZEL"
+        };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        var db = firebase.firestore();
 
-        // 💡 ضع هنا مصفوفة الأسئلة الخاصة بك بالكامل (قاعدة البيانات للأسئلة)
+        // متغيرات اللعبة
+        let score = 0;
+        let currentIdx = 0;
+        let selectedCategory = "math";
+        let wrongAnswersList = [];
+
+        // بنك الأسئلة للمواد الـ 5 (تقدر تضيف أسئلتك كاملة هنا بنفس الترتيب)
         const quizData = {
             "math": [
-                {
-                    question: "ما هو ناتج جمع 5 + 5؟",
-                    options: ["10", "15", "20", "25"],
-                    answer: "10",
-                    exp: "التفسير: جمع عادي ومباشر."
-                },
-                {
-                    question: "إذا كانت المصفوفة ثنائية، فكيف نحسب محددها؟",
-                    options: ["ad - bc", "ad + bc", "ab - cd", "ab + cd"],
-                    answer: "ad - bc",
-                    exp: "التفسير: حاصل ضرب عناصر القطر الرئيسي ناقص القطر الفرعي."
-                }
+                { question: "إذا كانت المصفوفة ثنائية، فكيف نحسب محددها؟", options: ["ad - bc", "ad + bc", "ab - cd"], answer: "ad - bc", exp: "التفسير: حاصل ضرب القطر الرئيسي ناقص القطر الفرعي." }
+            ],
+            "english": [
+                { question: "ما معنى مصطلح 'Management' باللغة العربية؟", options: ["الإدارة", "التسويق", "المحاسبة"], answer: "الإدارة", exp: "التفسير: Management تعني عملية التوجيه والسيطرة على المنظمة." }
+            ],
+            "economics": [
+                { question: "ما هو العلم الذي يدرس الندرة وكيفية استغلال الموارد؟", options: ["علم الاقتصاد", "علم النفس", "القانون"], answer: "علم الاقتصاد", exp: "التفسير: الاقتصاد يركز على مشكلة الندرة النسبية وتلبية الحاجات." }
+            ],
+            "management": [
+                { question: "من وظائف الإدارة الأساسية:", options: ["التخطيط", "الإنتاج العشوائي", "الإهمال"], answer: "التخطيط", exp: "التفسير: الوظائف الأربعة هي: التخطيط، التنظيم، التوجيه، والرقابة." }
+            ],
+            "office": [
+                { question: "أي البرامج التالية يعد تطبيقاً سحابياً للعروض التقديمية ركز عليه الأستاذ؟", options: ["Visme", "Excel", "Word"], answer: "Visme", exp: "التفسير: Visme من المنصات السحابية المتقدمة لإنشاء العروض التقديمية المرئية." }
             ]
         };
 
+        // تحميل لوحة الشرف فور فتح الموقع
+        window.onload = function() {
+            loadLeaderboard();
+        };
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            document.querySelector('.theme-toggle').innerText = isDark ? "☀️ الوضع النهاري" : "🌙 الوضع الليلي";
+        }
+
+        // جلب أعلى 100 طالب وترتيبهم مع التمييز المطلـوب
+        function loadLeaderboard() {
+            db.collection("students_results").orderBy("score", "desc").limit(100).get().then((snapshot) => {
+                let html = "";
+                let rank = 1;
+                snapshot.forEach((doc) => {
+                    let data = doc.data();
+                    let rowClass = "";
+                    
+                    // شروط التمييز للأوائل الثلاثة والعشرة
+                    if (rank <= 3) rowClass += ` rank-${rank}`;
+                    if (rank <= 10) rowClass += " top-10";
+
+                    html += `
+                        <div class="student-row ${rowClass}">
+                            <span>#${rank} - ${data.name || "طالب مجهول"} (${data.subject || "عام"})</span>
+                            <span>${data.score} نقاط</span>
+                        </div>
+                    `;
+                    rank++;
+                });
+                document.getElementById('leaderboard-box').innerHTML = html || "لا توجد نتائج مسجلة حتى الآن. كن الأول!";
+            }).catch(err => {
+                document.getElementById('leaderboard-box').innerHTML = "خطأ في تحميل لوحة الشرف.";
+            });
+        }
+
         function startQuiz() {
-            const nameInput = document.getElementById('student-name').value.trim();
-            if(nameInput === "") {
-                alert("برجاء إدخال اسمك أولاً لبدء الاختبار!");
-                return;
-            }
+            const name = document.getElementById('student-name').value.trim();
+            if(!name) { alert("من فضلك اكتب اسمك أولاً للدخول في المنافسة!"); return; }
+            selectedCategory = document.getElementById('quiz-category').value;
+            
             document.getElementById('quiz-login').style.display = "none";
             document.getElementById('quiz-play').style.display = "block";
             loadQuestion();
         }
 
         function loadQuestion() {
-            const activeQuestions = quizData[currentCategory];
-            const currentQuestion = activeQuestions[currentQuestionIndex];
+            const qList = quizData[selectedCategory] || [];
+            if(currentIdx >= qList.length) { endQuiz(); return; }
             
-            document.getElementById('question-text').innerText = currentQuestion.question;
+            const currentQ = qList[currentIdx];
+            document.getElementById('question-text').innerText = currentQ.question;
+            
             const container = document.getElementById('options-container');
             container.innerHTML = "";
-
-            currentQuestion.options.forEach(opt => {
+            
+            currentQ.options.forEach(opt => {
                 const btn = document.createElement('button');
+                btn.className = "option-btn";
                 btn.innerText = opt;
-                btn.style.margin = "5px";
-                btn.style.display = "block";
-                btn.style.width = "100%";
-                btn.onclick = () => checkAnswer(opt, currentQuestion.answer, currentQuestion.exp);
+                btn.onclick = () => handleAnswer(opt, currentQ.answer, currentQ.exp);
                 container.appendChild(btn);
             });
         }
 
-        function checkAnswer(userOpt, correctOpt, explanation) {
-            const activeQuestions = quizData[currentCategory];
-            if(userOpt === correctOpt) {
+        function handleAnswer(selected, correct, exp) {
+            const qList = quizData[selectedCategory];
+            if(selected === correct) {
                 score++;
             } else {
                 wrongAnswersList.push({
-                    question: activeQuestions[currentQuestionIndex].question,
-                    userAnswer: userOpt,
-                    correctAnswer: correctOpt,
-                    exp: explanation
+                    question: qList[currentIdx].question,
+                    userAns: selected,
+                    correctAns: correct,
+                    explanation: exp
                 });
             }
-            goToNextQuestion();
+            currentIdx++;
+            loadQuestion();
         }
 
-        function goToNextQuestion() {
-            const activeQuestions = quizData[currentCategory];
-            currentQuestionIndex++;
-            if(currentQuestionIndex < activeQuestions.length) {
-                loadQuestion();
-            } else {
-                showEndScreen();
-            }
-        }
-
-        // دالة نهاية الاختبار المعدلة والمصححة بالكامل بدون أي أخطاء أقواس
-        function showEndScreen() {
-            const activeQuestions = quizData[currentCategory];
+        function endQuiz() {
             document.getElementById('quiz-play').style.display = "none";
             document.getElementById('quiz-result').style.display = "block";
-            document.getElementById('final-score').innerText = score + " / " + activeQuestions.length;
+            
+            const qList = quizData[selectedCategory];
+            document.getElementById('final-score').innerText = `${score} / ${qList.length}`;
+            
+            const name = document.getElementById('student-name').value;
+            
+            // رفع النتيجة للفايربيز متضمنة الاسم والمادة
+            db.collection("students_results").add({
+                name: name,
+                score: score,
+                subject: document.getElementById('quiz-category').options[document.getElementById('quiz-category').selectedIndex].text,
+                date: new Date().toLocaleString('ar-EG')
+            }).then(() => {
+                console.log("تم حفظ النتيجة وتحديث لوحة المنافسة!");
+            });
 
-            let percent = (score / activeQuestions.length) * 100;
-            let feedback = "";
-            if (percent === 100) {
-                feedback = "امتياز! عبقري في الرياضة والتأمين 👑";
-            } else if (percent >= 50) {
-                feedback = "أداء جيد جداً 👍 واقرأ الأخطاء لتتحسن";
-            } else {
-                feedback = "محاولة طيبة، راجع تقرير الأخطاء بالأسفل وأعد الاختبار 📚";
-            }
-            document.getElementById('feedback-text').innerText = feedback;
-
-            // استدعاء الفايربيز وحفظ اسم الطالب والنتيجة
-            if (typeof window.saveStudentResult === 'function') {
-                const nameOfStudent = document.getElementById('student-name').value || "طالب مجهول";
-                window.saveStudentResult(nameOfStudent, score, activeQuestions.length);
-            }
-
-            // بناء واجهة مراجعة الأخطاء بالتفصيل
-            const reviewBox = document.getElementById('wrong-review-box');
-            const reviewList = document.getElementById('review-list');
-            reviewList.innerHTML = ""; 
-
-            if (wrongAnswersList.length > 0) {
-                reviewBox.style.display = "block";
-                wrongAnswersList.forEach((item, index) => {
-                    const div = document.createElement('div');
-                    div.className = "review-item";
-                    div.innerHTML = `
-                        <div style="font-weight:bold;">${index + 1}. ${item.question}</div>
-                        <div style="margin: 5px 0;">
-                            <span style="color:#ef4444; margin-left: 15px;">إجابتك: ${item.userAnswer}</span>
-                            <span style="color:#10b981;">الإجابة الصحيحة: ${item.correctAnswer}</span>
+            // عرض مراجعة الأخطاء مع التوضيح
+            if(wrongAnswersList.length > 0) {
+                document.getElementById('wrong-review-box').style.display = "block";
+                let rHtml = "";
+                wrongAnswersList.forEach(item => {
+                    rHtml += `
+                        <div class="review-item">
+                            <strong>السؤال:</strong> ${item.question}<br>
+                            <span style="color:#ef4444;">إجابتك: ${item.userAns}</span> | 
+                            <span style="color:#10b981;font-weight:bold;">الصحيحة: ${item.correctAns}</span>
+                            <div class="review-exp">💡 التوضيح: ${item.explanation}</div>
                         </div>
-                        <div style="font-size:13px; color:#64748b;">${item.exp}</div>
                     `;
-                    reviewList.appendChild(div);
                 });
-            } else {
-                reviewBox.style.display = "none";
+                document.getElementById('review-list').innerHTML = rHtml;
             }
         }
     </script>
