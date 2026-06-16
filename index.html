@@ -3,14 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - النسخة المعتمدة</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>AmerQuiz - تطبيق التحديات التعليمية</title>
     
+    <!-- مكتبات الدعم الخارجية: الأيقونات والفايربيز -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
 
     <style>
+        /* العمارة اللونية ونظام الـ التصميم الحديث */
         :root {
             --bg-gradient: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
             --card-bg: #ffffff;
@@ -24,8 +25,9 @@
             --border: #e2e8f0;
             --radius-sm: 12px;
             --radius-md: 20px;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.05);
         }
+        
         body.dark-mode {
             --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
             --card-bg: #1e293b;
@@ -34,50 +36,289 @@
             --primary: #3b82f6;
             --primary-light: #1e3a8a;
             --border: #334155;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
-        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg-gradient); color: var(--text-main); margin: 0; padding: 0; min-height: 100vh; }
-        header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; background: var(--card-bg); border-bottom: 2px solid var(--border); box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; }
-        .brand { font-size: 28px; font-weight: 900; background: linear-gradient(45deg, #2563eb, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        .profile-widget { display: flex; align-items: center; gap: 12px; background: var(--primary-light); padding: 6px 16px; border-radius: 30px; border: 1px solid var(--border); }
-        .avatar { width: 35px; height: 35px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-        .app-layout { display: grid; grid-template-columns: 2.2fr 1fr; max-width: 1400px; margin: 25px auto; gap: 25px; padding: 0 20px; }
-        .main-zone, .side-zone { display: flex; flex-direction: column; gap: 25px; }
-        .card { background: var(--card-bg); border-radius: var(--radius-md); padding: 25px; border: 2px solid var(--border); box-shadow: var(--shadow); position: relative; }
-        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
-        .stat-box { background: var(--bg-gradient); padding: 15px; border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border); }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        /* الهيدر العلوي الذكي */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+            background: var(--card-bg);
+            border-bottom: 2px solid var(--border);
+            box-shadow: var(--shadow);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .brand {
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(45deg, #2563eb, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* ويدجت الملف الشخصي السريع */
+        .profile-widget {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: var(--primary-light);
+            padding: 6px 16px;
+            border-radius: 30px;
+            border: 1px solid var(--border);
+        }
+        .avatar {
+            width: 35px;
+            height: 35px;
+            background: #3b82f6;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        /* تقسيم الواجهة الاحترافي */
+        .app-layout {
+            display: grid;
+            grid-template-columns: 2.2fr 1fr;
+            max-width: 1400px;
+            margin: 25px auto;
+            gap: 25px;
+            padding: 0 20px;
+        }
+
+        .main-zone { display: flex; flex-direction: column; gap: 25px; }
+        .side-zone { display: flex; flex-direction: column; gap: 25px; }
+
+        .card {
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: 25px;
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover { transform: translateY(-2px); }
+
+        /* ستايل لوحة الإحصائيات الفخمة */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 10px;
+        }
+        .stat-box {
+            background: var(--bg-gradient);
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            text-align: center;
+            border: 1px solid var(--border);
+        }
         .stat-box i { font-size: 24px; color: var(--primary); margin-bottom: 8px; }
-        .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px; }
-        .subject-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; }
-        .subject-card.selected { border-color: var(--primary); background: var(--primary-light); transform: scale(1.03); }
-        
-        /* ستايل حقول الرفع الخاصة بالأدمن */
-        .admin-input { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); box-sizing: border-box; }
-        .admin-btn { background: #ef4444; color: white; border: none; padding: 12px 20px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: 10px; }
-        
-        .btn-launch { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 16px; font-size: 18px; font-weight: bold; border-radius: var(--radius-sm); cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4); }
-        .quiz-arena-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .progress-container { flex-grow: 1; background: var(--border); height: 12px; border-radius: 10px; margin: 0 15px; overflow: hidden; }
-        .progress-bar { background: linear-gradient(90deg, #2563eb, #10b981); height: 100%; width: 0%; transition: width 0.4s; }
-        .timer-badge { background: var(--warning); color: white; padding: 6px 14px; border-radius: 20px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
-        .option-node { background: var(--card-bg); border: 2px solid var(--border); padding: 16px; border-radius: var(--radius-sm); margin: 12px 0; text-align: right; font-size: 16px; cursor: pointer; width: 100%; display: flex; justify-content: space-between; align-items: center; }
+        .stat-box div { font-size: 20px; font-weight: bold; }
+        .stat-box span { font-size: 12px; color: var(--text-muted); }
+
+        /* بطاقات المواد التفاعلية (Quizizz/Duolingo Style) */
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .subject-card {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .subject-card i { font-size: 32px; margin-bottom: 12px; color: var(--primary); }
+        .subject-card.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: scale(1.03);
+        }
+
+        /* شاشة الاستعداد وتفاصيل الاختبار */
+        .quiz-prep-info {
+            display: flex;
+            justify-content: space-around;
+            background: var(--bg-gradient);
+            padding: 15px;
+            border-radius: var(--radius-sm);
+            margin: 15px 0;
+            font-size: 14px;
+        }
+
+        /* زر الإطلاق العملاق */
+        .btn-launch {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.1s ease;
+            box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+        }
+        .btn-launch:active { transform: scale(0.98); }
+
+        /* شاشة اللعب والعداد الدائري */
+        .quiz-arena-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .progress-container {
+            flex-grow: 1;
+            background: var(--border);
+            height: 12px;
+            border-radius: 10px;
+            margin: 0 15px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: linear-gradient(90deg, #2563eb, #10b981);
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+        .timer-badge {
+            background: var(--warning);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* الخيارات بنظام المؤثرات البصرية اللمسية */
+        .option-node {
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            padding: 16px;
+            border-radius: var(--radius-sm);
+            margin: 12px 0;
+            text-align: right;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.15s ease;
+        }
+        .option-node:hover { border-color: var(--primary); background: var(--bg-gradient); }
         .option-node.correct { background: #d1fae5 !important; border-color: #10b981 !important; color: #065f46; }
         .option-node.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
-        .leaderboard-list { display: flex; flex-direction: column; gap: 10px; max-height: 450px; overflow-y: auto; }
-        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-gradient); }
-        .lecture-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--bg-gradient); border: 1px solid var(--border); border-radius: var(--radius-sm); margin-bottom: 8px; }
-        @media (max-width: 900px) { .app-layout { grid-template-columns: 1fr; } }
+
+        /* قائمة المتصدرين الاحترافية */
+        .leaderboard-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 450px;
+            overflow-y: auto;
+        }
+        .user-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            background: var(--bg-gradient);
+        }
+        .rank-gold { background: linear-gradient(90deg, rgba(251,191,36,0.15) 0%, rgba(251,191,36,0.05) 100%); border-right: 4px solid #f59e0b; font-weight: bold;}
+        .rank-silver { background: linear-gradient(90deg, rgba(148,163,184,0.15) 0%, rgba(148,163,184,0.05) 100%); border-right: 4px solid #94a3b8; font-weight: bold;}
+        .rank-bronze { background: linear-gradient(90deg, rgba(180,83,9,0.15) 0%, rgba(180,83,9,0.05) 100%); border-right: 4px solid #b45309; font-weight: bold;}
+
+        .filter-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 20px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-main);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: bold;
+        }
+        .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* الإنجازات والشارات */
+        .badge-container {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .badge-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            background: var(--border);
+            color: var(--text-muted);
+        }
+        .badge-icon.unlocked { background: #fef3c7; color: #d97706; border: 1px solid #f59e0b; }
+
+        /* ملاءمة الموبايل الصارمة Mobile-First */
+        @media (max-width: 900px) {
+            .app-layout { grid-template-columns: 1fr; margin: 10px auto; padding: 0 10px; }
+            header { padding: 10px 15px; }
+            .brand { font-size: 22px; }
+        }
     </style>
 </head>
 <body>
 
+    <!-- الهيدر الذكي العلوي -->
     <header>
         <div class="brand"><i class="fa-solid fa-graduation-cap"></i> AmerQuiz</div>
         <div style="display: flex; align-items: center; gap: 15px;">
-            <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
+            <button class="theme-btn" onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
             <div class="profile-widget" id="profile-area" style="display: none;">
-                <div class="avatar" id="user-avatar">?</div>
+                <div class="avatar" id="user-avatar">ع</div>
                 <div>
-                    <div id="user-display-name" style="font-size: 13px; font-weight: bold;">جاري التحقق...</div>
+                    <div id="user-display-name" style="font-size: 13px; font-weight: bold;">طالب</div>
                     <div style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-bolt" style="color:var(--warning)"></i> <span id="header-xp">0</span> XP</div>
                 </div>
             </div>
@@ -85,344 +326,387 @@
     </header>
 
     <div class="app-layout">
+        
+        <!-- الجانب الأيمن: شاشات التفاعل الأساسية ومناطق اللعب -->
         <div class="main-zone">
-            <div class="card" id="view-login" style="display: none;">
-                <h2><i class="fa-solid fa-shield-halved" style="color:var(--primary)"></i> نظام الدخول للمنصة</h2>
-                <input type="text" id="input-student-name" placeholder="اكتب اسمك الثلاثي هنا..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing:border-box;">
-                <button class="btn-launch" onclick="secureRegister()" style="margin-top: 20px;">إنشاء حساب وتوثيق الجهاز</button>
+            
+            <!-- 1. شاشة تسجيل الدخول لأول مرة -->
+            <div class="card" id="view-login">
+                <h2 style="text-align: center; margin-top: 0;"><i class="fa-solid fa-gamepad" style="color:var(--primary)"></i> ارفع راية التحدي العلمي</h2>
+                <p style="text-align: center; color: var(--text-muted);">ادخل اسمك الثلاثي لتبدأ رحلة تجميع نقاط الـ XP واعتلاء منصة الأوائل الجامعية.</p>
+                <input type="text" id="input-student-name" placeholder="اكتب اسمك الثلاثي هنا بدقة..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing:border-box; font-size:16px;">
+                <button class="btn-launch" onclick="registerUser()" style="margin-top: 20px;"><i class="fa-solid fa-rocket"></i> انطلاق كطالب محارب</button>
             </div>
 
+            <!-- 2. شاشة التحكم الرئيسية (Dashboard) واختيار المواد -->
             <div class="card" id="view-dashboard" style="display: none;">
-                <h3><i class="fa-solid fa-chart-pie" style="color:var(--success)"></i> لوحة الأداء الدراسي</h3>
+                <!-- لوحة الإحصائيات الفاخرة -->
+                <h3><i class="fa-solid fa-chart-pie" style="color:var(--success)"></i> لوحة أدائك الدراسي</h3>
                 <div class="stats-grid">
                     <div class="stat-box"><i class="fa-solid fa-award"></i><div id="stat-level">1</div><span>المستوى</span></div>
                     <div class="stat-box"><i class="fa-solid fa-bolt" style="color:var(--warning)"></i><div id="stat-xp">0</div><span>إجمالي XP</span></div>
-                    <div class="stat-box"><i class="fa-solid fa-check-double"></i><div id="stat-completed">0</div><span>الاختبارات</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-check-double"></i><div id="stat-completed">0</div><span>كويزات منجزة</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-fire" style="color:#ef4444"></i><div id="stat-streak">1</div><span>أيام متتالية</span></div>
                 </div>
 
-                <div id="admin-upload-panel" style="display:none; margin-top:20px; padding:15px; border:2px dashed #ef4444; border-radius:12px;">
-                    <h3 style="color:#ef4444; margin-top:0;">رفع محاضرة جديدة</h3>
-                    <input id="lectureTitle" class="admin-input" placeholder="اسم المحاضرة">
-                    <input id="lectureLink" class="admin-input" placeholder="رابط PDF أو Drive">
-                    <button class="admin-btn" onclick="uploadLecture()">رفع المحاضرة</button>
-
-                    <hr style="margin:20px 0; border:0; border-top:1px dashed var(--border);">
-
-                    <h3 style="color:#ef4444; margin-top:0;">رفع سؤال جديد</h3>
-                    <select id="qSubject" class="admin-input">
-                        <option value="math">math</option>
-                        <option value="english">english</option>
-                        <option value="economics">economics</option>
-                        <option value="management">management</option>
-                        <option value="office">office</option>
-                    </select>
-                    <input id="qText" class="admin-input" placeholder="السؤال؟">
-                    <input id="qOpt1" class="admin-input" placeholder="الخيار الأول A">
-                    <input id="qOpt2" class="admin-input" placeholder="الخيار الثاني B">
-                    <input id="qOpt3" class="admin-input" placeholder="الخيار الثالث C">
-                    <input id="qOpt4" class="admin-input" placeholder="الخيار الرابع D">
-                    <input id="qAns" class="admin-input" placeholder="الإجابة الصحيحة (تطابق نص الخيار تماماً)">
-                    <input id="qExp" class="admin-input" placeholder="الشرح والتوضيح">
-                    <button class="admin-btn" style="background:#2563eb;" onclick="uploadQuestion()">رفع السؤال</button>
-                </div>
-
-                <h3 style="margin-top:25px;"><i class="fa-solid fa-book-open"></i> اختر مادة التحدي:</h3>
+                <h3 style="margin-top:25px;"><i class="fa-solid fa-book-open"></i> اختر مادة التحدي الحالية:</h3>
                 <div class="subject-grid">
-                    <div class="subject-card selected" onclick="selectSubject('math', this)"><i class="fa-solid fa-calculator"></i><h4>الرياضة والتأمين</h4></div>
-                    <div class="subject-card" onclick="selectSubject('english', this)"><i class="fa-solid fa-language"></i><h4>مصطلحات أجنبية</h4></div>
-                    <div class="subject-card" onclick="selectSubject('economics', this)"><i class="fa-solid fa-chart-line"></i><h4>علم الاقتصاد</h4></div>
-                    <div class="subject-card" onclick="selectSubject('management', this)"><i class="fa-solid fa-users-gear"></i><h4>مبادئ الإدارة</h4></div>
-                    <div class="subject-card" onclick="selectSubject('office', this)"><i class="fa-solid fa-laptop-code"></i><h4>حزم تطبيقية</h4></div>
+                    <div class="subject-card selected" onclick="selectSubject('math', this)"><i class="fa-solid fa-calculator"></i><h4>الرياضة والتأمين</h4><small>مستوى متقدم</small></div>
+                    <div class="subject-card" onclick="selectSubject('english', this)"><i class="fa-solid fa-language"></i><h4>مصطلحات أجنبية</h4><small>مستوى متوسط</small></div>
+                    <div class="subject-card" onclick="selectSubject('economics', this)"><i class="fa-solid fa-chart-line"></i><h4>علم الاقتصاد</h4><small>مستوى متوسط</small></div>
+                    <div class="subject-card" onclick="selectSubject('management', this)"><i class="fa-solid fa-users-gear"></i><h4>مبادئ الإدارة</h4><small>مستوى مبتدئ</small></div>
+                    <div class="subject-card" onclick="selectSubject('office', this)"><i class="fa-solid fa-laptop-code"></i><h4>حزم تطبيقية</h4><small>مستوى متقدم</small></div>
                 </div>
 
-                <div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 15px;">
-                    <button class="btn-launch" onclick="enterArena()"><i class="fa-solid fa-circle-play"></i> بدء التحدي المعتمد</button>
+                <!-- بطاقة معلومات الكويز التمهيدية -->
+                <div class="review-box" style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 15px;">
+                    <h4 id="prep-title"><i class="fa-solid fa-circle-info"></i> معلومات جولة التحدي الحالية:</h4>
+                    <div class="quiz-prep-info">
+                        <div><i class="fa-solid fa-question"></i> <span id="prep-count">1</span> أسئلة</div>
+                        <div><i class="fa-solid fa-clock"></i> دقيقة واحدة</div>
+                        <div><i class="fa-solid fa-gift" style="color:var(--warning)"></i> +50 XP مكافأة</div>
+                    </div>
+                    <button class="btn-launch" onclick="enterArena()"><i class="fa-solid fa-circle-play"></i> بدء جولة الاختبار السريع</button>
                 </div>
             </div>
 
-            <div class="card" id="view-lectures-list" style="display:none;">
-                <h3><i class="fa-solid fa-folder-open" style="color:var(--warning)"></i> المحاضرات والملفات المتاحة:</h3>
-                <div id="lectures-container">لا توجد محاضرات حالياً.</div>
-            </div>
-
+            <!-- 3. حلبة التحدي والاختبار (Quiz Arena) -->
             <div class="card" id="view-arena" style="display: none;">
                 <div class="quiz-arena-header">
-                    <span id="arena-question-counter" style="font-weight: bold;">السؤال 1</span>
+                    <span id="arena-question-counter" style="font-weight: bold; font-size: 14px;">السؤال 1 من 1</span>
                     <div class="progress-container"><div class="progress-bar" id="arena-bar"></div></div>
                     <div class="timer-badge"><i class="fa-solid fa-hourglass-half"></i> <span id="timer-sec">30</span>ث</div>
                 </div>
-                <h2 id="arena-question-text">جاري التحميل...</h2>
+                <h2 id="arena-question-text" style="line-height: 1.5; margin-bottom: 25px;">جاري تحميل السؤال الذكي...</h2>
                 <div id="arena-options-box"></div>
             </div>
 
+            <!-- 4. شاشة نهاية الجولة وإعلان النقاط والمراجعة -->
             <div class="card" id="view-result" style="display: none;">
-                <h2 style="text-align: center;">انتهى الاختبار!</h2>
-                <h3 style="text-align: center;">النتيجة: <span id="result-score" style="color:var(--success)">0</span></h3>
-                <div id="box-review-errors" style="display:none; margin-top:25px; border-top:2px dashed var(--border); padding-top:20px;">
-                    <h4>🔍 مراجعة وتوضيح الأخطاء:</h4>
+                <h2 id="result-greeting" style="text-align: center; margin-top: 0; color:var(--primary)">جولة ممتازة! 🎉</h2>
+                <h3 style="text-align: center; font-size: 24px;">الدرجة النهائية المستحقة: <span id="result-score" style="color:var(--success)">0 / 0</span></h3>
+                <h4 style="text-align: center; background:var(--primary-light); padding:10px; border-radius:10px; color:var(--primary); width:fit-content; margin: 15px auto;"><i class="fa-solid fa-circle-plus"></i> حصلت على <span id="result-xp-earned">0</span> XP إضافية!</h4>
+                
+                <div id="box-review-errors" style="display: none; margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 20px;">
+                    <h4><i class="fa-solid fa-compass-drafting" style="color:var(--danger)"></i> تقرير مراجعة الأخطاء والتوضيح العلمي:</h4>
                     <div id="review-nodes-container"></div>
                 </div>
-                <button class="btn-launch" onclick="location.reload()"><i class="fa-solid fa-house"></i> العودة للرئيسية</button>
+                <button class="btn-launch" onclick="location.reload()" style="margin-top:25px; background:var(--text-main); color:var(--card-bg);"><i class="fa-solid fa-house-chimney"></i> العودة للوحة التحكم الرئيسية</button>
             </div>
+
         </div>
 
+        <!-- الجانب الأيسر: المتصدرون والإنجازات والشارات الرقمية -->
         <div class="side-zone">
+            
+            <!-- لوحة الشرف وأوائل المنصة -->
             <div class="card">
-                <h3><i class="fa-solid fa-trophy" style="color:var(--warning)"></i> أوائل المنصة الحقيقيين</h3>
-                <div class="leaderboard-list" id="global-leaderboard">جاري تحميل لوحة الشرف...</div>
+                <h3 class="leaderboard-title" style="margin-top: 0;"><i class="fa-solid fa-trophy" style="color:var(--warning)"></i> أوائل المنصة (Top 100)</h3>
+                <div class="filter-tabs">
+                    <button class="tab-btn active" onclick="switchFilter('all', this)">العام</button>
+                    <button class="tab-btn" onclick="switchFilter('weekly', this)">الأسبوعي</button>
+                    <button class="tab-btn" onclick="switchFilter('monthly', this)">الشهري</button>
+                </div>
+                <div class="leaderboard-list" id="global-leaderboard">
+                    جاري تحميل ترتيب قادة المنصة...
+                </div>
             </div>
+
+            <!-- لوحة الشارات والإنجازات المحققة -->
+            <div class="card">
+                <h3 style="margin-top: 0;"><i class="fa-solid fa-medal" style="color:var(--primary)"></i> الشارات والإنجازات (Achievements)</h3>
+                <div class="badge-container">
+                    <div class="badge-icon unlocked" title="بطل البداية - أكمل أول اختبار له بالمنصة" id="badge-1"><i class="fa-solid fa-flag-checkered"></i></div>
+                    <div class="badge-icon" title="المثقف - تخطى حاجز الـ 200 نقطة XP" id="badge-2"><i class="fa-solid fa-brain"></i></div>
+                    <div class="badge-icon" title="العلامة الكاملة - قفل مادة وحصل على 100%" id="badge-3"><i class="fa-solid fa-star"></i></div>
+                    <div class="badge-icon" title="المثابر - دخل يومين متتاليين دون انقطاع" id="badge-4"><i class="fa-solid fa-fire-clip"></i></div>
+                </div>
+            </div>
+
         </div>
     </div>
 
     <script>
-        // إعدادات Firebase الخاصة بك
+        // دمج إعدادات سيرفر الفايربيز المباشر الخاص بـ AmerQuiz
         var firebaseConfig = {
           apiKey: "AIzaSyA7VLIloU_7jbHuexgC4oQUZ6Mj1dwCu1M",
           authDomain: "amer-quiz-65ce2.firebaseapp.com",
           projectId: "amer-quiz-65ce2",
           storageBucket: "amer-quiz-65ce2.firebasestorage.app",
           messagingSenderId: "14966645412",
-          appId: "1:14966645412:web:e6c8dee237d9caa6a03c31"
+          appId: "1:14966645412:web:e6c8dee237d9caa6a03c31",
+          measurementId: "G-SG2TRRSZEL"
         };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         var db = firebase.firestore();
-        var auth = firebase.auth();
 
-        // (الخطوة 1): إضافة متغير الأدمن ودالة التحقق
-        const ADMIN_UID = "UID_HERE"; // ضع الـ UID الخاص بك هنا
-
-        function isAdmin() {
-           return currentUser && currentUser.uid === ADMIN_UID;
-        }
-
-        let currentUser = null;
+        // متغيرات المحرك الداخلي للمنصة والألعاب
+        let localUser = { name: "", xp: 0, level: 1, completedCount: 0, streak: 1 };
         let activeCategory = "math";
-        let activeQuestionsList = []; // (الخطوة 5): مصفوفة استقبال الأسئلة بدلاً من المجلية الثابتة quizData
-        let score = 0, qIndex = 0, timeRemaining = 30, timerInterval;
+        let score = 0;
+        let qIndex = 0;
+        let timerInterval;
+        let timeRemaining = 30;
         let roundWrongAnswers = [];
 
-        // مراقبة حالة الاتصال والـ Auth
-        auth.onAuthStateChanged((user) => {
-            if (user) {
-                currentUser = user;
-                db.collection("users").doc(user.uid).get().then((doc) => {
-                    if(doc.exists) {
-                        let data = doc.data();
-                        document.getElementById('view-login').style.display = "none";
-                        document.getElementById('view-dashboard').style.display = "block";
-                        document.getElementById('view-lectures-list').style.display = "block";
-                        document.getElementById('profile-area').style.display = "flex";
-                        
-                        document.getElementById('user-display-name').innerText = data.name;
-                        document.getElementById('user-avatar').innerText = data.name.charAt(0);
-                        document.getElementById('stat-xp').innerText = data.xp;
-                        document.getElementById('header-xp').innerText = data.xp;
-                        document.getElementById('stat-completed').innerText = data.completedCount;
-                        document.getElementById('stat-level').innerText = Math.floor(data.xp / 100) + 1;
+        // بنك الأسئلة المطور بمفاهيم متقدمة تناسب تخصص نظم المعلومات والأعمال ومصفوفات الرياضة
+        const quizData = {
+            "math": [
+                { question: "في مصفوفة مربعة ثنائية، لحساب المحدد نقوم بضرب عناصر القطر الرئيسي وطرح عناصر القطر الفرعي منها، ما المعادلة الممثلة لذلك؟", options: ["ad - bc", "ad + bc", "ab - cd", "ac - bd"], answer: "ad - bc", exp: "التوضيح: محدد مصفوفة ثنائية هو ad - bc." }
+            ],
+            "english": [
+                { question: "ما الترجمة العلمية الدقيقة لمصطلح 'Information Systems' الشائع في تخصصات نظم معلومات الأعمال؟", options: ["نظم المعلومات", "تقنيات الحاسب", "إدارة حزم البيانات", "هندسة البرمجيات"], answer: "نظم المعلومات", exp: "التوضيح: المصطلح يترجم حرفياً وعلمياً إلى نظم المعلومات." }
+            ],
+            "economics": [
+                { question: "تنشأ المشكلة الاقتصادية وتتم دراستها في العلوم الأساسية نتيجة لوجود:", options: ["الندرة النسبية للموارد مقابل حاجات غير محدودة", "زيادة كميات الإنتاج الرأسمالي", "انخفاض القوة الشرائية للدول الناشئة"], answer: "الندرة النسبية للموارد مقابل حاجات غير محدودة", exp: "التوضيح: الندرة مقابل الاحتياجات اللانهائية هي جوهر المشكلة الاقتصادية." }
+            ],
+            "management": [
+                { question: "أي مما يلي يعتبر الركيزة الأولى والخطوة المفتاحية للعملية الإدارية الاحترافية والمنظمة؟", options: ["التخطيط", "التنظيم", "التوجيه", "الرقابة والمتابعة"], answer: "التخطيط", exp: "التوضيح: التخطيط هو حجر الأساس الذي يحدد المسارات المستقبلية والأهداف." }
+            ],
+            "office": [
+                { question: "أي الأوامر التالية في لغة SQL تستخدم لإدراج سجلات جديدة داخل قاعدة بيانات موقع مسابقات مثل AmerQuiz؟", options: ["INSERT INTO", "SELECT FROM", "UPDATE SET", "DELETE FROM"], answer: "INSERT INTO", exp: "التوضيح: يستعمل أمر INSERT INTO لإنشاء وإضافة صفوف جديدة في الجداول." }
+            ]
+        };
 
-                        // (الخطوة 4): إظهار لوحة الرفع للأدمن فقط
-                        if(user.uid === ADMIN_UID) {
-                            document.getElementById("admin-upload-panel").style.display = "block";
-                        }
-                        
-                        loadLectures();
-                        loadLeaderboard();
-                    } else {
-                        document.getElementById('view-login').style.display = "block";
-                    }
-                });
+        window.onload = function() {
+            initApp();
+            loadLeaderboard();
+        };
+
+        function initApp() {
+            const savedName = localStorage.getItem('studentName');
+            if(savedName) {
+                localUser.name = savedName;
+                localUser.xp = parseInt(localStorage.getItem('userXp')) || 0;
+                localUser.completedCount = parseInt(localStorage.getItem('userCompleted')) || 0;
+                localUser.level = Math.floor(localUser.xp / 100) + 1;
+                
+                // تحديث بيانات الواجهة الرسومية
+                document.getElementById('view-login').style.display = "none";
+                document.getElementById('view-dashboard').style.display = "block";
+                document.getElementById('profile-area').style.display = "flex";
+                
+                document.getElementById('user-display-name').innerText = localUser.name;
+                document.getElementById('user-avatar').innerText = localUser.name.charAt(0);
+                
+                updateDashboardStats();
             } else {
-                auth.signInAnonymously().catch(e => console.log("خطأ الدخول الآمن"));
+                document.getElementById('view-login').style.display = "block";
+                document.getElementById('view-dashboard').style.display = "none";
             }
-        });
+        }
 
-        function secureRegister() {
+        function registerUser() {
             const nameInput = document.getElementById('input-student-name').value.trim();
-            if(!nameInput || nameInput.length < 6) { alert("اكتب اسمك بشكل صحيح!"); return; }
-            if(currentUser) {
-                db.collection("users").doc(currentUser.uid).set({
-                    name: nameInput, xp: 0, completedCount: 0, uid: currentUser.uid, date: new Date().toISOString()
-                }).then(() => location.reload());
+            if(!nameInput) { alert("أهلاً بك، يرجى كتابة اسمك الثلاثي لتوثيق نقاطك في لوحة المتصدرين!"); return; }
+            
+            localStorage.setItem('studentName', nameInput);
+            localStorage.setItem('userXp', 0);
+            localStorage.setItem('userCompleted', 0);
+            initApp();
+        }
+
+        function updateDashboardStats() {
+            document.getElementById('stat-level').innerText = localUser.level;
+            document.getElementById('stat-xp').innerText = localUser.xp;
+            document.getElementById('header-xp').innerText = localUser.xp;
+            document.getElementById('stat-completed').innerText = localUser.completedCount;
+            
+            // تفعيل الشارات تلقائياً بناءً على النقاط
+            if(localUser.completedCount > 0) document.getElementById('badge-1').classList.add('unlocked');
+            if(localUser.xp >= 200) document.getElementById('badge-2').classList.add('unlocked');
+        }
+
+        function selectSubject(subjectKey, element) {
+            activeCategory = subjectKey;
+            document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            const qCount = quizData[subjectKey].length;
+            document.getElementById('prep-count').innerText = qCount;
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            const icon = document.querySelector('.theme-btn i');
+            if(document.body.classList.contains('dark-mode')) {
+                icon.className = "fa-solid fa-sun";
+            } else {
+                icon.className = "fa-solid fa-moon";
             }
         }
 
-        // (الخطوة 3): دالة رفع المحاضرات المعتمدة منك
-        function uploadLecture() {
-           if(!isAdmin()){
-              alert("غير مصرح");
-              return;
-           }
-
-           const title = document.getElementById("lectureTitle").value;
-           const link = document.getElementById("lectureLink").value;
-
-           db.collection("lectures").add({
-              title,
-              link,
-              subject: activeCategory, // لربط المحاضرة بالمادة المحددة حالياً
-              createdAt: firebase.firestore.FieldValue.serverTimestamp()
-           });
-
-           alert("تم رفع المحاضرة");
-           document.getElementById("lectureTitle").value = "";
-           document.getElementById("lectureLink").value = "";
-           loadLectures();
-        }
-
-        // (الخطوة 5 المكملة): دالة رفع الأسئلة من لوحة الأدمن لتخزينها بنفس الترتيب المطلوب
-        function uploadQuestion() {
-            if(!isAdmin()){ alert("غير مصرح"); return; }
-
-            const subject = document.getElementById("qSubject").value;
-            const question = document.getElementById("qText").value;
-            const options = [
-                document.getElementById("qOpt1").value,
-                document.getElementById("qOpt2").value,
-                document.getElementById("qOpt3").value,
-                document.getElementById("qOpt4").value
-            ];
-            const answer = document.getElementById("qAns").value;
-            const exp = document.getElementById("qExp").value;
-
-            db.collection("questions").add({
-                subject,
-                question,
-                options,
-                answer,
-                exp,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-            });
-
-            alert("تم رفع السؤال بنجاح");
-            document.getElementById("qText").value = "";
-            document.getElementById("qOpt1").value = ""; document.getElementById("qOpt2").value = "";
-            document.getElementById("qOpt3").value = ""; document.getElementById("qOpt4").value = "";
-            document.getElementById("qAns").value = ""; document.getElementById("qExp").value = "";
-        }
-
-        // جلب المحاضرات للطلاب
-        function loadLectures() {
-            db.collection("lectures").where("subject", "==", activeCategory).get().then((snapshot) => {
-                let html = "";
-                snapshot.forEach(doc => {
-                    let data = doc.data();
-                    html += `
-                        <div class="lecture-item">
-                            <span><i class="fa-solid fa-file-pdf" style="color:var(--danger);"></i> ${data.title}</span>
-                            <a href="${data.link}" target="_blank" style="color:var(--primary); font-weight:bold; text-decoration:none;">فتح الرابط</a>
-                        </div>`;
-                });
-                document.getElementById("lectures-container").innerHTML = html || "لا توجد محاضرات حالياً لهذه المادة.";
-            });
-        }
-
-        // (الخطوة 5): جلب الأسئلة من قاعدة البيانات بدلاً من مصفوفة quizData القديمة المحلية
         function enterArena() {
             document.getElementById('view-dashboard').style.display = "none";
-            document.getElementById('view-lectures-list').style.display = "none";
             document.getElementById('view-arena').style.display = "block";
-            
-            score = 0; qIndex = 0; roundWrongAnswers = [];
-
-            // جلب الأسئلة الحية المفلترة بالمادة المختارة
-            db.collection("questions").where("subject", "==", activeCategory).get().then((snapshot) => {
-                activeQuestionsList = [];
-                snapshot.forEach(doc => {
-                    activeQuestionsList.push(doc.data());
-                });
-
-                if(activeQuestionsList.length === 0) {
-                    alert("لا توجد أسئلة مرفوعة لهذه المادة بعد!");
-                    location.reload(); return;
-                }
-                loadArenaQuestion();
-            });
+            score = 0;
+            qIndex = 0;
+            roundWrongAnswers = [];
+            loadArenaQuestion();
         }
 
         function loadArenaQuestion() {
-            if(qIndex >= activeQuestionsList.length) { endArenaSession(); return; }
+            const list = quizData[activeCategory];
+            if(qIndex >= list.length) { endArenaSession(); return; }
             
-            document.getElementById('arena-question-counter').innerText = `السؤال ${qIndex + 1} من ${activeQuestionsList.length}`;
-            document.getElementById('arena-bar').style.width = ((qIndex)/activeQuestionsList.length)*100 + "%";
+            // عداد وشريط التقدم
+            document.getElementById('arena-question-counter').innerText = `السؤال ${qIndex + 1} من ${list.length}`;
+            const percent = ((qIndex) / list.length) * 100;
+            document.getElementById('arena-bar').style.width = percent + "%";
             
-            const activeQ = activeQuestionsList[qIndex];
+            const activeQ = list[qIndex];
             document.getElementById('arena-question-text').innerText = activeQ.question;
-            const box = document.getElementById('arena-options-box'); box.innerHTML = "";
             
-            clearInterval(timerInterval); timeRemaining = 30; document.getElementById('timer-sec').innerText = timeRemaining;
+            const box = document.getElementById('arena-options-box');
+            box.innerHTML = "";
+            
+            // تشغيل العداد الزمني التنافسي
+            clearInterval(timerInterval);
+            timeRemaining = 30;
+            document.getElementById('timer-sec').innerText = timeRemaining;
             timerInterval = setInterval(() => {
-                timeRemaining--; document.getElementById('timer-sec').innerText = timeRemaining;
-                if(timeRemaining <= 0) { clearInterval(timerInterval); qIndex++; loadArenaQuestion(); }
+                timeRemaining--;
+                document.getElementById('timer-sec').innerText = timeRemaining;
+                if(timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeout(activeQ);
+                }
             }, 1000);
 
             activeQ.options.forEach(opt => {
                 const node = document.createElement('button');
                 node.className = "option-node";
                 node.innerHTML = `<span>${opt}</span><i class="fa-regular fa-circle"></i>`;
-                node.onclick = () => {
-                    clearInterval(timerInterval);
-                    if(opt === activeQ.answer) { score++; node.className = "option-node correct"; }
-                    else { 
-                        node.className = "option-node wrong"; 
-                        roundWrongAnswers.push({q: activeQ.question, your: opt, right: activeQ.answer, exp: activeQ.exp});
-                    }
-                    setTimeout(() => { qIndex++; loadArenaQuestion(); }, 1200);
-                };
+                node.onclick = () => processUserChoice(node, opt, activeQ);
                 box.appendChild(node);
             });
+        }
+
+        function processUserChoice(selectedNode, chosenString, questionObj) {
+            clearInterval(timerInterval);
+            // تجميد باقي الخيارات لمنع الضغط المتكرر
+            document.querySelectorAll('.option-node').forEach(b => b.disabled = true);
+            
+            if(chosenString === questionObj.answer) {
+                score++;
+                selectedNode.className = "option-node correct";
+                selectedNode.querySelector('i').className = "fa-solid fa-circle-check";
+            } else {
+                selectedNode.className = "option-node wrong";
+                selectedNode.querySelector('i').className = "fa-solid fa-circle-xmark";
+                roundWrongAnswers.push({
+                    q: questionObj.question,
+                    your: chosenString,
+                    right: questionObj.answer,
+                    explanation: questionObj.exp
+                });
+                
+                // إبراز الخيار الصحيح بلون خفيف لخدمة تجربة التعليم
+                document.querySelectorAll('.option-node').forEach(b => {
+                    if(b.innerText.trim() === questionObj.answer) b.classList.add('correct');
+                });
+            }
+            
+            setTimeout(() => {
+                qIndex++;
+                loadArenaQuestion();
+            }, 1400);
+        }
+
+        function handleTimeout(questionObj) {
+            roundWrongAnswers.push({
+                q: questionObj.question,
+                your: "انتهى الوقت الزمني المستغرق",
+                right: questionObj.answer,
+                explanation: questionObj.exp
+            });
+            qIndex++;
+            loadArenaQuestion();
         }
 
         function endArenaSession() {
             document.getElementById('view-arena').style.display = "none";
             document.getElementById('view-result').style.display = "block";
-            document.getElementById('result-score').innerText = `${score} / ${activeQuestionsList.length}`;
             
-            db.collection("users").doc(currentUser.uid).get().then(doc => {
-                if(doc.exists) {
-                    let currentData = doc.data();
-                    let addedXp = score * 50; 
-                    
-                    db.collection("users").doc(currentUser.uid).update({
-                        xp: (currentData.xp || 0) + addedXp,
-                        completedCount: (currentData.completedCount || 0) + 1
-                    }).then(() => loadLeaderboard());
-                }
+            const totalQ = quizData[activeCategory].length;
+            document.getElementById('result-score').innerText = `${score} / ${totalQ}`;
+            
+            // حساب وتوزيع نقاط الـ XP المكتسبة وتحديث الذاكرة
+            const xpGained = score * 50;
+            document.getElementById('result-xp-earned').innerText = xpGained;
+            
+            localUser.xp += xpGained;
+            localUser.completedCount += 1;
+            localStorage.setItem('userXp', localUser.xp);
+            localStorage.setItem('userCompleted', localUser.completedCount);
+
+            if(score === totalQ) document.getElementById('badge-3').classList.add('unlocked');
+
+            // إرسال البيانات المجمعة فورا لقاعدة البيانات السحابية (Firebase) لترتيب الأوائل
+            const subjectLabel = document.querySelector('.subject-card.selected h4').innerText;
+            db.collection("students_results").add({
+                name: localUser.name,
+                score: localUser.xp, // نعتمد على إجمالي الـ XP للترتيب العالمي
+                latestSubject: subjectLabel,
+                date: new Date().toISOString()
+            }).then(() => {
+                loadLeaderboard();
             });
 
-            const container = document.getElementById('review-nodes-container'); container.innerHTML = "";
+            // عرض ومراجعة الأخطاء مع التوضيحات العلمية
+            const reviewBox = document.getElementById('box-review-errors');
+            const container = document.getElementById('review-nodes-container');
+            container.innerHTML = "";
+            
             if(roundWrongAnswers.length > 0) {
-                document.getElementById('box-review-errors').style.display = "block";
+                reviewBox.style.display = "block";
                 roundWrongAnswers.forEach(item => {
-                    container.innerHTML += `
-                        <div style="background:rgba(239,68,68,0.05); padding:10px; border-right:4px solid var(--danger); margin:10px 0; text-align:right;">
-                            <strong>السؤال:</strong> ${item.q}<br>
-                            <span style="color:var(--danger)">إجابتك: ${item.your}</span> | <span style="color:var(--success)">الصحيحة: ${item.right}</span>
-                            <div style="font-size:13px; color:var(--success); margin-top:5px;"><i class="fa-solid fa-lightbulb"></i> ${item.exp}</div>
-                        </div>`;
+                    const node = document.createElement('div');
+                    node.className = "review-item";
+                    node.innerHTML = `
+                        <strong>السؤال:</strong> ${item.q}<br>
+                        <span style="color:var(--danger)">اختيارك: ${item.your}</span> | 
+                        <span style="color:var(--success); font-weight:bold;">الصحيح: ${item.right}</span>
+                        <div class="explanation-text"><i class="fa-solid fa-lightbulb"></i> ${item.explanation}</div>
+                    `;
+                    container.appendChild(node);
                 });
+            } else {
+                reviewBox.style.display = "none";
             }
         }
 
-        function selectSubject(sKey, el) {
-            activeCategory = sKey;
-            document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
-            el.classList.add('selected');
-            loadLectures();
-        }
-
         function loadLeaderboard() {
-            db.collection("users").orderBy("xp", "desc").limit(100).get().then((snapshot) => {
-                let html = ""; let rank = 1;
+            db.collection("students_results").orderBy("score", "desc").limit(100).get().then((snapshot) => {
+                let html = "";
+                let rank = 1;
                 snapshot.forEach((doc) => {
                     let data = doc.data();
-                    html += `<div class="user-row"><span>#${rank} - ${data.name}</span><span><strong>${data.xp}</strong> XP</span></div>`;
+                    let rankClass = "";
+                    if(rank === 1) rankClass = "rank-gold";
+                    else if(rank === 2) rankClass = "rank-silver";
+                    else if(rank === 3) rankClass = "rank-bronze";
+
+                    html += `
+                        <div class="user-row ${rankClass}">
+                            <span>#${rank} - ${data.name || "مقاتل تعليمي"}</span>
+                            <span><strong>${data.score || 0}</strong> <small style="color:var(--text-muted)">XP</small></span>
+                        </div>
+                    `;
                     rank++;
                 });
-                document.getElementById('global-leaderboard').innerHTML = html;
+                document.getElementById('global-leaderboard').innerHTML = html || "لوحة الشرف جاهزة لانتظار بطولاتكم!";
+            }).catch(e => {
+                document.getElementById('global-leaderboard').innerHTML = "تحميل لوحة المتصدرين مؤقتاً...";
             });
         }
 
-        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+        function switchFilter(type, btn) {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            // هنا يمكن دمج فلاتر تصفية التواريخ لاحقاً بسلاسة
+            loadLeaderboard();
+        }
     </script>
 </body>
 </html>
