@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - لوحة التحكم والإدارة الشاملة</title>
+    <title>AmerQuiz - النظام المطور</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -56,45 +56,32 @@
 
         .brand { font-size: 28px; font-weight: 900; background: linear-gradient(45deg, #2563eb, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         
-        .profile-widget { display: flex; align-items: center; gap: 12px; background: var(--primary-light); padding: 6px 16px; border-radius: 30px; }
-        .avatar { width: 35px; height: 35px; background: #3b82f6; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; }
-
         .app-layout { display: grid; grid-template-columns: 2.2fr 1fr; max-width: 1400px; margin: 25px auto; gap: 25px; padding: 0 20px; }
         .main-zone, .side-zone { display: flex; flex-direction: column; gap: 25px; }
 
         .card { background: var(--card-bg); border-radius: var(--radius-md); padding: 25px; border: 2px solid var(--border); box-shadow: var(--shadow); }
-
+        
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 15px; }
         .stat-box { background: var(--bg-gradient); padding: 15px; border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border); }
         .stat-box i { font-size: 24px; color: var(--primary); margin-bottom: 8px; }
 
         .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 15px; }
         .subject-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius-sm); padding: 15px; text-align: center; cursor: pointer; }
-        .subject-card.selected { border-color: var(--primary); background: var(--primary-light); transform: scale(1.02); }
+        .subject-card.selected { border-color: var(--primary); background: var(--primary-light); }
 
         .btn-launch { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: var(--radius-sm); cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
         
-        .option-node { background: var(--card-bg); border: 2px solid var(--border); padding: 14px; border-radius: var(--radius-sm); margin: 10px 0; text-align: right; width: 100%; display: flex; justify-content: space-between; cursor: pointer; }
+        .option-node { background: var(--card-bg); border: 2px solid var(--border); padding: 14px; border-radius: var(--radius-sm); margin: 10px 0; text-align: right; width: 100%; cursor: pointer; font-size: 16px; display: flex; justify-content: space-between; }
         .option-node.correct { background: #d1fae5 !important; border-color: #10b981 !important; color: #065f46; }
         .option-node.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; }
 
-        .leaderboard-list { display: flex; flex-direction: column; gap: 10px; max-height: 450px; overflow-y: auto; }
+        .leaderboard-list { display: flex; flex-direction: column; gap: 10px; max-height: 400px; overflow-y: auto; }
         .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-gradient); }
         
-        /* تصميم عناصر لوحة الإدارة المتطورة */
-        .admin-tab-content { display: none; margin-top: 20px; }
-        .admin-tab-content.active { display: block; }
-        .admin-nav { display: flex; gap: 10px; border-bottom: 2px solid var(--border); padding-bottom: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-        .admin-nav-btn { padding: 8px 16px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .admin-nav-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+        .practice-badge { background: var(--danger); color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; display: none; }
         
-        .admin-table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; }
-        .admin-table th, .admin-table td { border: 1px solid var(--border); padding: 10px; text-align: right; }
-        .admin-table th { background: var(--bg-gradient); }
-        
-        .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px; }
-        .form-group input, .form-group select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; background: var(--card-bg); color: var(--text-main); }
+        .admin-form-group { margin-bottom: 15px; }
+        .admin-form-group input, .admin-form-group select, .admin-form-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; }
 
         @media (max-width: 900px) { .app-layout { grid-template-columns: 1fr; } }
     </style>
@@ -104,169 +91,101 @@
     <header>
         <div class="brand"><i class="fa-solid fa-graduation-cap"></i> AmerQuiz</div>
         <div style="display: flex; align-items: center; gap: 15px;">
-            <button class="theme-btn" onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
-            <div class="profile-widget" id="profile-area" style="display: none;">
-                <div class="avatar" id="user-avatar">ع</div>
-                <div>
-                    <div id="user-display-name" style="font-size: 13px; font-weight: bold;">طالب</div>
-                    <div style="font-size: 11px; color: var(--text-muted);"><i class="fa-solid fa-bolt" style="color:var(--warning)"></i> <span id="header-xp">0</span> XP</div>
-                </div>
-            </div>
+            <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
+            <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
         </div>
     </header>
 
     <div class="app-layout">
+        
         <div class="main-zone">
             
-            <div class="card" id="view-login">
-                <div id="student-login-form">
-                    <h2 style="text-align: center;"><i class="fa-solid fa-gamepad" style="color:var(--primary)"></i> منصة التحدي العلمي</h2>
-                    <input type="text" id="input-student-name" placeholder="اكتب اسمك الثلاثي هنا بدقة..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing:border-box; font-size:16px;">
-                    <button class="btn-launch" onclick="registerUser()" style="margin-top: 20px;"><i class="fa-solid fa-rocket"></i> دخول ومنافسة</button>
-                    <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('admin')" style="color: var(--primary); text-decoration: none; font-weight: bold;">🔐 دخول الإدارة (Superadmin)</a></p>
-                </div>
+            <div class="card" id="view-register" style="display: none;">
+                <h2 style="text-align: center;"><i class="fa-solid fa-user-plus"></i> انضم كطالب محارب</h2>
+                <p style="text-align: center; color: var(--text-muted);">ادخل اسمك الثلاثي لمرة واحدة فقط لربط جهازك بالمنصة للأبد.</p>
+                <input type="text" id="reg-student-name" placeholder="اكتب اسمك الثلاثي بدقة..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing:border-box; font-size:16px;">
+                <button class="btn-launch" onclick="handleStudentRegistration()" style="margin-top: 20px;"><i class="fa-solid fa-rocket"></i> دخول سريع للمنصة</button>
+                <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('admin')" style="color:var(--primary); text-decoration:none; font-weight:bold;">🔐 دخول إدارة المنصة</a></p>
+            </div>
 
-                <div id="admin-login-form" style="display: none;">
-                    <h2 style="text-align: center; color: var(--warning);"><i class="fa-solid fa-user-shield"></i> دخول السوبر أدمن</h2>
-                    <input type="email" id="input-admin-email" placeholder="البريد الإلكتروني..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); margin-bottom: 10px; box-sizing: border-box;">
-                    <input type="password" id="input-admin-pass" placeholder="كلمة المرور..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing: border-box;">
-                    <button class="btn-launch" onclick="loginAdmin()" style="margin-top: 20px; background: var(--warning);"><i class="fa-solid fa-unlock-keyhole"></i> تحقق وافتح لوحة الإدارة</button>
-                    <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('student')" style="color: var(--text-muted); text-decoration: none;">⬅️ العودة للطلاب</a></p>
-                </div>
+            <div class="card" id="view-admin-login" style="display: none;">
+                <h2 style="text-align: center; color: var(--warning);"><i class="fa-solid fa-user-shield"></i> بوابة السوبر أدمن</h2>
+                <div class="admin-form-group"><input type="email" id="admin-email" placeholder="البريد الإلكتروني للمشرف..."></div>
+                <div class="admin-form-group"><input type="password" id="admin-pass" placeholder="كلمة المرور..."></div>
+                <button class="btn-launch" style="background: var(--warning);" onclick="handleAdminLogin()">تسجيل الدخول للإدارة</button>
+                <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('student')" style="color:var(--text-muted); text-decoration:none;">العودة للطلاب</a></p>
             </div>
 
             <div class="card" id="view-dashboard" style="display: none;">
-                <div id="admin-badge-panel" style="display:none; background: #fef3c7; border: 1px solid #f59e0b; padding: 12px; border-radius: 10px; color: #b45309; margin-bottom: 20px; font-weight: bold; text-align: center;">
-                    👑 مرحباً بك يا قائد! لقد دخلت بصلاحية الـ Superadmin.
-                    <button onclick="showAdminPanelSection()" style="margin-right: 15px; background: #d97706; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer;">فتح لوحة التحكم الكاملة ⚙️</button>
-                </div>
-
-                <h3><i class="fa-solid fa-chart-pie" style="color:var(--success)"></i> أداؤك الدراسي</h3>
+                <h3><i class="fa-solid fa-gauge"></i> أهلاً بك: <span id="dash-student-name" style="color: var(--primary);"></span></h3>
                 <div class="stats-grid">
                     <div class="stat-box"><i class="fa-solid fa-award"></i><div id="stat-level">1</div><span>المستوى</span></div>
                     <div class="stat-box"><i class="fa-solid fa-bolt" style="color:var(--warning)"></i><div id="stat-xp">0</div><span>إجمالي XP</span></div>
-                    <div class="stat-box"><i class="fa-solid fa-check-double"></i><div id="stat-completed">0</div><span>كويزات منجزة</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-check-double"></i><div id="stat-completed">0</div><span>محاولات رسمية</span></div>
                 </div>
 
-                <h3 style="margin-top:25px;"><i class="fa-solid fa-book-open"></i> اختر مادة التحدي:</h3>
-                <div class="subject-grid">
-                    <div class="subject-card selected" onclick="selectSubject('math', this)"><h4>الرياضة والتأمين</h4></div>
-                    <div class="subject-card" onclick="selectSubject('english', this)"><h4>مصطلحات أجنبية</h4></div>
-                    <div class="subject-card" onclick="selectSubject('economics', this)"><h4>علم الاقتصاد</h4></div>
-                    <div class="subject-card" onclick="selectSubject('management', this)"><h4>مبادئ الإدارة</h4></div>
-                    <div class="subject-card" onclick="selectSubject('office', this)"><h4>حزم تطبيقية</h4></div>
-                </div>
+                <h3 style="margin-top:25px;"><i class="fa-solid fa-book"></i> اختر المادة الدراسية للتحدي:</h3>
+                <div class="subject-grid" id="subjects-container">
+                    </div>
 
                 <div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 15px;">
-                    <div class="quiz-prep-info" style="display:flex; justify-content:space-around; margin-bottom:15px; background:var(--bg-gradient); padding:10px; border-radius:10px;">
-                        <div><i class="fa-solid fa-question"></i> <span id="prep-count">0</span> أسئلة متوفرة</div>
-                        <div><i class="fa-solid fa-gift" style="color:var(--warning)"></i> لكل سؤال +50 XP</div>
-                    </div>
-                    <button class="btn-launch" onclick="enterArena()"><i class="fa-solid fa-circle-play"></i> بدء جولة الاختبار</button>
+                    <div class="practice-badge" id="arena-practice-alert">⚠️ هذه محاولة تدريبية ولن تضيف XP جديد.</div>
+                    <button class="btn-launch" onclick="startQuizArena()"><i class="fa-solid fa-play"></i> بدء التحدي الآن</button>
                 </div>
             </div>
 
             <div class="card" id="view-arena" style="display: none;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <span id="arena-question-counter" style="font-weight: bold;">السؤال 1</span>
-                    <div style="flex-grow:1; background:var(--border); height:10px; margin:0 15px; border-radius:5px; overflow:hidden;"><div id="arena-bar" style="background:var(--primary); height:100%; width:0%;"></div></div>
-                    <div class="timer-badge" style="background:var(--warning); color:white; padding:4px 10px; border-radius:10px;"><span id="timer-sec">30</span>ث</div>
+                    <span id="arena-counter" style="font-weight: bold;">السؤال 1 من 1</span>
+                    <div style="background: var(--warning); color: white; padding: 5px 12px; border-radius: 15px; font-weight: bold;"><i class="fa-solid fa-clock"></i> <span id="timer-sec">30</span>ث</div>
                 </div>
-                <h2 id="arena-question-text">جاري تحميل السؤال...</h2>
+                <h2 id="arena-question-text" style="line-height: 1.5; margin-bottom: 25px;">جاري تحميل السؤال...</h2>
                 <div id="arena-options-box"></div>
             </div>
 
             <div class="card" id="view-result" style="display: none;">
-                <h2 style="text-align: center; color:var(--primary)">انتهى الاختبار! 🎉</h2>
-                <h3 style="text-align: center; font-size: 24px;">الدرجة المستحقة: <span id="result-score" style="color:var(--success)">0 / 0</span></h3>
-                <button class="btn-launch" onclick="location.reload()" style="background:var(--text-main); color:var(--card-bg);"><i class="fa-solid fa-house-chimney"></i> العودة للرئيسية</button>
+                <h2 style="text-align: center; color: var(--success);">تم إنهاء الجولة بنجاح!</h2>
+                <h3 style="text-align: center; font-size: 24px;">النتيجة: <span id="result-score" style="color: var(--primary);">0 / 0</span></h3>
+                <p id="result-xp-status" style="text-align: center; font-weight: bold; color: var(--success);"></p>
+                <button class="btn-launch" style="background: var(--text-main);" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للرئيسية</button>
             </div>
 
             <div class="card" id="view-admin-panel" style="display: none;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2><i class="fa-solid fa-gears" style="color:var(--warning)"></i> لوحة تحكم السوبر أدمن الكاملة</h2>
-                    <button onclick="closeAdminPanelSection()" style="background:var(--danger); color:white; border:none; padding:8px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">خروج للرئيسية ❌</button>
+                <h2><i class="fa-solid fa-sliders"></i> لوحة تحكم الـ SuperAdmin</h2>
+                <div class="stats-grid" style="margin-bottom: 25px;">
+                    <div class="stat-box" style="background: #e0f2fe;"><i class="fa-solid fa-users" style="color:#0369a1"></i><div id="admin-total-students">0</div><span>إجمالي الطلاب</span></div>
+                    <div class="stat-box" style="background: #fef3c7;"><i class="fa-solid fa-file-invoice" style="color:#b45309"></i><div id="admin-total-questions">0</div><span>إجمالي الأسئلة المتاحة</span></div>
                 </div>
 
-                <div class="admin-nav">
-                    <button class="admin-nav-btn active" onclick="switchAdminTab('tab-stats', this)"><i class="fa-solid fa-chart-line"></i> إحصائيات المنصة</button>
-                    <button class="admin-nav-btn" onclick="switchAdminTab('tab-questions', this)"><i class="fa-solid fa-database"></i> إدارة الأسئلة</button>
-                    <button class="admin-nav-btn" onclick="switchAdminTab('tab-users', this)"><i class="fa-solid fa-users"></i> عرض وحظر الطلاب</button>
-                </div>
-
-                <div id="tab-stats" class="admin-tab-content active">
-                    <div class="stats-grid">
-                        <div class="stat-box"><i class="fa-solid fa-users"></i><div id="admin-total-students">0</div><span>إجمالي الطلاب</span></div>
-                        <div class="stat-box"><i class="fa-solid fa-clipboard-question"></i><div id="admin-total-questions">0</div><span>إجمالي الأسئلة</span></div>
-                        <div class="stat-box"><i class="fa-solid fa-user-slash" style="color:var(--danger)"></i><div id="admin-total-banned">0</div><span>الطلاب المحظورين</span></div>
+                <h3>➕ إضافة / تعديل سؤال جديد</h3>
+                <div class="card" style="background: var(--bg-gradient); margin-bottom: 20px;">
+                    <input type="hidden" id="form-q-id">
+                    <div class="admin-form-group">
+                        <label>اختر المادة:</label>
+                        <select id="form-q-subject">
+                            <option value="math">الرياضة والتأمين</option>
+                            <option value="english">مصطلحات أجنبية</option>
+                            <option value="economics">علم الاقتصاد</option>
+                            <option value="management">مبادئ الإدارة</option>
+                            <option value="office">حزم تطبيقية</option>
+                        </select>
                     </div>
+                    <div class="admin-form-group"><input type="text" id="form-q-text" placeholder="نص السؤال..."></div>
+                    <div class="admin-form-group"><input type="text" id="form-q-opt1" placeholder="الخيار الأول..."></div>
+                    <div class="admin-form-group"><input type="text" id="form-q-opt2" placeholder="الخيار الثاني..."></div>
+                    <div class="admin-form-group"><input type="text" id="form-q-opt3" placeholder="الخيار الثالث..."></div>
+                    <div class="admin-form-group"><input type="text" id="form-q-opt4" placeholder="الخيار الرابع..."></div>
+                    <div class="admin-form-group"><input type="text" id="form-q-answer" placeholder="الإجابة الصحيحة (يجب أن تطابق نص الخيار تماماً)..."></div>
+                    <div class="admin-form-group"><textarea id="form-q-exp" placeholder="التوضيح العلمي للاستفادة مابعد الحل..."></textarea></div>
+                    <button class="btn-launch" style="background: var(--success);" onclick="saveQuestionData()">حفظ السؤال بالسيرفر</button>
+                    <button class="btn-launch" style="background: var(--danger); margin-top:10px; display:none;" id="btn-cancel-edit" onclick="resetQuestionForm()">إلغاء التعديل</button>
                 </div>
 
-                <div id="tab-questions" class="admin-tab-content">
-                    <h3>➕ إضافة سؤال جديد لقاعدة البيانات</h3>
-                    <div style="background: var(--bg-gradient); padding: 15px; border-radius: 10px; border: 1px solid var(--border);">
-                        <div class="form-group">
-                            <label>المادة / التصنيف:</label>
-                            <select id="q-add-category">
-                                <option value="math">الرياضة والتأمين</option>
-                                <option value="english">مصطلحات أجنبية</option>
-                                <option value="economics">علم الاقتصاد</option>
-                                <option value="management">مبادئ الإدارة</option>
-                                <option value="office">حزم تطبيقية</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>نص السؤال:</label>
-                            <input type="text" id="q-add-text" placeholder="اكتب السؤال هنا...">
-                        </div>
-                        <div class="form-group"><label>الخيار الأول:</label><input type="text" id="q-add-o1"></div>
-                        <div class="form-group"><label>الخيار الثاني:</label><input type="text" id="q-add-o2"></div>
-                        <div class="form-group"><label>الخيار الثالث:</label><input type="text" id="q-add-o3"></div>
-                        <div class="form-group"><label>الخيار الرابع:</label><input type="text" id="q-add-o4"></div>
-                        <div class="form-group">
-                            <label>الإجابة الصحيحة (يجب أن تطابق أحد الخيارات الأربعة تماماً):</label>
-                            <input type="text" id="q-add-answer" placeholder="انسخ الإجابة الصحيحة هنا...">
-                        </div>
-                        <div class="form-group">
-                            <label>التوضيح العلمي / التفسير الهام:</label>
-                            <input type="text" id="q-add-exp" placeholder="لماذا هذه الإجابة هي الصحيحة؟">
-                        </div>
-                        <button class="btn-launch" onclick="addQuestionLive()" style="background: var(--success);"><i class="fa-solid fa-plus"></i> حفظ ونشر السؤال فوراً</button>
-                    </div>
-
-                    <h3 style="margin-top: 30px;">📋 الأسئلة الحالية في النظام (حذف وتعديل)</h3>
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>المادة</th>
-                                <th>السؤال</th>
-                                <th>الإجابة الصحيحة</th>
-                                <th>التحكم</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-questions-tbody">
-                            <tr><td colspan="4" style="text-align:center;">جاري تحميل بنك الأسئلة من السيرفر...</td></tr>
-                        </tbody>
-                    </table>
+                <h3>🗂️ إدارة بنك الأسئلة الحالي</h3>
+                <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 10px;" id="admin-questions-list">
+                    جاري تحميل بنك الأسئلة...
                 </div>
-
-                <div id="tab-users" class="admin-tab-content">
-                    <h3>👥 قائمة الطلاب المسجلين بالمنصة</h3>
-                    <table class="admin-table">
-                        <thead>
-                            <tr>
-                                <th>اسم الطالب</th>
-                                <th>XP النقاط</th>
-                                <th>المستوى</th>
-                                <th>الحالة</th>
-                                <th>الإجراء</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-users-tbody">
-                            <tr><td colspan="5" style="text-align:center;">جاري تحميل الطلاب...</td></tr>
-                        </tbody>
-                    </table>
-                </div>
+                <button class="btn-launch" style="background: var(--text-main); margin-top:20px;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-right-from-bracket"></i> الخروج من لوحة الإدارة</button>
             </div>
 
         </div>
@@ -274,13 +193,16 @@
         <div class="side-zone">
             <div class="card">
                 <h3 style="margin-top: 0;"><i class="fa-solid fa-trophy" style="color:var(--warning)"></i> أوائل المنصة (Top 100)</h3>
-                <div class="leaderboard-list" id="global-leaderboard">جاري تحميل الترتيب...</div>
+                <div class="leaderboard-list" id="dom-leaderboard">
+                    جاري المزامنة الحية للأوائل...
+                </div>
             </div>
         </div>
+
     </div>
 
     <script>
-        // إعدادات Firebase الخاصة بموقعك
+        // تكوين الـ Config الخاص بمشروعك
         var firebaseConfig = {
           apiKey: "AIzaSyA7VLIloU_7jbHuexgC4oQUZ6Mj1dwCu1M",
           authDomain: "amer-quiz-65ce2.firebaseapp.com",
@@ -292,317 +214,404 @@
         };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         var db = firebase.firestore();
-        var auth = firebase.auth(); 
+        var auth = firebase.auth();
 
-        let localUser = { uid: "", name: "", xp: 0, level: 1, completedCount: 0, role: "student", banned: false };
-        let activeCategory = "math";
-        let score = 0, qIndex = 0, timerInterval, timeRemaining = 30;
-        let dynamicQuestions = []; // مصفوفة الأسئلة المسحوبة لايف من Firestore
-
-        window.onload = function() {
-            initApp();
-            loadLeaderboard();
-            auth.onAuthStateChanged((user) => { if (user) { checkAdminRole(user.uid); } });
+        // الهيكل الموحد للمواد
+        const fixedSubjects = {
+            "math": "الرياضة والتأمين",
+            "english": "مصطلحات أجنبية",
+            "economics": "علم الاقتصاد",
+            "management": "مبادئ الإدارة",
+            "office": "حزم تطبيقية"
         };
 
-        function initApp() {
-            const savedName = localStorage.getItem('studentName');
-            if(savedName) {
-                // توليد UID إن لم يوجد
-                if(!localStorage.getItem('userUid')) {
-                    localStorage.setItem('userUid', 'std_' + Math.random().toString(36).substr(2, 9));
-                }
-                localUser.uid = localStorage.getItem('userUid');
+        let currentUser = null;
+        let activeCategory = "math";
+        let isPracticeMode = false;
+        let currentQuestions = [];
+        let qIndex = 0;
+        let score = 0;
+        let timerInterval;
+        let timeRemaining = 30;
 
-                // فحص الحظر أولاً قبل فتح الحساب
-                db.collection("users").doc(localUser.uid).get().then(doc => {
-                    if(doc.exists && doc.data().banned === true) {
-                        alert("🚨 تم حظر هذا الحساب من قِبل إدارة المنصة لتجاوز القوانين.");
-                        localStorage.clear();
-                        location.reload();
-                        return;
+        window.onload = function() {
+            renderSubjects();
+            checkAuthenticationState();
+            loadGlobalLeaderboard();
+        };
+
+        // 1. إدارة الهوية (Firebase Anonymous Auth & LocalStorage Document System)
+        function checkAuthenticationState() {
+            const cachedUid = localStorage.getItem('amer_quiz_uid');
+            
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    // فحص إذا كان الداخل هو الأدمن
+                    db.collection("admins").doc(user.uid).get().then(adminSnap => {
+                        if (adminSnap.exists) {
+                            document.getElementById('btn-goto-admin').style.display = "block";
+                        }
+                    });
+
+                    if (cachedUid && cachedUid === user.uid) {
+                        fetchUserRecord(user.uid);
+                    } else if (!cachedUid) {
+                        // لو مستخدم جديد تماماً وليس لديه كاش
+                        localStorage.setItem('amer_quiz_uid', user.uid);
+                        showView('view-register');
+                    } else {
+                        fetchUserRecord(cachedUid);
                     }
-
-                    localUser.name = savedName;
-                    localUser.xp = doc.exists ? (doc.data().xp || 0) : (parseInt(localStorage.getItem('userXp')) || 0);
-                    localUser.completedCount = doc.exists ? (doc.data().completedCount || 0) : (parseInt(localStorage.getItem('userCompleted')) || 0);
-                    localUser.level = Math.floor(localUser.xp / 100) + 1;
-
-                    document.getElementById('view-login').style.display = "none";
-                    document.getElementById('view-dashboard').style.display = "block";
-                    document.getElementById('profile-area').style.display = "flex";
-                    document.getElementById('user-display-name').innerText = localUser.name;
-                    document.getElementById('user-avatar').innerText = localUser.name.charAt(0);
-                    
-                    updateDashboardStats();
-                    syncCategoryQuestionsCount();
-                });
-            }
-        }
-
-        function registerUser() {
-            const nameInput = document.getElementById('input-student-name').value.trim();
-            if(!nameInput) { alert("من فضلك اكتب الاسم الثلاثي!"); return; }
-            localStorage.setItem('studentName', nameInput);
-            initApp();
-        }
-
-        function toggleLoginForm(type) {
-            document.getElementById('student-login-form').style.display = type === 'admin' ? "none" : "block";
-            document.getElementById('admin-login-form').style.display = type === 'admin' ? "block" : "none";
-        }
-
-        function loginAdmin() {
-            const email = document.getElementById('input-admin-email').value.trim();
-            const pass = document.getElementById('input-admin-pass').value.trim();
-            auth.signInWithEmailAndPassword(email, pass).catch(e => alert("خطأ: " + e.message));
-        }
-
-        function checkAdminRole(uid) {
-            db.collection("admins").doc(uid).get().then((docSnap) => {
-                if (docSnap.exists && docSnap.data().role === "superadmin") {
-                    localStorage.setItem('studentName', "Super Admin 👑");
-                    localStorage.setItem('userUid', uid);
-                    localUser.name = "Super Admin 👑";
-                    localUser.role = "superadmin";
-                    localUser.uid = uid;
-                    document.getElementById('admin-badge-panel').style.display = "block";
-                    initApp();
+                } else {
+                    // إذا لم يكن مسجلاً في الفايربيز نهائياً
+                    if (cachedUid) {
+                        // محاولة ربط المتصفح القديم تلقائياً
+                        auth.signInAnonymously().catch(() => {
+                            showView('view-register');
+                        });
+                    } else {
+                        auth.signInAnonymously();
+                    }
                 }
             });
         }
 
-        function updateDashboardStats() {
-            document.getElementById('stat-level').innerText = localUser.level;
-            document.getElementById('stat-xp').innerText = localUser.xp;
-            document.getElementById('header-xp').innerText = localUser.xp;
-            document.getElementById('stat-completed').innerText = localUser.completedCount;
-        }
-
-        function selectSubject(subjectKey, element) {
-            activeCategory = subjectKey;
-            document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
-            element.classList.add('selected');
-            syncCategoryQuestionsCount();
-        }
-
-        function syncCategoryQuestionsCount() {
-            db.collection("questions").where("category", "==", activeCategory).get().then(snap => {
-                document.getElementById('prep-count').innerText = snap.size;
+        function fetchUserRecord(uid) {
+            db.collection("users").doc(uid).get().then((docSnap) => {
+                if (docSnap.exists) {
+                    currentUser = docSnap.data();
+                    document.getElementById('dash-student-name').innerText = currentUser.name;
+                    document.getElementById('stat-level').innerText = currentUser.level || 1;
+                    document.getElementById('stat-xp').innerText = currentUser.xp || 0;
+                    document.getElementById('stat-completed').innerText = currentUser.completedCount || 0;
+                    
+                    checkSubjectAttemptStatus();
+                    showView('view-dashboard');
+                } else {
+                    showView('view-register');
+                }
+            }).catch(() => {
+                showView('view-register');
             });
         }
 
-        function enterArena() {
-            // سحب الأسئلة الحية من الفايرستور للمادة المختارة
-            db.collection("questions").where("category", "==", activeCategory).get().then(snap => {
-                dynamicQuestions = [];
-                snap.forEach(doc => {
-                    let qData = doc.data();
-                    qData.id = doc.id;
-                    dynamicQuestions.push(qData);
-                });
+        function handleStudentRegistration() {
+            const name = document.getElementById('reg-student-name').value.trim();
+            if (name.length < 8) { alert("يرجى كتابة الاسم الثلاثي كاملاً لتوثيق نتائجك."); return; }
+            
+            const uid = auth.currentUser.uid;
+            const newUserData = {
+                uid: uid,
+                name: name,
+                xp: 0,
+                level: 1,
+                completedCount: 0,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            };
 
-                if(dynamicQuestions.length === 0) {
-                    alert("⚠️ لا توجد أسئلة مضافة في هذه المادة حالياً بواسطة الأدمن.");
+            db.collection("users").doc(uid).set(newUserData).then(() => {
+                localStorage.setItem('amer_quiz_uid', uid);
+                fetchUserRecord(uid);
+            }).catch(e => alert("خطأ في الاتصال بقاعدة البيانات: " + e.message));
+        }
+
+        // 2. نظام التحقق الذكي من المحاولات السابقة (First Attempt Tracker)
+        function checkSubjectAttemptStatus() {
+            if (!currentUser) return;
+            const alertBox = document.getElementById('arena-practice-alert');
+            
+            db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).get().then((docSnap) => {
+                if (docSnap.exists) {
+                    isPracticeMode = true;
+                    alertBox.style.display = "block";
+                } else {
+                    isPracticeMode = false;
+                    alertBox.style.display = "none";
+                }
+            });
+        }
+
+        // 3. نظام تشغيل الامتحانات حياً من السيرفر
+        function startQuizArena() {
+            // جلب الأسئلة الخاصة بالمادة المحددة من السيرفر مباشرة
+            db.collection("questions").where("subject", "==", activeCategory).get().then((snapshot) => {
+                if (snapshot.empty) {
+                    alert("لا توجد أسئلة مضافة في هذه المادة حالياً من قبل الإدارة.");
                     return;
                 }
-
-                document.getElementById('view-dashboard').style.display = "none";
-                document.getElementById('view-arena').style.display = "block";
-                score = 0; qIndex = 0;
+                currentQuestions = [];
+                snapshot.forEach(doc => {
+                    let data = doc.data();
+                    currentQuestions.push(data);
+                });
+                
+                // خلط الأسئلة عشوائياً لزيادة التحدي ومنع الغش
+                currentQuestions.sort(() => Math.random() - 0.5);
+                
+                showView('view-arena');
+                qIndex = 0;
+                score = 0;
                 loadArenaQuestion();
             });
         }
 
         function loadArenaQuestion() {
-            if(qIndex >= dynamicQuestions.length) { endArenaSession(); return; }
+            if (qIndex >= currentQuestions.length) { finishQuizSession(); return; }
             
-            document.getElementById('arena-question-counter').innerText = `السؤال ${qIndex + 1} من ${dynamicQuestions.length}`;
-            document.getElementById('arena-bar').style.width = ((qIndex) / dynamicQuestions.length) * 100 + "%";
-            
-            const activeQ = dynamicQuestions[qIndex];
+            document.getElementById('arena-counter').innerText = `السؤال ${qIndex + 1} من ${currentQuestions.length}`;
+            const activeQ = currentQuestions[qIndex];
             document.getElementById('arena-question-text').innerText = activeQ.question;
             
             const box = document.getElementById('arena-options-box');
             box.innerHTML = "";
             
-            clearInterval(timerInterval); timeRemaining = 30;
+            clearInterval(timerInterval);
+            timeRemaining = 30;
             document.getElementById('timer-sec').innerText = timeRemaining;
             timerInterval = setInterval(() => {
-                timeRemaining--; document.getElementById('timer-sec').innerText = timeRemaining;
-                if(timeRemaining <= 0) { clearInterval(timerInterval); qIndex++; loadArenaQuestion(); }
+                timeRemaining--;
+                document.getElementById('timer-sec').innerText = timeRemaining;
+                if (timeRemaining <= 0) { handleSelection(null, null, activeQ); }
             }, 1000);
 
             activeQ.options.forEach(opt => {
                 const node = document.createElement('button');
                 node.className = "option-node";
                 node.innerHTML = `<span>${opt}</span><i class="fa-regular fa-circle"></i>`;
-                node.onclick = () => {
-                    clearInterval(timerInterval);
-                    if(opt === activeQ.answer) { score++; node.className = "option-node correct"; } 
-                    else { node.className = "option-node wrong"; }
-                    setTimeout(() => { qIndex++; loadArenaQuestion(); }, 1200);
-                };
+                node.onclick = () => handleSelection(node, opt, activeQ);
                 box.appendChild(node);
             });
         }
 
-        function endArenaSession() {
-            document.getElementById('view-arena').style.display = "none";
-            document.getElementById('view-result').style.display = "block";
-            document.getElementById('result-score').innerText = `${score} / ${dynamicQuestions.length}`;
+        function handleSelection(selectedNode, chosen, questionObj) {
+            clearInterval(timerInterval);
+            document.querySelectorAll('.option-node').forEach(b => b.disabled = true);
             
-            let xpGained = score * 50;
-            localUser.xp += xpGained;
-            localUser.completedCount += 1;
-            localUser.level = Math.floor(localUser.xp / 100) + 1;
+            if (chosen === questionObj.answer) {
+                score++;
+                if(selectedNode) selectedNode.className = "option-node correct";
+            } else {
+                if(selectedNode) selectedNode.className = "option-node wrong";
+                document.querySelectorAll('.option-node').forEach(b => {
+                    if (b.innerText.trim() === questionObj.answer) b.classList.add('correct');
+                });
+            }
 
-            db.collection("users").doc(localUser.uid).set({
-                name: localUser.name, xp: localUser.xp, level: localUser.level, completedCount: localUser.completedCount, banned: false
-            }, { merge: true }).then(() => { loadLeaderboard(); });
+            setTimeout(() => {
+                qIndex++;
+                loadArenaQuestion();
+            }, 1500);
         }
 
-        function loadLeaderboard() {
-            db.collection("users").where("banned", "==", false).orderBy("xp", "desc").limit(100).get().then((snapshot) => {
-                let html = ""; let rank = 1;
-                snapshot.forEach((doc) => {
-                    let data = doc.data();
-                    html += `<div class="user-row"><span>#${rank} - ${data.name}</span><span><strong>${data.xp}</strong> XP</span></div>`;
+        function finishQuizSession() {
+            showView('view-result');
+            document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
+            const xpGained = score * 20; // 20 نقطة لكل سؤال صحيح
+
+            const statusText = document.getElementById('result-xp-status');
+            
+            if (isPracticeMode) {
+                statusText.innerText = "✨ هذه جولة تدريبية، لم يتم إضافة نقاط تماشياً مع قواعد المنصة.";
+            } else {
+                statusText.innerText = `🎉 جولة ممتازة! ربحت +${xpGained} XP وأضيفت لترتيبك العام.`;
+                
+                // 1. حفظ مستند المحاولة لمنع تكرار الـ XP مستقبلاً
+                db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).set({
+                    subjectId: activeCategory,
+                    isOfficial: true,
+                    score: score,
+                    totalQuestions: currentQuestions.length,
+                    date: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // 2. تحديث الحساب العام للطالب باستخدام الحقل التراكمي الآمن بالسيرفر
+                const nextXp = currentUser.xp + xpGained;
+                const nextLevel = Math.floor(nextXp / 200) + 1;
+
+                db.collection("users").doc(currentUser.uid).update({
+                    xp: firebase.firestore.FieldValue.increment(xpGained),
+                    level: nextLevel,
+                    completedCount: firebase.firestore.FieldValue.increment(1)
+                }).then(() => {
+                    loadGlobalLeaderboard();
+                });
+            }
+        }
+
+        // 4. إدارة لوحة المتصدرين الفورية (Top 100 Leaderboard)
+        function loadGlobalLeaderboard() {
+            db.collection("users").orderBy("xp", "desc").limit(100).get().then((snapshot) => {
+                let html = "";
+                let rank = 1;
+                snapshot.forEach(doc => {
+                    let u = doc.data();
+                    html += `
+                        <div class="user-row">
+                            <span>#${rank} - ${u.name}</span>
+                            <span><strong>${u.xp || 0}</strong> <small style="color:var(--text-muted)">XP</small> (Lvl ${u.level || 1})</span>
+                        </div>
+                    `;
                     rank++;
                 });
-                document.getElementById('global-leaderboard').innerHTML = html || "لوحة الشرف خالية.";
+                document.getElementById('dom-leaderboard').innerHTML = html || "لوحة الأوائل جاهزة بانتظاركم!";
             });
         }
 
-        function toggleTheme() {
-            document.body.classList.toggle('dark-mode');
+        // 5. محرك لوحة تحكم الإدارة (Superadmin Engine)
+        function handleAdminLogin() {
+            const email = document.getElementById('admin-email').value.trim();
+            const pass = document.getElementById('admin-pass').value.trim();
+            
+            auth.signInWithEmailAndPassword(email, pass).then((cred) => {
+                db.collection("admins").doc(cred.user.uid).get().then(snap => {
+                    if (snap.exists) {
+                        alert("مرحباً بك يا قائد! تم فتح صلاحيات الإدارة حياً.");
+                        openAdminPanel();
+                    } else {
+                        alert("عذراً، هذا الحساب لا يملك صلاحيات سوبر أدمن.");
+                        auth.signOut();
+                    }
+                });
+            }).catch(e => alert("خطأ في التحقق: " + e.message));
         }
 
-        // ================= تفعيل لولجيك وبرمجة لوحة السوبر أدمن الكاملة =================
-        function showAdminPanelSection() {
-            document.getElementById('view-dashboard').style.display = "none";
-            document.getElementById('view-admin-panel').style.display = "block";
-            loadAdminStats();
-            loadAdminQuestions();
-            loadAdminUsers();
-        }
-
-        function closeAdminPanelSection() {
-            document.getElementById('view-admin-panel').style.display = "none";
-            document.getElementById('view-dashboard').style.display = "block";
-        }
-
-        function switchAdminTab(tabId, btn) {
-            document.querySelectorAll('.admin-tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.admin-nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById(tabId).classList.add('active');
-            btn.classList.add('active');
-        }
-
-        // 1. حساب الإحصائيات الحية
-        function loadAdminStats() {
-            db.collection("users").get().then(snap => {
-                document.getElementById('admin-total-students').innerText = snap.size;
-                let bannedCount = 0;
-                snap.forEach(d => { if(d.data().banned === true) bannedCount++; });
-                document.getElementById('admin-total-banned').innerText = bannedCount;
-            });
-            db.collection("questions").get().then(snap => {
-                document.getElementById('admin-total-questions').innerText = snap.size;
-            });
-        }
-
-        // 2. إضافة سؤال جديد لايف لـ Firestore
-        function addQuestionLive() {
-            const cat = document.getElementById('q-add-category').value;
-            const text = document.getElementById('q-add-text').value.trim();
-            const o1 = document.getElementById('q-add-o1').value.trim();
-            const o2 = document.getElementById('q-add-o2').value.trim();
-            const o3 = document.getElementById('q-add-o3').value.trim();
-            const o4 = document.getElementById('q-add-o4').value.trim();
-            const ans = document.getElementById('q-add-answer').value.trim();
-            const exp = document.getElementById('q-add-exp').value.trim();
-
-            if(!text || !o1 || !o2 || !ans) { alert("يرجى ملء نص السؤال والخيارات والإجابة الصحيحة!"); return; }
-
-            db.collection("questions").add({
-                category: cat, question: text, options: [o1, o2, o3, o4], answer: ans, exp: exp
-            }).then(() => {
-                alert("🎉 تم إضافة السؤال بنجاح وحفظه في السيرفر!");
-                loadAdminQuestions();
-                loadAdminStats();
-                // تنظيف الفورم
-                document.getElementById('q-add-text').value = "";
-                document.getElementById('q-add-o1').value = ""; document.getElementById('q-add-o2').value = "";
-                document.getElementById('q-add-o3').value = ""; document.getElementById('q-add-o4').value = "";
-                document.getElementById('q-add-answer').value = ""; document.getElementById('q-add-exp').value = "";
-            }).catch(e => alert("فشلت الإضافة بسبب الصلاحيات: " + e.message));
-        }
-
-        // 3. عرض الأسئلة مع إمكانية الحذف
-        function loadAdminQuestions() {
-            db.collection("questions").get().then(snap => {
+        function openAdminPanel() {
+            showView('view-admin-panel');
+            resetQuestionForm();
+            
+            // جلب الإحصائيات السريعة للوحة
+            db.collection("users").get().then(snap => document.getElementById('admin-total-students').innerText = snap.size);
+            db.collection("questions").get().then(snap => document.getElementById('admin-total-questions').innerText = snap.size);
+            
+            // جلب بنك الأسئلة المتاحة
+            db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
                 let html = "";
-                snap.forEach(doc => {
+                snapshot.forEach(doc => {
                     let q = doc.data();
                     html += `
-                        <tr>
-                            <td><strong>${q.category}</strong></td>
-                            <td>${q.question}</td>
-                            <td style="color:var(--success)">${q.answer}</td>
-                            <td><button onclick="deleteQuestionLive('${doc.id}')" style="background:var(--danger); color:white; border:none; padding:4px 8px; border-radius:5px; cursor:pointer;"><i class="fa-solid fa-trash"></i> حذف</button></td>
-                        </tr>
+                        <div style="background:var(--card-bg); padding:10px; border:1px solid var(--border); margin-bottom:10px; border-radius:8px;">
+                            <strong>[${fixedSubjects[q.subject]}]</strong> ${q.question}
+                            <div style="margin-top:5px; display:flex; gap:10px;">
+                                <button onclick="editQuestionInline('${doc.id}')" style="background:var(--primary); color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer;">تعديل 📝</button>
+                                <button onclick="deleteQuestionInline('${doc.id}')" style="background:var(--danger); color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer;">حذف 🗑️</button>
+                            </div>
+                        </div>
                     `;
                 });
-                document.getElementById('admin-questions-tbody').innerHTML = html || "لا توجد أسئلة مضافة حتى الآن.";
+                document.getElementById('admin-questions-list').innerHTML = html || "لا توجد أسئلة مضافة حتى الآن.";
             });
         }
 
-        function deleteQuestionLive(id) {
+        function saveQuestionData() {
+            const qId = document.getElementById('form-q-id').value;
+            const subject = document.getElementById('form-q-subject').value;
+            const text = document.getElementById('form-q-text').value.trim();
+            const o1 = document.getElementById('form-q-opt1').value.trim();
+            const o2 = document.getElementById('form-q-opt2').value.trim();
+            const o3 = document.getElementById('form-q-opt3').value.trim();
+            const o4 = document.getElementById('form-q-opt4').value.trim();
+            const ans = document.getElementById('form-q-answer').value.trim();
+            const exp = document.getElementById('form-q-exp').value.trim();
+
+            if(!text || !o1 || !o2 || !ans) { alert("يرجى ملء نص السؤال والخيارات والإجابة الصحيحة على الأقل."); return; }
+
+            const payload = {
+                subject: subject,
+                question: text,
+                options: [o1, o2, o3, o4].filter(o => o !== ""),
+                answer: ans,
+                explanation: exp,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (qId) {
+                // عملية تعديل سؤال موجود
+                db.collection("questions").doc(qId).update(payload).then(() => {
+                    alert("تم تعديل السؤال بنجاح!");
+                    openAdminPanel();
+                });
+            } else {
+                // عملية إضافة سؤال جديد
+                db.collection("questions").add(payload).then(() => {
+                    alert("تم إضافة السؤال لبنك الأسئلة بنجاح!");
+                    openAdminPanel();
+                });
+            }
+        }
+
+        function editQuestionInline(id) {
+            db.collection("questions").doc(id).get().then(doc => {
+                let q = doc.data();
+                document.getElementById('form-q-id').value = id;
+                document.getElementById('form-q-subject').value = q.subject;
+                document.getElementById('form-q-text').value = q.question;
+                document.getElementById('form-q-opt1').value = q.options[0] || "";
+                document.getElementById('form-q-opt2').value = q.options[1] || "";
+                document.getElementById('form-q-opt3').value = q.options[2] || "";
+                document.getElementById('form-q-opt4').value = q.options[3] || "";
+                document.getElementById('form-q-answer').value = q.answer;
+                document.getElementById('form-q-exp').value = q.explanation || "";
+                
+                document.getElementById('btn-cancel-edit').style.display = "block";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+
+        function deleteQuestionInline(id) {
             if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً من السيرفر؟")) {
                 db.collection("questions").doc(id).delete().then(() => {
-                    alert("تم حذف السؤال!"); loadAdminQuestions(); loadAdminStats();
+                    alert("تم حذف السؤال!");
+                    openAdminPanel();
                 });
             }
         }
 
-        // 4. إدارة وحظر الطلاب
-        function loadAdminUsers() {
-            db.collection("users").get().then(snap => {
-                let html = "";
-                snap.forEach(doc => {
-                    let u = doc.data();
-                    let isBanned = u.banned === true;
-                    let btnText = isBanned ? "🚫 فك الحظر" : "🔒 حظر الطالب";
-                    let btnColor = isBanned ? "var(--success)" : "var(--danger)";
-                    
-                    html += `
-                        <tr>
-                            <td>${u.name}</td>
-                            <td>${u.xp}</td>
-                            <td>${u.level}</td>
-                            <td style="color:${btnColor}">${isBanned ? "محظور" : "نشط"}</td>
-                            <td><button onclick="toggleBanUser('${doc.id}', ${isBanned})" style="background:${btnColor}; color:white; border:none; padding:4px 8px; border-radius:5px; cursor:pointer;">${btnText}</button></td>
-                        </tr>
-                    `;
-                });
-                document.getElementById('admin-users-tbody').innerHTML = html || "لا يوجد طلاب مسجلين.";
+        function resetQuestionForm() {
+            document.getElementById('form-q-id').value = "";
+            document.getElementById('form-q-text').value = "";
+            document.getElementById('form-q-opt1').value = "";
+            document.getElementById('form-q-opt2').value = "";
+            document.getElementById('form-q-opt3').value = "";
+            document.getElementById('form-q-opt4').value = "";
+            document.getElementById('form-q-answer').value = "";
+            document.getElementById('form-q-exp').value = "";
+            document.getElementById('btn-cancel-edit').style.display = "none";
+        }
+
+        // أدوات مساعدة للواجهات
+        function renderSubjects() {
+            const grid = document.getElementById('subjects-container');
+            grid.innerHTML = "";
+            Object.keys(fixedSubjects).forEach(key => {
+                const card = document.createElement('div');
+                card.className = `subject-card ${key === activeCategory ? 'selected' : ''}`;
+                card.innerHTML = `<h4>${fixedSubjects[key]}</h4>`;
+                card.onclick = () => {
+                    activeCategory = key;
+                    document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    checkSubjectAttemptStatus();
+                };
+                grid.appendChild(card);
             });
         }
 
-        function toggleBanUser(uid, currentStatus) {
-            const action = currentStatus ? "فك حظر" : "حظر";
-            if(confirm(`هل أنت متأكد من رغبتك في ${action} هذا الطالب؟`)) {
-                db.collection("users").doc(uid).update({
-                    banned: !currentStatus
-                }).then(() => {
-                    alert(`تم ${action} الطالب بنجاح!`);
-                    loadAdminUsers();
-                    loadAdminStats();
-                    loadLeaderboard();
-                });
-            }
+        function toggleLoginForm(type) {
+            if(type === 'admin') { showView('view-admin-login'); }
+            else { checkAuthenticationState(); }
         }
+
+        function showAdminLogin() { showView('view-admin-login'); }
+        function backToDashboard() { checkAuthenticationState(); }
+
+        function showView(viewId) {
+            const views = ['view-register', 'view-admin-login', 'view-dashboard', 'view-arena', 'view-result', 'view-admin-panel'];
+            views.forEach(v => document.getElementById(v).style.display = "none");
+            document.getElementById(viewId).style.display = "block";
+        }
+
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
     </script>
 </body>
 </html>
