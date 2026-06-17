@@ -9,6 +9,7 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
 
     <style>
         :root {
@@ -83,6 +84,33 @@
         .admin-form-group { margin-bottom: 15px; }
         .admin-form-group input, .admin-form-group select, .admin-form-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; }
 
+        /* ستايلات احترافية خاصة بلوحة التحكم المتقدمة */
+        .admin-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .admin-title { font-size: 24px; font-weight: 800; color: var(--warning); margin: 0; }
+        .admin-subtitle { color: var(--text-muted); font-size: 14px; margin: 5px 0 0 0; }
+        
+        .tabs-nav { display: flex; gap: 10px; background: var(--border); padding: 5px; border-radius: var(--radius-sm); margin-bottom: 25px; max-width: 400px; margin-right: auto; margin-left: auto; }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: none; color: var(--text-muted); font-weight: bold; border-radius: 8px; cursor: pointer; transition: 0.2s; font-size: 14px; }
+        .tab-btn.active-upload { background: var(--success); color: white; }
+        .tab-btn.active-students { background: var(--danger); color: white; }
+        
+        .bulk-upload-card { background: var(--bg-gradient); border: 2px dashed var(--border); padding: 30px; border-radius: var(--radius-sm); text-align: center; margin-bottom: 25px; transition: 0.2s; }
+        .bulk-upload-card:hover { border-color: var(--primary); }
+        .file-label { cursor: pointer; display: block; }
+        .file-icon { font-size: 40px; color: var(--primary); margin-bottom: 10px; display: block; }
+        
+        .student-table-container { overflow-x: auto; margin-top: 15px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+        .student-table { width: 100%; border-collapse: collapse; text-align: right; }
+        .student-table th { background: var(--border); padding: 12px; font-size: 14px; color: var(--text-main); }
+        .student-table td { padding: 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .student-table tr:hover { background: var(--primary-light); }
+        
+        .ban-btn { border: none; padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .ban-btn.ban-active { background: #fee2e2; color: #ef4444; }
+        .ban-btn.ban-inactive { background: #d1fae5; color: #10b981; }
+        
+        .hidden-tab { display: none !important; }
+
         @media (max-width: 900px) { .app-layout { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -151,41 +179,89 @@
             </div>
 
             <div class="card" id="view-admin-panel" style="display: none;">
-                <h2><i class="fa-solid fa-sliders"></i> لوحة تحكم الـ SuperAdmin</h2>
+                <div class="admin-header-box">
+                    <div>
+                        <h2 class="admin-title"><i class="fa-solid fa-sliders"></i> لوحة تحكم الـ SuperAdmin المطورة</h2>
+                        <p class="admin-subtitle">أهلاً بك يا قائد، تحكّم في بنك أسئلتك والرقابة على الطلاب بشكل حيوي.</p>
+                    </div>
+                    <button onclick="backToDashboard()" class="ban-btn ban-inactive" style="padding: 10px 15px;">⬅️ العودة للرئيسية</button>
+                </div>
+
                 <div class="stats-grid" style="margin-bottom: 25px;">
-                    <div class="stat-box" style="background: #e0f2fe;"><i class="fa-solid fa-users" style="color:#0369a1"></i><div id="admin-total-students">0</div><span>إجمالي الطلاب</span></div>
+                    <div class="stat-box" style="background: var(--primary-light);"><i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">0</div><span>إجمالي الطلاب</span></div>
                     <div class="stat-box" style="background: #fef3c7;"><i class="fa-solid fa-file-invoice" style="color:#b45309"></i><div id="admin-total-questions">0</div><span>إجمالي الأسئلة المتاحة</span></div>
                 </div>
 
-                <h3>➕ إضافة / تعديل سؤال جديد</h3>
-                <div class="card" style="background: var(--bg-gradient); margin-bottom: 20px;">
-                    <input type="hidden" id="form-q-id">
-                    <div class="admin-form-group">
-                        <label>اختر المادة:</label>
-                        <select id="form-q-subject">
-                            <option value="math">الرياضة والتأمين</option>
-                            <option value="english">مصطلحات أجنبية</option>
-                            <option value="economics">علم الاقتصاد</option>
-                            <option value="management">مبادئ الإدارة</option>
-                            <option value="office">حزم تطبيقية</option>
-                        </select>
-                    </div>
-                    <div class="admin-form-group"><input type="text" id="form-q-text" placeholder="نص السؤال..."></div>
-                    <div class="admin-form-group"><input type="text" id="form-q-opt1" placeholder="الخيار الأول..."></div>
-                    <div class="admin-form-group"><input type="text" id="form-q-opt2" placeholder="الخيار الثاني..."></div>
-                    <div class="admin-form-group"><input type="text" id="form-q-opt3" placeholder="الخيار الثالث..."></div>
-                    <div class="admin-form-group"><input type="text" id="form-q-opt4" placeholder="الخيار الرابع..."></div>
-                    <div class="admin-form-group"><input type="text" id="form-q-answer" placeholder="الإجابة الصحيحة (يجب أن تطابق نص الخيار تماماً)..."></div>
-                    <div class="admin-form-group"><textarea id="form-q-exp" placeholder="التوضيح العلمي للاستفادة مابعد الحل..."></textarea></div>
-                    <button class="btn-launch" style="background: var(--success);" onclick="saveQuestionData()">حفظ السؤال بالسيرفر</button>
-                    <button class="btn-launch" style="background: var(--danger); margin-top:10px; display:none;" id="btn-cancel-edit" onclick="resetQuestionForm()">إلغاء التعديل</button>
+                <div class="tabs-nav">
+                    <button onclick="switchAdminTab('tab-upload')" id="btn-tab-upload" class="tab-btn active-upload">📥 إدارة الأسئلة</button>
+                    <button onclick="switchAdminTab('tab-students')" id="btn-tab-students" class="tab-btn">👥 إدارة الطلاب</button>
                 </div>
 
-                <h3>🗂️ إدارة بنك الأسئلة الحالي</h3>
-                <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 10px;" id="admin-questions-list">
-                    جاري تحميل بنك الأسئلة...
+                <div id="tab-upload" class="admin-tab-content">
+                    
+                    <div class="bulk-upload-card">
+                        <input type="file" id="csvFileInput" accept=".csv" style="display: none;" onchange="updateFileNameDisplay()" />
+                        <label for="csvFileInput" class="file-label">
+                            <i class="fa-solid fa-file-excel file-icon"></i>
+                            <span id="fileNameDisplay" style="font-weight: bold; display: block; margin-bottom: 5px;">اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة</span>
+                            <small style="color: var(--text-muted); display: block;">الترتيب الإلزامي للأعمدة: Question, A, B, C, D, Answer, Explanation, Subject</small>
+                        </label>
+                        <button class="btn-launch" style="background: var(--success); margin-top: 15px; max-width: 320px; margin-right: auto; margin-left: auto;" onclick="uploadBulkQuestions()"><i class="fa-solid fa-cloud-arrow-up"></i> ابدأ الرفع التلقائي بالسيرفر</button>
+                    </div>
+
+                    <div style="text-align: center; margin: 25px 0; font-weight: bold; color: var(--text-muted);">─ أو إضافة / تعديل سؤال بشكل يدوي فردي ─</div>
+
+                    <div class="card" style="background: var(--bg-gradient); margin-bottom: 25px; border-color: var(--primary);">
+                        <input type="hidden" id="form-q-id">
+                        <div class="admin-form-group">
+                            <label>اختر المادة الدراسية:</label>
+                            <select id="form-q-subject">
+                                <option value="math">الرياضة والتأمين</option>
+                                <option value="english">مصطلحات أجنبية</option>
+                                <option value="economics">علم الاقتصاد</option>
+                                <option value="management">مبادئ الإدارة</option>
+                                <option value="office">حزم تطبيقية</option>
+                            </select>
+                        </div>
+                        <div class="admin-form-group"><input type="text" id="form-q-text" placeholder="نص السؤال..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt1" placeholder="الخيار الأول..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt2" placeholder="الخيار الثاني..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt3" placeholder="الخيار الثالث..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt4" placeholder="الخيار الرابع..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-answer" placeholder="الإجابة الصحيحة (يجب أن تطابق نص الخيار تماماً)..."></div>
+                        <div class="admin-form-group"><textarea id="form-q-exp" placeholder="التوضيح العلمي للاستفادة مابعد الحل..."></textarea></div>
+                        <button class="btn-launch" style="background: var(--primary);" onclick="saveQuestionData()">حفظ السؤال بالسيرفر</button>
+                        <button class="btn-launch" style="background: var(--danger); margin-top:10px; display:none;" id="btn-cancel-edit" onclick="resetQuestionForm()">إلغاء التعديل</button>
+                    </div>
+
+                    <h3>🗂️ بنك الأسئلة المتاحة حالياً بالسيرفر</h3>
+                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 10px;" id="admin-questions-list">
+                        جاري تحميل بنك الأسئلة...
+                    </div>
                 </div>
-                <button class="btn-launch" style="background: var(--text-main); margin-top:20px;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-right-from-bracket"></i> الخروج من لوحة الإدارة</button>
+
+                <div id="tab-students" class="admin-tab-content hidden-tab">
+                    <h3>👥 إدارة ورقابة مجتمع الطلاب المسجلين</h3>
+                    <div class="student-table-container">
+                        <table class="student-table">
+                            <thead>
+                                <tr>
+                                    <th>اسم الطالب الثلاثي</th>
+                                    <th>إجمالي نقاط الـ XP</th>
+                                    <th>المستوى الحالي</th>
+                                    <th style="text-align: center;">إجراءات الرقابة الأدمن</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-students-table-body">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب بيانات ومزامنة الطلاب...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <button class="btn-launch" style="background: var(--text-main); margin-top:25px;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-right-from-bracket"></i> الخروج من لوحة الإدارة</button>
             </div>
 
         </div>
@@ -280,6 +356,17 @@
             db.collection("users").doc(uid).get().then((docSnap) => {
                 if (docSnap.exists) {
                     currentUser = docSnap.data();
+                    
+                    // 🚨 فحص الحظر الصارم والفوري للطالب المخالف
+                    if (currentUser.isBanned === true) {
+                        document.body.innerHTML = `
+                            <div style="text-align:center; padding:50px; font-family:'Segoe UI', sans-serif; direction:rtl; background:#0f172a; color:#fff; min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                                <h2 style="color:#ef4444; font-size: 32px; margin-bottom: 15px;">🚫 عذراً، تم حظر حسابك من قبل الإدارة!</h2>
+                                <p style="color:#94a3b8; font-size: 18px; margin-top:0;">برجاء المراجعة والتواصل مع الأستاذ عامر لتسوية الحساب وفك القيد.</p>
+                            </div>`;
+                        return;
+                    }
+
                     document.getElementById('dash-student-name').innerText = currentUser.name;
                     document.getElementById('stat-level').innerText = currentUser.level || 1;
                     document.getElementById('stat-xp').innerText = currentUser.xp || 0;
@@ -334,7 +421,6 @@
 
         // 3. نظام تشغيل الامتحانات حياً من السيرفر
         function startQuizArena() {
-            // جلب الأسئلة الخاصة بالمادة المحددة من السيرفر مباشرة
             db.collection("questions").where("subject", "==", activeCategory).get().then((snapshot) => {
                 if (snapshot.empty) {
                     alert("لا توجد أسئلة مضافة في هذه المادة حالياً من قبل الإدارة.");
@@ -346,7 +432,6 @@
                     currentQuestions.push(data);
                 });
                 
-                // خلط الأسئلة عشوائياً لزيادة التحدي ومنع الغش
                 currentQuestions.sort(() => Math.random() - 0.5);
                 
                 showView('view-arena');
@@ -407,7 +492,7 @@
         function finishQuizSession() {
             showView('view-result');
             document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
-            const xpGained = score * 20; // 20 نقطة لكل سؤال صحيح
+            const xpGained = score * 20;
 
             const statusText = document.getElementById('result-xp-status');
             
@@ -416,7 +501,6 @@
             } else {
                 statusText.innerText = `🎉 جولة ممتازة! ربحت +${xpGained} XP وأضيفت لترتيبك العام.`;
                 
-                // 1. حفظ مستند المحاولة لمنع تكرار الـ XP مستقبلاً
                 db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).set({
                     subjectId: activeCategory,
                     isOfficial: true,
@@ -425,7 +509,6 @@
                     date: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
-                // 2. تحديث الحساب العام للطالب باستخدام الحقل التراكمي الآمن بالسيرفر
                 const nextXp = currentUser.xp + xpGained;
                 const nextLevel = Math.floor(nextXp / 200) + 1;
 
@@ -479,28 +562,149 @@
         function openAdminPanel() {
             showView('view-admin-panel');
             resetQuestionForm();
+            switchAdminTab('tab-upload'); // فتح تبويب الرفع تلقائياً
             
-            // جلب الإحصائيات السريعة للوحة
             db.collection("users").get().then(snap => document.getElementById('admin-total-students').innerText = snap.size);
             db.collection("questions").get().then(snap => document.getElementById('admin-total-questions').innerText = snap.size);
             
-            // جلب بنك الأسئلة المتاحة
             db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
                 let html = "";
                 snapshot.forEach(doc => {
                     let q = doc.data();
                     html += `
-                        <div style="background:var(--card-bg); padding:10px; border:1px solid var(--border); margin-bottom:10px; border-radius:8px;">
-                            <strong>[${fixedSubjects[q.subject]}]</strong> ${q.question}
-                            <div style="margin-top:5px; display:flex; gap:10px;">
-                                <button onclick="editQuestionInline('${doc.id}')" style="background:var(--primary); color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer;">تعديل 📝</button>
-                                <button onclick="deleteQuestionInline('${doc.id}')" style="background:var(--danger); color:white; border:none; padding:3px 8px; border-radius:4px; cursor:pointer;">حذف 🗑️</button>
+                        <div class="question-item">
+                            <strong>[${fixedSubjects[q.subject] || 'عام'}]</strong> ${q.question}
+                            <div class="question-actions">
+                                <button onclick="editQuestionInline('${doc.id}')" class="inline-btn" style="background:var(--primary)">تعديل 📝</button>
+                                <button onclick="deleteQuestionInline('${doc.id}')" class="inline-btn" style="background:var(--danger)">حذف 🗑️</button>
                             </div>
                         </div>
                     `;
                 });
                 document.getElementById('admin-questions-list').innerHTML = html || "لا توجد أسئلة مضافة حتى الآن.";
             });
+        }
+
+        // ⚙️ دوال التبويبات والمميزات المطورة لرفع البيانات وحظر المستخدمين
+        function switchAdminTab(tabId) {
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden-tab'));
+            document.getElementById(tabId).classList.remove('hidden-tab');
+            
+            const btnUpload = document.getElementById('btn-tab-upload');
+            const btnStudents = document.getElementById('btn-tab-students');
+            
+            if(tabId === 'tab-upload') {
+                btnUpload.className = "tab-btn active-upload";
+                btnStudents.className = "tab-btn";
+            } else {
+                btnStudents.className = "tab-btn active-students";
+                btnUpload.className = "tab-btn";
+                loadAdminStudentsList(); // جلب قائمة الطلاب الحية فوراً
+            }
+        }
+
+        function updateFileNameDisplay() {
+            const fileInput = document.getElementById('csvFileInput');
+            const display = document.getElementById('fileNameDisplay');
+            if(fileInput.files.length > 0) {
+                display.innerText = "📁 الملف الجاهز للرفع: " + fileInput.files[0].name;
+                display.style.color = "var(--success)";
+            }
+        }
+
+        function uploadBulkQuestions() {
+            const fileInput = document.getElementById('csvFileInput');
+            if (fileInput.files.length === 0) {
+                alert("يا قائد، يرجى اختيار ملف الـ CSV الذي قمت بحفظه من الإكسيل أولاً!");
+                return;
+            }
+
+            const file = fileInput.files[0];
+            
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const questionsArray = results.data;
+                    let batch = db.batch(); 
+                    let count = 0;
+                    
+                    questionsArray.forEach((q) => {
+                        // التأكد التام من سلامة الحقول المقروءة ومطابقتها لقاعدة بياناتك الأصلية
+                        if(q.Question && q.A && q.B && q.Answer) { 
+                            let newQuestionRef = db.collection("questions").doc(); 
+                            batch.set(newQuestionRef, {
+                                subject: q.Subject || "math",
+                                question: q.Question,
+                                options: [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== ""),
+                                answer: q.Answer,
+                                explanation: q.Explanation || "",
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                            count++;
+                        }
+                    });
+
+                    if(count === 0) {
+                        alert("لم نجد أسئلة صالحة، يرجى التأكد من كتابة عناوين الأعمدة في السطر الأول بالإكسيل: Question, A, B, C, D, Answer, Explanation, Subject");
+                        return;
+                    }
+
+                    batch.commit().then(() => {
+                        alert(`🎯 مبروك يا قائد! تم رفع عدد (${count}) سؤال بنجاح فوري إلى قاعدة البيانات حياً!`);
+                        fileInput.value = "";
+                        document.getElementById('fileNameDisplay').innerText = "اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة";
+                        document.getElementById('fileNameDisplay').style.color = "";
+                        openAdminPanel(); // تحديث فوري للأعداد والقائمة بالخلفية
+                    }).catch(err => alert("حدث خطأ ما أثناء الرفع الجماعي بالسيرفر: " + err.message));
+                }
+            });
+        }
+
+        function loadAdminStudentsList() {
+            const tbody = document.getElementById('admin-students-table-body');
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب بيانات ومزامنة الطلاب...</td></tr>`;
+            
+            db.collection("users").orderBy("xp", "desc").limit(100).get().then((snapshot) => {
+                tbody.innerHTML = "";
+                if(snapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--text-muted); padding: 20px;">لا يوجد أي طلاب مسجلين حتى الآن.</td></tr>`;
+                    return;
+                }
+                
+                snapshot.forEach((doc) => {
+                    const student = doc.data();
+                    const uid = doc.id;
+                    const isBanned = student.isBanned === true;
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 12px; font-weight: bold; ${isBanned ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${student.name || 'طالب مجهول'}</td>
+                        <td style="padding: 12px; color: var(--warning); font-weight: bold;">${student.xp || 0} XP</td>
+                        <td style="padding: 12px;">المستوى ${student.level || 1}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <button onclick="toggleBanStudent('${uid}', ${isBanned})" class="ban-btn ${isBanned ? 'ban-inactive' : 'ban-active'}">
+                                ${isBanned ? '🔓 فك الحظر' : '🚫 حظر الطالب'}
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }).catch(err => {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: var(--danger); padding: 20px;">حدث خطأ في تحميل الطلاب: ${err.message}</td></tr>`;
+            });
+        }
+
+        function toggleBanStudent(uid, currentStatus) {
+            const msg = currentStatus ? "هل تود بالتأكيد إلغاء الحظر عن هذا الطالب وإعادة تفعيل حسابه؟" : "هل أنت متأكد من حظر هذا الطالب بشكل قطعي؟ لن يتمكن من دخول المنصة.";
+            if (confirm(msg)) {
+                db.collection("users").doc(uid).update({
+                    isBanned: !currentStatus
+                }).then(() => {
+                    alert("تم تحديث حالة التحكم بالحساب بنجاح!");
+                    loadAdminStudentsList(); // تحديث الجدول فوراً لشاشة المشرف
+                }).catch(err => alert("فشلت عملية الرقابة بالسيرفر: " + err.message));
+            }
         }
 
         function saveQuestionData() {
@@ -526,13 +730,11 @@
             };
 
             if (qId) {
-                // عملية تعديل سؤال موجود
                 db.collection("questions").doc(qId).update(payload).then(() => {
                     alert("تم تعديل السؤال بنجاح!");
                     openAdminPanel();
                 });
             } else {
-                // عملية إضافة سؤال جديد
                 db.collection("questions").add(payload).then(() => {
                     alert("تم إضافة السؤال لبنك الأسئلة بنجاح!");
                     openAdminPanel();
