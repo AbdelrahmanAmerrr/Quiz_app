@@ -204,8 +204,21 @@
                         <label for="csvFileInput" class="file-label">
                             <i class="fa-solid fa-file-excel file-icon"></i>
                             <span id="fileNameDisplay" style="font-weight: bold; display: block; margin-bottom: 5px;">اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة</span>
-                            <small style="color: var(--text-muted); display: block;">الترتيب الإلزامي للأعمدة: Question, A, B, C, D, Answer, Explanation, Subject</small>
+                            <small style="color: var(--text-muted); display: block;">الترتيب الإلزامي للأعمدة بالإكسيل: Question, A, B, C, D, Answer, Explanation</small>
                         </label>
+                        
+                        <div style="margin: 20px auto 10px auto; max-width: 320px; text-align: right;">
+                            <label style="display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; color: var(--text-main);">📌 حدد المادة التعليمية لتلك الأسئلة:</label>
+                            <select id="csvFileSubject" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; font-weight: bold; cursor: pointer;">
+                                <option value="">-- اختر المادة التعليمية --</option>
+                                <option value="math">الرياضة والتأمين</option>
+                                <option value="english">مصطلحات أجنبية</option>
+                                <option value="economics">علم الاقتصاد</option>
+                                <option value="management">مبادئ الإدارة</option>
+                                <option value="office">حزم تطبيقية</option>
+                            </select>
+                        </div>
+
                         <button class="btn-launch" style="background: var(--success); margin-top: 15px; max-width: 320px; margin-right: auto; margin-left: auto;" onclick="uploadBulkQuestions()"><i class="fa-solid fa-cloud-arrow-up"></i> ابدأ الرفع التلقائي بالسيرفر</button>
                     </div>
 
@@ -614,8 +627,16 @@
 
         function uploadBulkQuestions() {
             const fileInput = document.getElementById('csvFileInput');
+            const subjectSelect = document.getElementById('csvFileSubject');
+            const selectedSubject = subjectSelect.value;
+
             if (fileInput.files.length === 0) {
                 alert("يا قائد، يرجى اختيار ملف الـ CSV الذي قمت بحفظه من الإكسيل أولاً!");
+                return;
+            }
+
+            if (!selectedSubject) {
+                alert("يا قائد، يرجى تحديد المادة التعليمية من القائمة المنسدلة أولاً ليتم ربط الملف بها وبثه للطلاب!");
                 return;
             }
 
@@ -634,7 +655,7 @@
                         if(q.Question && q.A && q.B && q.Answer) { 
                             let newQuestionRef = db.collection("questions").doc(); 
                             batch.set(newQuestionRef, {
-                                subject: q.Subject || "math",
+                                subject: selectedSubject, // التعديل الاحترافي: ربط أوتوماتيكي بالمادة المختارة من الـ Dropdown
                                 question: q.Question,
                                 options: [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== ""),
                                 answer: q.Answer,
@@ -646,13 +667,15 @@
                     });
 
                     if(count === 0) {
-                        alert("لم نجد أسئلة صالحة، يرجى التأكد من كتابة عناوين الأعمدة في السطر الأول بالإكسيل: Question, A, B, C, D, Answer, Explanation, Subject");
+                        alert("لم نجد أسئلة صالحة، يرجى التأكد من كتابة عناوين الأعمدة في السطر الأول بالإكسيل: Question, A, B, C, D, Answer, Explanation");
                         return;
                     }
 
                     batch.commit().then(() => {
-                        alert(`🎯 مبروك يا قائد! تم رفع عدد (${count}) سؤال بنجاح فوري إلى قاعدة البيانات حياً!`);
+                        const subjectName = fixedSubjects[selectedSubject];
+                        alert(`🎯 مبروك يا قائد! تم رفع عدد (${count}) سؤال بنجاح فوري وربطهم بمادة (${subjectName}) حياً في قاعدة البيانات!`);
                         fileInput.value = "";
+                        subjectSelect.value = ""; // تصفير الاختيار بعد الرفع الناجح
                         document.getElementById('fileNameDisplay').innerText = "اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة";
                         document.getElementById('fileNameDisplay').style.color = "";
                         openAdminPanel(); // تحديث فوري للأعداد والقائمة بالخلفية
@@ -761,7 +784,7 @@
         }
 
         function deleteQuestionInline(id) {
-            if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً من السيرفر؟")) {
+            if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً من السيرفر?")) {
                 db.collection("questions").doc(id).delete().then(() => {
                     alert("تم حذف السؤال!");
                     openAdminPanel();
