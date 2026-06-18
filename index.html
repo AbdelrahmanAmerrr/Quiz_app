@@ -71,6 +71,7 @@
         .subject-card.selected { border-color: var(--primary); background: var(--primary-light); }
 
         .btn-launch { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: var(--radius-sm); cursor: pointer; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-launch:disabled { opacity: 0.6; cursor: not-allowed; }
         
         .option-node { background: var(--card-bg); border: 2px solid var(--border); padding: 14px; border-radius: var(--radius-sm); margin: 10px 0; text-align: right; width: 100%; cursor: pointer; font-size: 16px; display: flex; justify-content: space-between; }
         .option-node.correct { background: #d1fae5 !important; border-color: #10b981 !important; color: #065f46; }
@@ -84,7 +85,6 @@
         .admin-form-group { margin-bottom: 15px; }
         .admin-form-group input, .admin-form-group select, .admin-form-group textarea { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; }
 
-        /* ستايلات احترافية خاصة بلوحة التحكم المتقدمة */
         .admin-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border); padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
         .admin-title { font-size: 24px; font-weight: 800; color: var(--warning); margin: 0; }
         .admin-subtitle { color: var(--text-muted); font-size: 14px; margin: 5px 0 0 0; }
@@ -111,10 +111,38 @@
         
         .hidden-tab { display: none !important; }
 
+        /* ستايلات العناصر الجديدة المضافة حديثاً */
+        .xp-progress-container { background: var(--border); border-radius: 10px; height: 12px; width: 100%; margin-top: 8px; overflow: hidden; position: relative; }
+        .xp-progress-bar { background: linear-gradient(90deg, #2563eb, #10b981); height: 100%; width: 0%; transition: width 0.4s ease; }
+        
+        .achievements-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
+        .achievement-badge { background: var(--bg-gradient); border: 1px solid var(--border); padding: 12px 8px; border-radius: var(--radius-sm); text-align: center; font-size: 12px; opacity: 0.35; filter: grayscale(100%); transition: all 0.3s ease; font-weight: bold; }
+        .achievement-badge i { font-size: 20px; margin-bottom: 5px; display: block; }
+        .achievement-badge.unlocked { opacity: 1; filter: grayscale(0%); border-color: var(--warning); background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #92400e; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15); }
+        body.dark-mode .achievement-badge.unlocked { background: linear-gradient(135deg, #78350f 0%, #451a03 100%); color: #fef3c7; }
+
+        .explanation-box { background: var(--primary-light); border-right: 5px solid var(--primary); padding: 15px; border-radius: var(--radius-sm); margin-top: 20px; display: none; line-height: 1.6; }
+        body.dark-mode .explanation-box { background: #1e3a8a; border-right-color: #3b82f6; }
+        
+        .search-box { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); margin-bottom: 15px; box-sizing: border-box; font-size: 14px; }
+        .search-box:focus { border-color: var(--primary); outline: none; }
+        
+        .q-stat-tag { display: inline-block; padding: 4px 8px; font-size: 11px; border-radius: 6px; font-weight: bold; margin-left: 5px; margin-top: 5px; }
+        .q-stat-success { background: #d1fae5; color: #065f46; }
+        .q-stat-wrong { background: #fee2e2; color: #991b1b; }
+        .q-stat-rate { background: var(--primary-light); color: var(--primary); }
+
         @media (max-width: 900px) { .app-layout { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
+
+    <script>
+        // التفعيل التلقائي الفوري لـ Dark Mode قبل رندر الصفحة لمنع الفلاش الأبيض (ميزة 6)
+        if (localStorage.getItem('amer_quiz_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
 
     <header>
         <div class="brand"><i class="fa-solid fa-graduation-cap"></i> AmerQuiz</div>
@@ -149,17 +177,39 @@
                 <div class="stats-grid">
                     <div class="stat-box"><i class="fa-solid fa-award"></i><div id="stat-level">1</div><span>المستوى</span></div>
                     <div class="stat-box"><i class="fa-solid fa-bolt" style="color:var(--warning)"></i><div id="stat-xp">0</div><span>إجمالي XP</span></div>
-                    <div class="stat-box"><i class="fa-solid fa-check-double"></i><div id="stat-completed">0</div><span>محاولات رسمية</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-earth-americas" style="color:#0ea5e9"></i><div id="stat-rank">-</div><span>الترتيب العالمي</span></div> <div class="stat-box"><i class="fa-solid fa-check-double"></i><div id="stat-completed">0</div><span>محاولات رسمية</span></div>
+                </div>
+
+                <div style="margin-top: 20px; background: var(--card-bg); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                    <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+                        <span>🎯 تقدم المستوى الحالي:</span>
+                        <span id="progress-xp-text" style="color: var(--primary);">0 / 200 XP</span>
+                    </div>
+                    <div class="xp-progress-container">
+                        <div id="progress-xp-fill" class="xp-progress-bar"></div>
+                    </div>
+                </div>
+
+                <h3 style="margin-top:25px;"><i class="fa-solid fa-medal" style="color: var(--warning);"></i> الإنجازات والأوسمة المفتوحة</h3>
+                <div class="achievements-grid">
+                    <div class="achievement-badge" id="ach-first"><i class="fa-solid fa-flag"></i>أول امتحان</div>
+                    <div class="achievement-badge" id="ach-100xp"><i class="fa-solid fa-bolt-lightning"></i>100 XP</div>
+                    <div class="achievement-badge" id="ach-500xp"><i class="fa-solid fa-fire"></i>500 XP</div>
+                    <div class="achievement-badge" id="ach-full"><i class="fa-solid fa-star"></i>درجة كاملة</div>
+                    <div class="achievement-badge" id="ach-subject"><i class="fa-solid fa-graduation-cap"></i>مُقفل المواد</div>
+                </div>
+
+                <div style="margin-top: 25px; background: var(--bg-gradient); padding: 15px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                    <h4 style="margin: 0 0 8px 0; font-size: 15px;"><i class="fa-solid fa-clock-rotate-left"></i> آخر نشاط لك في المنصة:</h4>
+                    <p id="last-activity-text" style="margin: 0; color: var(--text-muted); font-size: 14px;">لا يوجد سجل محاولات حتى الآن، ابدأ تحديك الأول!</p>
                 </div>
 
                 <h3 style="margin-top:25px;"><i class="fa-solid fa-book"></i> اختر المادة الدراسية للتحدي:</h3>
-                <div class="subject-grid" id="subjects-container">
-                    </div>
+                <div class="subject-grid" id="subjects-container"></div>
 
                 <div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 15px;">
                     <div class="practice-badge" id="arena-practice-alert">⚠️ هذه محاولة تدريبية ولن تضيف XP جديد.</div>
-                    <button class="btn-launch" onclick="startQuizArena()"><i class="fa-solid fa-play"></i> بدء التحدي الآن</button>
-                </div>
+                    <button class="btn-launch" id="btn-start-quiz" onclick="startQuizArena()"><i class="fa-solid fa-play"></i> بدء التحدي الآن</button> </div>
             </div>
 
             <div class="card" id="view-arena" style="display: none;">
@@ -169,6 +219,12 @@
                 </div>
                 <h2 id="arena-question-text" style="line-height: 1.5; margin-bottom: 25px;">جاري تحميل السؤال...</h2>
                 <div id="arena-options-box"></div>
+                
+                <div id="arena-explanation-box" class="explanation-box">
+                    <strong style="color: var(--primary);"><i class="fa-solid fa-circle-info"></i> الشرح العلمي للسؤال:</strong>
+                    <p id="arena-explanation-text" style="margin: 6px 0 0 0;"></p>
+                </div>
+                <button id="btn-next-question" class="btn-launch" style="display: none; margin-top: 20px; background: var(--success);" onclick="advanceArenaQuestion()"><i class="fa-solid fa-circle-arrow-left"></i> السؤال التالي</button>
             </div>
 
             <div class="card" id="view-result" style="display: none;">
@@ -220,6 +276,8 @@
                         </div>
 
                         <button class="btn-launch" style="background: var(--success); margin-top: 15px; max-width: 320px; margin-right: auto; margin-left: auto;" onclick="uploadBulkQuestions()"><i class="fa-solid fa-cloud-arrow-up"></i> ابدأ الرفع التلقائي بالسيرفر</button>
+                        
+                        <button class="btn-launch" style="background: var(--danger); margin-top: 12px; max-width: 320px; margin-right: auto; margin-left: auto;" onclick="deleteAllQuestions()"><i class="fa-solid fa-trash-can"></i> مسح جميع الأسئلة من السيرفر</button>
                     </div>
 
                     <div style="text-align: center; margin: 25px 0; font-weight: bold; color: var(--text-muted);">─ أو إضافة / تعديل سؤال بشكل يدوي فردي ─</div>
@@ -248,7 +306,10 @@
                     </div>
 
                     <h3>🗂️ بنك الأسئلة المتاحة حالياً بالسيرفر</h3>
-                    <div style="max-height: 400px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 10px;" id="admin-questions-list">
+                    
+                    <input type="text" id="admin-search-input" class="search-box" placeholder="🔍 ابحث عن أي سؤال داخل السيرفر بكلمات مفتاحية حية..." oninput="filterQuestionsBank()">
+
+                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px;" id="admin-questions-list">
                         جاري تحميل بنك الأسئلة...
                     </div>
                 </div>
@@ -291,7 +352,6 @@
     </div>
 
     <script>
-        // تكوين الـ Config الخاص بمشروعك
         var firebaseConfig = {
           apiKey: "AIzaSyA7VLIloU_7jbHuexgC4oQUZ6Mj1dwCu1M",
           authDomain: "amer-quiz-65ce2.firebaseapp.com",
@@ -305,7 +365,6 @@
         var db = firebase.firestore();
         var auth = firebase.auth();
 
-        // الهيكل الموحد للمواد
         const fixedSubjects = {
             "math": "الرياضة والتأمين",
             "english": "مصطلحات أجنبية",
@@ -318,10 +377,12 @@
         let activeCategory = "math";
         let isPracticeMode = false;
         let currentQuestions = [];
+        let cachedAdminQuestions = []; // لتخزين الأسئلة محلياً لفلترتها بالبحث الإداري السريع
         let qIndex = 0;
         let score = 0;
         let timerInterval;
         let timeRemaining = 30;
+        let hasAnsweredCurrent = false; // لمنع النقر المزدوج على خيارات الإجابة
 
         window.onload = function() {
             renderSubjects();
@@ -329,13 +390,11 @@
             loadGlobalLeaderboard();
         };
 
-        // 1. إدارة الهوية (Firebase Anonymous Auth & LocalStorage Document System)
         function checkAuthenticationState() {
             const cachedUid = localStorage.getItem('amer_quiz_uid');
             
             auth.onAuthStateChanged((user) => {
                 if (user) {
-                    // فحص إذا كان الداخل هو الأدمن
                     db.collection("admins").doc(user.uid).get().then(adminSnap => {
                         if (adminSnap.exists) {
                             document.getElementById('btn-goto-admin').style.display = "block";
@@ -345,16 +404,13 @@
                     if (cachedUid && cachedUid === user.uid) {
                         fetchUserRecord(user.uid);
                     } else if (!cachedUid) {
-                        // لو مستخدم جديد تماماً وليس لديه كاش
                         localStorage.setItem('amer_quiz_uid', user.uid);
                         showView('view-register');
                     } else {
                         fetchUserRecord(cachedUid);
                     }
                 } else {
-                    // إذا لم يكن مسجلاً في الفايربيز نهائياً
                     if (cachedUid) {
-                        // محاولة ربط المتصفح القديم تلقائياً
                         auth.signInAnonymously().catch(() => {
                             showView('view-register');
                         });
@@ -370,7 +426,6 @@
                 if (docSnap.exists) {
                     currentUser = docSnap.data();
                     
-                    // 🚨 فحص الحظر الصارم والفوري للطالب المخالف
                     if (currentUser.isBanned === true) {
                         document.body.innerHTML = `
                             <div style="text-align:center; padding:50px; font-family:'Segoe UI', sans-serif; direction:rtl; background:#0f172a; color:#fff; min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
@@ -381,9 +436,38 @@
                     }
 
                     document.getElementById('dash-student-name').innerText = currentUser.name;
-                    document.getElementById('stat-level').innerText = currentUser.level || 1;
-                    document.getElementById('stat-xp').innerText = currentUser.xp || 0;
+                    
+                    const level = currentUser.level || 1;
+                    const xp = currentUser.xp || 0;
+                    
+                    document.getElementById('stat-level').innerText = level;
+                    document.getElementById('stat-xp').innerText = xp;
                     document.getElementById('stat-completed').innerText = currentUser.completedCount || 0;
+                    
+                    // ميزة 5: حساب شريط تقدم الـ XP نحو المستوى التالي (كل 200 نقطة مستوى)
+                    const xpInCurrentLevel = xp % 200;
+                    document.getElementById('progress-xp-text').innerText = `${xpInCurrentLevel} / 200 XP`;
+                    document.getElementById('progress-xp-fill').style.width = `${(xpInCurrentLevel / 200) * 100}%`;
+
+                    // ميزة 3: احتساب وعرض الترتيب العالمي حياً
+                    db.collection("users").where("xp", ">", xp).get().then(snap => {
+                        document.getElementById('stat-rank').innerText = `#${snap.size + 1}`;
+                    }).catch(() => {
+                        document.getElementById('stat-rank').innerText = `-`;
+                    });
+
+                    // ميزة 4: رندر الإنجازات المحققة
+                    if (currentUser.completedCount >= 1) document.getElementById('ach-first').classList.add('unlocked');
+                    if (xp >= 100) document.getElementById('ach-100xp').classList.add('unlocked');
+                    if (xp >= 500) document.getElementById('ach-500xp').classList.add('unlocked');
+                    if (currentUser.hasFullScore === true) document.getElementById('ach-full').classList.add('unlocked');
+                    if (currentUser.completedSubjects && currentUser.completedSubjects.length >= 5) document.getElementById('ach-subject').classList.add('unlocked');
+
+                    // ميزة 8: رندر سجل آخر نشاط
+                    if (currentUser.lastActivity) {
+                        const act = currentUser.lastActivity;
+                        document.getElementById('last-activity-text').innerHTML = `اختبار بمادة <strong>(${act.subjectName})</strong> 📝 بنتيجة <strong>${act.score} من ${act.total}</strong> بتاريخ: ${act.date}`;
+                    }
                     
                     checkSubjectAttemptStatus();
                     showView('view-dashboard');
@@ -406,6 +490,8 @@
                 xp: 0,
                 level: 1,
                 completedCount: 0,
+                completedSubjects: [],
+                hasFullScore: false,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                 lastLogin: firebase.firestore.FieldValue.serverTimestamp()
             };
@@ -416,7 +502,6 @@
             }).catch(e => alert("خطأ في الاتصال بقاعدة البيانات: " + e.message));
         }
 
-        // 2. نظام التحقق الذكي من المحاولات السابقة (First Attempt Tracker)
         function checkSubjectAttemptStatus() {
             if (!currentUser) return;
             const alertBox = document.getElementById('arena-practice-alert');
@@ -432,9 +517,16 @@
             });
         }
 
-        // 3. نظام تشغيل الامتحانات حياً من السيرفر
         function startQuizArena() {
+            // ميزة 9: منع الضغط المتكرر أثناء سحب الأسئلة
+            const startBtn = document.getElementById('btn-start-quiz');
+            startBtn.disabled = true;
+            startBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري إعداد وتأمين التحدي الناري...`;
+
             db.collection("questions").where("subject", "==", activeCategory).get().then((snapshot) => {
+                startBtn.disabled = false;
+                startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
+
                 if (snapshot.empty) {
                     alert("لا توجد أسئلة مضافة في هذه المادة حالياً من قبل الإدارة.");
                     return;
@@ -442,6 +534,7 @@
                 currentQuestions = [];
                 snapshot.forEach(doc => {
                     let data = doc.data();
+                    data.id = doc.id; // ربط المعرف لتحديث الإحصائيات لاحقاً
                     currentQuestions.push(data);
                 });
                 
@@ -451,16 +544,24 @@
                 qIndex = 0;
                 score = 0;
                 loadArenaQuestion();
+            }).catch(() => {
+                startBtn.disabled = false;
+                startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
             });
         }
 
         function loadArenaQuestion() {
             if (qIndex >= currentQuestions.length) { finishQuizSession(); return; }
             
+            hasAnsweredCurrent = false;
             document.getElementById('arena-counter').innerText = `السؤال ${qIndex + 1} من ${currentQuestions.length}`;
             const activeQ = currentQuestions[qIndex];
             document.getElementById('arena-question-text').innerText = activeQ.question;
             
+            // إعادة تصفير وتهيئة واجهة الشرح والتالي
+            document.getElementById('arena-explanation-box').style.display = "none";
+            document.getElementById('btn-next-question').style.display = "none";
+
             const box = document.getElementById('arena-options-box');
             box.innerHTML = "";
             
@@ -483,30 +584,50 @@
         }
 
         function handleSelection(selectedNode, chosen, questionObj) {
+            if (hasAnsweredCurrent) return;
+            hasAnsweredCurrent = true;
+
             clearInterval(timerInterval);
             document.querySelectorAll('.option-node').forEach(b => b.disabled = true);
             
-            if (chosen === questionObj.answer) {
+            // 🛠️ حل مشكلة المقارنة الصارمة والمسافات عبر تفعيل التحويل لنصوص والـ Trim الشامل
+            const cleanAnswer = questionObj.answer.toString().trim();
+            const cleanChosen = chosen ? chosen.toString().trim() : "";
+            const isCorrect = (cleanChosen === cleanAnswer);
+
+            // ميزة 11: تسجيل إحصائية السؤال حياً في السيرفر
+            if (questionObj.id) {
+                db.collection("questions").doc(questionObj.id).update({
+                    correctCount: firebase.firestore.FieldValue.increment(isCorrect ? 1 : 0),
+                    wrongCount: firebase.firestore.FieldValue.increment(isCorrect ? 0 : 1)
+                });
+            }
+            
+            if (isCorrect) {
                 score++;
                 if(selectedNode) selectedNode.className = "option-node correct";
             } else {
                 if(selectedNode) selectedNode.className = "option-node wrong";
                 document.querySelectorAll('.option-node').forEach(b => {
-                    if (b.innerText.trim() === questionObj.answer) b.classList.add('correct');
+                    if (b.innerText.toString().trim() === cleanAnswer) b.classList.add('correct');
                 });
             }
 
-            setTimeout(() => {
-                qIndex++;
-                loadArenaQuestion();
-            }, 1500);
+            // ميزة 2: إظهار الشرح العلمي فوراً مع تفعيل زر التالي
+            document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل لهذا السؤال من قبل المشرف.";
+            document.getElementById('arena-explanation-box').style.display = "block";
+            document.getElementById('btn-next-question').style.display = "flex";
+        }
+
+        function advanceArenaQuestion() {
+            qIndex++;
+            loadArenaQuestion();
         }
 
         function finishQuizSession() {
             showView('view-result');
             document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
             const xpGained = score * 20;
-
             const statusText = document.getElementById('result-xp-status');
             
             if (isPracticeMode) {
@@ -524,27 +645,44 @@
 
                 const nextXp = currentUser.xp + xpGained;
                 const nextLevel = Math.floor(nextXp / 200) + 1;
+                
+                let isFull = (score === currentQuestions.length && currentQuestions.length > 0);
+                const todayStr = new Date().toLocaleDateString('ar-EG');
 
                 db.collection("users").doc(currentUser.uid).update({
                     xp: firebase.firestore.FieldValue.increment(xpGained),
                     level: nextLevel,
-                    completedCount: firebase.firestore.FieldValue.increment(1)
+                    completedCount: firebase.firestore.FieldValue.increment(1),
+                    hasFullScore: currentUser.hasFullScore || isFull,
+                    completedSubjects: firebase.firestore.FieldValue.arrayUnion(activeCategory),
+                    lastActivity: {
+                        subjectName: fixedSubjects[activeCategory],
+                        score: score,
+                        total: currentQuestions.length,
+                        date: todayStr
+                    }
                 }).then(() => {
                     loadGlobalLeaderboard();
                 });
             }
         }
 
-        // 4. إدارة لوحة المتصدرين الفورية (Top 100 Leaderboard)
         function loadGlobalLeaderboard() {
             db.collection("users").orderBy("xp", "desc").limit(100).get().then((snapshot) => {
                 let html = "";
                 let rank = 1;
                 snapshot.forEach(doc => {
                     let u = doc.data();
+                    
+                    // ميزة 7: إضافة ميداليات ذهبية وفضية وبرونزية للمراكز الـ 3 الأولى
+                    let medalBadge = `#${rank}`;
+                    if(rank === 1) medalBadge = "🥇 الأول";
+                    else if(rank === 2) medalBadge = "🥈 الثاني";
+                    else if(rank === 3) medalBadge = "🥉 الثالث";
+
                     html += `
                         <div class="user-row">
-                            <span>#${rank} - ${u.name}</span>
+                            <span><strong>${medalBadge}</strong> - ${u.name}</span>
                             <span><strong>${u.xp || 0}</strong> <small style="color:var(--text-muted)">XP</small> (Lvl ${u.level || 1})</span>
                         </div>
                     `;
@@ -554,7 +692,6 @@
             });
         }
 
-        // 5. محرك لوحة تحكم الإدارة (Superadmin Engine)
         function handleAdminLogin() {
             const email = document.getElementById('admin-email').value.trim();
             const pass = document.getElementById('admin-pass').value.trim();
@@ -575,30 +712,75 @@
         function openAdminPanel() {
             showView('view-admin-panel');
             resetQuestionForm();
-            switchAdminTab('tab-upload'); // فتح تبويب الرفع تلقائياً
+            switchAdminTab('tab-upload');
+            document.getElementById('admin-search-input').value = ""; // تصفير خانة البحث
             
             db.collection("users").get().then(snap => document.getElementById('admin-total-students').innerText = snap.size);
             db.collection("questions").get().then(snap => document.getElementById('admin-total-questions').innerText = snap.size);
             
             db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
-                let html = "";
+                cachedAdminQuestions = [];
                 snapshot.forEach(doc => {
                     let q = doc.data();
-                    html += `
-                        <div class="question-item">
-                            <strong>[${fixedSubjects[q.subject] || 'عام'}]</strong> ${q.question}
-                            <div class="question-actions">
-                                <button onclick="editQuestionInline('${doc.id}')" class="inline-btn" style="background:var(--primary)">تعديل 📝</button>
-                                <button onclick="deleteQuestionInline('${doc.id}')" class="inline-btn" style="background:var(--danger)">حذف 🗑️</button>
-                            </div>
-                        </div>
-                    `;
+                    q.uid = doc.id;
+                    cachedAdminQuestions.push(q);
                 });
-                document.getElementById('admin-questions-list').innerHTML = html || "لا توجد أسئلة مضافة حتى الآن.";
+                renderQuestionsListUI(cachedAdminQuestions);
             });
         }
 
-        // ⚙️ دوال التبويبات والمميزات المطورة لرفع البيانات وحظر المستخدمين
+        // رندر بنك الأسئلة مع الإحصائيات المتقدمة (ميزة 11)
+        function renderQuestionsListUI(list) {
+            let html = "";
+            list.forEach(q => {
+                const c = q.correctCount || 0;
+                const w = q.wrongCount || 0;
+                const totalAnswers = c + w;
+                const rate = totalAnswers > 0 ? Math.round((c / totalAnswers) * 100) : 0;
+
+                html += `
+                    <div class="question-item" style="padding:15px; border-bottom:1px solid var(--border)">
+                        <strong>[${fixedSubjects[q.subject] || 'عام'}]</strong> ${q.question}
+                        <div style="margin: 5px 0;">
+                            <span class="q-stat-tag q-stat-success"><i class="fa-regular fa-circle-check"></i> إجابات صحيحة: ${c}</span>
+                            <span class="q-stat-tag q-stat-wrong"><i class="fa-regular fa-circle-xmark"></i> خاطئة: ${w}</span>
+                            <span class="q-stat-tag q-stat-rate"><i class="fa-solid fa-chart-pie"></i> نسبة النجاح: ${rate}%</span>
+                        </div>
+                        <div class="question-actions" style="margin-top:8px;">
+                            <button onclick="editQuestionInline('${q.uid}')" class="ban-btn ban-inactive" style="padding:4px 10px; font-size:12px;">تعديل 📝</button>
+                            <button onclick="deleteQuestionInline('${q.uid}')" class="ban-btn ban-active" style="padding:4px 10px; font-size:12px;">حذف 🗑️</button>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('admin-questions-list').innerHTML = html || "لا توجد أسئلة تطابق البحث أو السيرفر فارغ حالياً.";
+        }
+
+        // ميزة 10: فلترة بنك الأسئلة بشكل فوري أثناء الكتابة
+        function filterQuestionsBank() {
+            const word = document.getElementById('admin-search-input').value.toLowerCase().trim();
+            if(!word) {
+                renderQuestionsListUI(cachedAdminQuestions);
+            } else {
+                const filtered = cachedAdminQuestions.filter(q => q.question.toLowerCase().includes(word));
+                renderQuestionsListUI(filtered);
+            }
+        }
+
+        // mيزة 1: مسح شامل لجميع الأسئلة دفعة واحدة من قاعدة البيانات
+        function deleteAllQuestions() {
+            if (confirm("🚨 تحذير خطير جداً يا قائد! هل تود مسح جميع الأسئلة نهائياً وبشكل كامل من السيرفر؟ هذا الإجراء لا يمكن التراجع عنه.")) {
+                db.collection("questions").get().then(snap => {
+                    let batch = db.batch();
+                    snap.forEach(doc => batch.delete(doc.ref));
+                    batch.commit().then(() => {
+                        alert("🎯 تم تدمير ومسح بنك الأسئلة بالكامل بنجاح!");
+                        openAdminPanel();
+                    }).catch(err => alert("فشلت عملية الحذف الشامل: " + err.message));
+                });
+            }
+        }
+
         function switchAdminTab(tabId) {
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden-tab'));
             document.getElementById(tabId).classList.remove('hidden-tab');
@@ -612,7 +794,7 @@
             } else {
                 btnStudents.className = "tab-btn active-students";
                 btnUpload.className = "tab-btn";
-                loadAdminStudentsList(); // جلب قائمة الطلاب الحية فوراً
+                loadAdminStudentsList();
             }
         }
 
@@ -630,15 +812,8 @@
             const subjectSelect = document.getElementById('csvFileSubject');
             const selectedSubject = subjectSelect.value;
 
-            if (fileInput.files.length === 0) {
-                alert("يا قائد، يرجى اختيار ملف الـ CSV الذي قمت بحفظه من الإكسيل أولاً!");
-                return;
-            }
-
-            if (!selectedSubject) {
-                alert("يا قائد، يرجى تحديد المادة التعليمية من القائمة المنسدلة أولاً ليتم ربط الملف بها وبثه للطلاب!");
-                return;
-            }
+            if (fileInput.files.length === 0) { alert("يا قائد، يرجى اختيار ملف الـ CSV أولاً!"); return; }
+            if (!selectedSubject) { alert("يا قائد، يرجى تحديد المادة التعليمية أولاً!"); return; }
 
             const file = fileInput.files[0];
             
@@ -651,15 +826,16 @@
                     let count = 0;
                     
                     questionsArray.forEach((q) => {
-                        // التأكد التام من سلامة الحقول المقروءة ومطابقتها لقاعدة بياناتك الأصلية
                         if(q.Question && q.A && q.B && q.Answer) { 
                             let newQuestionRef = db.collection("questions").doc(); 
                             batch.set(newQuestionRef, {
-                                subject: selectedSubject, // التعديل الاحترافي: ربط أوتوماتيكي بالمادة المختارة من الـ Dropdown
+                                subject: selectedSubject,
                                 question: q.Question,
                                 options: [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== ""),
                                 answer: q.Answer,
                                 explanation: q.Explanation || "",
+                                correctCount: 0,
+                                wrongCount: 0,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
                             count++;
@@ -667,19 +843,18 @@
                     });
 
                     if(count === 0) {
-                        alert("لم نجد أسئلة صالحة، يرجى التأكد من كتابة عناوين الأعمدة في السطر الأول بالإكسيل: Question, A, B, C, D, Answer, Explanation");
+                        alert("لم نجد أسئلة صالحة، يرجى التأكد من العناوين: Question, A, B, C, D, Answer, Explanation");
                         return;
                     }
 
                     batch.commit().then(() => {
-                        const subjectName = fixedSubjects[selectedSubject];
-                        alert(`🎯 مبروك يا قائد! تم رفع عدد (${count}) سؤال بنجاح فوري وربطهم بمادة (${subjectName}) حياً في قاعدة البيانات!`);
+                        alert(`🎯 مبروك يا قائد! تم رفع عدد (${count}) سؤال بنجاح وربطهم بمادة (${fixedSubjects[selectedSubject]})!`);
                         fileInput.value = "";
-                        subjectSelect.value = ""; // تصفير الاختيار بعد الرفع الناجح
+                        subjectSelect.value = "";
                         document.getElementById('fileNameDisplay').innerText = "اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة";
                         document.getElementById('fileNameDisplay').style.color = "";
-                        openAdminPanel(); // تحديث فوري للأعداد والقائمة بالخلفية
-                    }).catch(err => alert("حدث خطأ ما أثناء الرفع الجماعي بالسيرفر: " + err.message));
+                        openAdminPanel();
+                    }).catch(err => alert("حدث خطأ ما أثناء الرفع: " + err.message));
                 }
             });
         }
@@ -719,13 +894,13 @@
         }
 
         function toggleBanStudent(uid, currentStatus) {
-            const msg = currentStatus ? "هل تود بالتأكيد إلغاء الحظر عن هذا الطالب وإعادة تفعيل حسابه؟" : "هل أنت متأكد من حظر هذا الطالب بشكل قطعي؟ لن يتمكن من دخول المنصة.";
+            const msg = currentStatus ? "هل تود إلغاء الحظر عن هذا الطالب؟" : "هل أنت متأكد من حظر هذا الطالب؟ لن يتمكن من دخول المنصة.";
             if (confirm(msg)) {
                 db.collection("users").doc(uid).update({
                     isBanned: !currentStatus
                 }).then(() => {
                     alert("تم تحديث حالة التحكم بالحساب بنجاح!");
-                    loadAdminStudentsList(); // تحديث الجدول فوراً لشاشة المشرف
+                    loadAdminStudentsList();
                 }).catch(err => alert("فشلت عملية الرقابة بالسيرفر: " + err.message));
             }
         }
@@ -758,6 +933,8 @@
                     openAdminPanel();
                 });
             } else {
+                payload.correctCount = 0;
+                payload.wrongCount = 0;
                 db.collection("questions").add(payload).then(() => {
                     alert("تم إضافة السؤال لبنك الأسئلة بنجاح!");
                     openAdminPanel();
@@ -784,7 +961,7 @@
         }
 
         function deleteQuestionInline(id) {
-            if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً من السيرفر?")) {
+            if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً؟")) {
                 db.collection("questions").doc(id).delete().then(() => {
                     alert("تم حذف السؤال!");
                     openAdminPanel();
@@ -804,7 +981,6 @@
             document.getElementById('btn-cancel-edit').style.display = "none";
         }
 
-        // أدوات مساعدة للواجهات
         function renderSubjects() {
             const grid = document.getElementById('subjects-container');
             grid.innerHTML = "";
@@ -836,7 +1012,15 @@
             document.getElementById(viewId).style.display = "block";
         }
 
-        function toggleTheme() { document.body.classList.toggle('dark-mode'); }
+        // ميزة 6: حفظ الـ Dark Mode في الـ LocalStorage واستعادته بشكل تلقائي دائم
+        function toggleTheme() { 
+            document.body.classList.toggle('dark-mode'); 
+            if(document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('amer_quiz_theme', 'dark');
+            } else {
+                localStorage.setItem('amer_quiz_theme', 'light');
+            }
+        }
     </script>
 </body>
 </html>
