@@ -615,20 +615,7 @@ html, body {
                 <button class="btn-launch" style="background: var(--text-main);" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
             </div>
 
-    <div class="card" id="view-admin-panel" style="display: none;">
-    
-    <div class="admin-header-box">
-        <h2 class="admin-title"><i class="fa-solid fa-user-shield"></i> لوحة الإدارة الأكاديمية المطورة</h2>
-        <button class="ban-btn ban-active" onclick="handleAdminLogout()">تسجيل الخروج</button>
-    </div>
-    
-    <div class="admin-navbar-tabs" style="display: flex; gap: 10px; margin-bottom: 20px;">
-        <button id="btn-tab-upload" class="tab-btn active-upload" onclick="showAdminTab('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> رفع الأسئلة CSV</button>
-        <button id="btn-tab-students" class="tab-btn" onclick="showAdminTab('students')"><i class="fa-solid fa-users"></i> إدارة الطلاب</button>
-        <button id="btn-tab-logs" class="tab-btn" onclick="showAdminTab('logs')"><i class="fa-solid fa-clipboard-list"></i> سجلات النشاط</button>
-    </div>
-    
-    <div class="card" id="view-admin-panel" style="display: none;">
+<div class="card" id="view-admin-panel" style="display: none;">
     
     <div class="admin-header-box">
         <h2 class="admin-title"><i class="fa-solid fa-user-shield"></i> لوحة الإدارة الأكاديمية المطورة</h2>
@@ -640,6 +627,18 @@ html, body {
         <button id="btn-tab-students" class="tab-btn" onclick="showAdminTab('students')"><i class="fa-solid fa-users"></i> إدارة الطلاب</button>
         <button id="btn-tab-logs" class="tab-btn" onclick="showAdminTab('logs')"><i class="fa-solid fa-clipboard-list"></i> سجلات النشاط</button>
     </div>
+    
+    <div id="admin-tab-upload" class="tab-content">
+        </div>
+    
+    <div id="admin-tab-students" class="tab-content" style="display: none;">
+        </div>
+    
+    <div id="admin-tab-logs" class="tab-content" style="display: none;">
+        </div>
+
+</div>
+
     
     <div id="admin-tab-upload" class="tab-content">
         </div>
