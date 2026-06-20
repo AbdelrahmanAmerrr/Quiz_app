@@ -13,6 +13,29 @@
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
         <style>
+            /* 🛠️ حارس منع التمدد (يحل مشكلة الـ Scroll الأفقي) */
+* {
+    box-sizing: border-box !important;
+    max-width: 100vw !important; /* يمنع أي عنصر من تجاوز عرض الشاشة */
+}
+
+html, body {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important; /* يمنع ظهور شريط التمرير العرضي نهائياً */
+}
+
+/* تعديل الـ Layout ليكون 100% عرضاً */
+.app-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* دائماً عمود واحد في الموبايل */
+    width: 100% !important;
+    padding: 0 10px !important;
+    margin: 0 auto !important;
+    gap: 15px !important;
+}
+
         :root {
             --bg-gradient: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
             --card-bg: #ffffff;
