@@ -437,24 +437,14 @@ html, body {
             } }
     </style>
 
-</head>
-<body>
-
-    <script>
-        if (localStorage.getItem('amer_quiz_theme') === 'dark') {
-            document.body.classList.add('dark-mode');
-        }
-    </script>
-
-    <div id="toast" class="toast-msg"></div>
-
-    <header>
-        <div class="brand" onclick="showDashboardTab('dash')"><i class="fa-solid fa-graduation-cap"></i> AmerQuiz</div>
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
-            <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
-        </div>
-    </header>
+<header>
+    <div class="brand" onclick="showDashboardTab('dash')"><i class="fa-solid fa-graduation-cap"></i> AmerQuiz</div>
+    <div class="header-controls">
+        <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
+        <button id="btn-goto-leaderboard" onclick="showDashboardTab('leaderboard')" class="ban-btn ban-inactive" style="display:none;"><i class="fa-solid fa-trophy"></i> أوائل المنصة</button>
+        <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
+    </div>
+</header>
 
     <div class="app-layout">
         
