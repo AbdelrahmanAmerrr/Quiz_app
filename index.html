@@ -191,24 +191,67 @@
         }
 
         /* 📱 تعديل الـ CSS الشامل والمتكامل للهواتف الذكية لمنع المط العرضي والـ Scroll الأفقي */
-        @media (max-width: 768px) {
-            .app-layout { grid-template-columns: 1fr; padding: 0 10px; margin: 15px auto; gap: 15px; }
-            header { padding: 10px 15px; }
-            .brand { font-size: 22px; }
-            .card { padding: 15px; width: 92% !important; max-width: 100% !important; margin: 0 auto !important; float: none !important; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .subject-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .option-node { width: 100% !important; margin: 8px 0 !important; font-size: 15px; padding: 12px; flex-direction: column; align-items: flex-start; gap: 8px; text-align: right; }
-            .option-node i { align-self: flex-end; }
-            #arena-questions-navigation-dots { gap: 5px; padding-bottom: 8px; }
-            .q-nav-dot { width: 32px; height: 32px; font-size: 12px; }
-            .nav-tabs { flex-direction: column; gap: 5px; }
-            .nav-tab-link { padding: 8px 12px; text-align: center; }
-            .admin-header-box { flex-direction: column; align-items: flex-start; gap: 10px; }
-            .tabs-nav { flex-direction: column; width: 100%; }
-            .tab-btn { width: 100%; }
-            body { overflow-x: hidden; }
-            #arena-question-text { font-size: 18px; }
+/* 1. جعل شريط أرقام الأسئلة مرناً وقابلاً للتمرير الأفقي في الموبايل لمنع تمدد الشاشة */
+#arena-questions-navigation-dots {
+    display: flex !important;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    max-width: 100% !important;
+    padding: 10px 5px !important;
+    gap: 8px !important;
+    justify-content: flex-start !important;
+    -webkit-overflow-scrolling: touch;
+}
+#arena-questions-navigation-dots::-webkit-scrollbar {
+    height: 5px;
+}
+#arena-questions-navigation-dots::-webkit-scrollbar-thumb {
+    background: var(--text-muted);
+    border-radius: 4px;
+}
+
+/* وتوسيط زر التالي ومحاذاته بشكل احترافي */
+.btn-next-wrapper {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    margin-top: 15px;
+}
+
+/* 2. تنسيق الهيدر لتوزيع الأزرار عرضياً وبشكل متجاوب */
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 30px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* 3. شريط تبويبات لوحة الأدمن العلوية المتجاوبة (Navbar) */
+.admin-navbar-tabs {
+    display: flex;
+    gap: 10px;
+    background: var(--border);
+    padding: 6px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 25px;
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+}
+.admin-navbar-tabs .tab-btn {
+    flex: 1;
+    min-width: 120px;
+    text-align: center;
+}
+
         }
 
         @media (max-width: 900px) and (min-width: 769px) { .app-layout { grid-template-columns: 1fr; } }
