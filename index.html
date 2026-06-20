@@ -615,19 +615,20 @@ html, body {
                 <button class="btn-launch" style="background: var(--text-main);" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
             </div>
 
-            <div class="card" id="view-admin-panel" style="display: none;">
-                <div class="admin-header-box">
-                    <div>
-                        <h2 class="admin-title"><i class="fa-solid fa-sliders"></i> لوحة تحكم الـ SuperAdmin المطورة</h2>
-                        <p style="color: var(--text-muted); font-size: 14px; margin: 5px 0 0 0;">أهلاً بك يا قائد، تحكّم في بنك أسئلتك والرقابة على الطلاب بشكل حيوي ومباشر.</p>
-                    </div>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button onclick="exportFullBackup()" class="ban-btn ban-inactive" style="background:#e0f2fe; color:#0369a1;"><i class="fa-solid fa-download"></i> نسخة احتياطية (Backup)</button>
-                        <button onclick="document.getElementById('importBackupFile').click()" class="ban-btn ban-inactive" style="background:#fef3c7; color:#b45309;"><i class="fa-solid fa-upload"></i> استعادة (Restore)</button>
-                        <input type="file" id="importBackupFile" accept=".json" style="display:none;" onchange="importFullBackup(event)">
-                        <button onclick="backToDashboard()" class="ban-btn ban-inactive" style="padding: 10px 15px;">⬅️ العودة للرئيسية</button>
-                    </div>
-                </div>
+    <div class="card" id="view-admin-panel" style="display: none;">
+    <div class="admin-header-box">
+        <h2 class="admin-title"><i class="fa-solid fa-user-shield"></i> لوحة الإدارة الأكاديمية المطورة</h2>
+        <button class="ban-btn ban-active" onclick="handleAdminLogout()">تسجيل الخروج</button>
+    </div>
+    
+    <div class="admin-navbar-tabs">
+        <button id="btn-tab-upload" class="tab-btn active-upload" onclick="showAdminTab('upload')"><i class="fa-solid fa-cloud-arrow-up"></i> رفع الأسئلة CSV</button>
+        <button id="btn-tab-students" class="tab-btn" onclick="showAdminTab('students')"><i class="fa-solid fa-users"></i> إدارة الطلاب</button>
+        <button id="btn-tab-logs" class="tab-btn" onclick="showAdminTab('logs')"><i class="fa-solid fa-clipboard-list"></i> سجلات النشاط</button>
+    </div>
+    
+    </div>
+
 
                 <div class="stats-grid" style="margin-bottom: 25px;">
                     <div class="stat-box" style="background: var(--primary-light);"><i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">0</div><span>إجمالي الطلاب</span></div>
