@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AmerQuiz - النظام الأكاديمي المطور</title>
     
-    <!-- الأنماط والمكتبات الخارجية المستخدمة بالنظام -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
@@ -13,1082 +12,2332 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
-    <style>
-        /* 🛠️ حارس منع التمدد لمنع الـ Scroll الأفقي المزعج بالهواتف */
-        * {
-            box-sizing: border-box !important;
-            max-width: 100vw !important;
-        }
+        <style>
+            /* 🛠️ حارس منع التمدد (يحل مشكلة الـ Scroll الأفقي) */
+* {
+    box-sizing: border-box !important;
+    max-width: 100vw !important; /* يمنع أي عنصر من تجاوز عرض الشاشة */
+}
 
-        html, body {
-            width: 100% !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow-x: hidden !important;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: var(--bg-gradient);
-            color: var(--text-color);
-            transition: background 0.3s, color 0.3s;
-        }
+html, body {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow-x: hidden !important; /* يمنع ظهور شريط التمرير العرضي نهائياً */
+}
+
+/* تعديل الـ Layout ليكون 100% عرضاً */
+.app-layout {
+    display: grid;
+    grid-template-columns: 1fr; /* دائماً عمود واحد في الموبايل */
+    width: 100% !important;
+    padding: 0 10px !important;
+    margin: 0 auto !important;
+    gap: 15px !important;
+}
 
         :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
-            --text-color: #f8fafc;
-            --card-bg: rgba(30, 41, 59, 0.7);
-            --primary: #6366f1;
-            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
+            --card-bg: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --primary: #2563eb;
+            --primary-light: #dbeafe;
             --success: #10b981;
             --danger: #ef4444;
-            --accent: #f59e0b;
-            --border-color: rgba(255,255,255,0.1);
-            --text-muted: #94a3b8;
+            --warning: #f59e0b;
+            --border: #e2e8f0;
+            --radius-sm: 12px;
+            --radius-md: 20px;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
+        
         body.dark-mode {
-            --bg-gradient: linear-gradient(135deg, #020617 0%, #0f172a 100%);
-            --text-color: #f1f5f9;
-            --card-bg: rgba(15, 23, 42, 0.8);
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            --card-bg: #1e293b;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --primary: #3b82f6;
+            --primary-light: #1e3a8a;
+            --border: #334155;
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
-        .main-container {
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
+            margin: 0; padding: 0;
             min-height: 100vh;
+            transition: background 0.3s, color 0.3s;
+            overflow-x: hidden;
+        }
+
+        /* 2. تنسيق الهيدر المتجاوب المطور */
+        header {
             display: flex;
-            flex-direction: column;
+            justify-content: space-between; 
             align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-
-        .quiz-card {
+            padding: 15px 30px; 
             background: var(--card-bg);
-            backdrop-filter: blur(10px);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 550px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            text-align: center;
-            animation: fadeInUp 0.6s ease forwards;
-        }
-
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-            text-align: right;
-        }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-            color: var(--text-muted);
-            font-weight: 500;
-        }
-
-        .input-field {
-            width: 100%;
-            padding: 14px 16px;
-            background: rgba(15, 23, 42, 0.6);
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
-            transition: all 0.3s;
-            outline: none;
-        }
-
-        .input-field:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-        }
-
-        .btn-main {
-            width: 100%;
-            padding: 14px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
-        }
-
-        .btn-main:hover {
-            background: var(--primary-hover);
-            transform: translateY(-2px);
-        }
-
-        .btn-secondary {
-            background: transparent;
-            color: var(--text-muted);
-            border: 1px solid var(--border-color);
-            margin-top: 12px;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(255,255,255,0.05);
-            color: #fff;
-        }
-
-        /* 🏆 تنسيقات لوحة الأوائل وقائمة التميز */
-        .leaderboard-view-container {
-            width: 100%;
-            max-width: 800px;
-            margin: 30px auto;
-            padding: 25px;
-            background: var(--card-bg);
-            border-radius: 24px;
-            border: 1px solid var(--border-color);
-        }
-
-        .podium-container {
-            display: flex;
-            justify-content: center;
-            align-items: flex-end;
+            border-bottom: 2px solid var(--border); 
+            box-shadow: var(--shadow);
+            position: sticky; 
+            top: 0;
+            z-index: 100;
+            flex-wrap: wrap;
             gap: 15px;
-            margin: 30px 0;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--border-color);
         }
-
-        .podium-step {
-            background: rgba(255,255,255,0.03);
-            border-radius: 16px 16px 4px 4px;
-            padding: 15px;
-            text-align: center;
-            flex: 1;
-            max-width: 150px;
-            transition: transform 0.3s;
-        }
-
-        .podium-step:hover { transform: translateY(-5px); }
-        .step-1 { height: 190px; border: 2px solid gold; background: linear-gradient(to top, rgba(251,191,36,0.1), rgba(255,255,255,0.01)); }
-        .step-2 { height: 150px; border: 2px solid #cbd5e1; }
-        .step-3 { height: 120px; border: 2px solid #b45309; }
-
-        .podium-avatar {
-            width: 55px;
-            height: 55px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #fff;
-            margin-bottom: 8px;
-        }
-
-        .user-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 20px;
-            background: rgba(255,255,255,0.02);
-            margin-bottom: 10px;
-            border-radius: 14px;
-            border: 1px solid var(--border-color);
-            transition: all 0.2s;
-        }
-        .user-row:hover { background: rgba(255,255,255,0.05); }
-
-        .dashboard-layout {
-            display: flex;
-            min-height: 100vh;
-            width: 100%;
-        }
-
-        .sidebar {
-            width: 260px;
-            background: rgba(15, 23, 42, 0.4);
-            backdrop-filter: blur(20px);
-            border-left: 1px solid var(--border-color);
-            padding: 30px 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .sidebar-btn {
+        .header-controls {
             display: flex;
             align-items: center;
             gap: 12px;
-            width: 100%;
-            padding: 12px 16px;
-            background: transparent;
-            border: none;
-            border-radius: 12px;
-            color: var(--text-muted);
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            text-align: right;
-            transition: all 0.3s;
-        }
-
-        .sidebar-btn:hover, .sidebar-btn.active {
-            background: rgba(99, 102, 241, 0.15);
-            color: var(--primary);
-        }
-
-        .content-area {
-            flex: 1;
-            padding: 40px;
-            overflow-y: auto;
-        }
-
-        .subject-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .subject-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 24px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-
-        .subject-card:hover { transform: translateY(-5px); border-color: var(--primary); }
-        .subject-card.selected { border-color: var(--success); background: rgba(16, 185, 129, 0.1); }
-
-        /* 🎯 نقاط التنقل للامتحانات التفاعلية */
-        .dot-navigation {
-            display: flex;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 15px;
             flex-wrap: wrap;
         }
-        .nav-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.2);
-            transition: all 0.3s;
-        }
-        .nav-dot.active { background: var(--primary); transform: scale(1.2); }
-        .nav-dot.correct { background: var(--success); }
-        .nav-dot.incorrect { background: var(--danger); }
 
-        /* نظام التنبيهات */
-        .toast-msg {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            padding: 12px 24px;
-            border-radius: 10px;
-            color: #fff;
-            font-weight: 500;
-            z-index: 9999;
-            display: none;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-            animation: fadeInUp 0.3s ease;
+        .brand { font-size: 28px; font-weight: 900; background: linear-gradient(45deg, #2563eb, #ec4899);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
+        
+        .app-layout { display: grid;
+            grid-template-columns: 2.2fr 1fr; max-width: 1400px; margin: 25px auto; gap: 25px; padding: 0 20px;
+            }
+        .main-zone, .side-zone { display: flex; flex-direction: column; gap: 25px;
+            }
+
+        .card { 
+            background: var(--card-bg);
+            border-radius: var(--radius-md); padding: 25px; 
+            border: 2px solid var(--border); box-shadow: var(--shadow); position: relative; 
+            transition: var(--transition); animation: fadeInUp 0.4s ease-out;
+            box-sizing: border-box;
+            }
+        .card:hover { transform: translateY(-4px);
+            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); }
+        body.dark-mode .card:hover { box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.4);
+            }
+        
+        .stats-grid { display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; }
+        .stat-box { background: var(--bg-gradient); padding: 15px;
+            border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border); transition: var(--transition);
+            }
+        .stat-box:hover { transform: scale(1.04);
+            }
+        .stat-box i { font-size: 24px; color: var(--primary); margin-bottom: 8px;
+            }
+
+        .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;
+            }
+        .subject-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius-md);
+            padding: 20px 15px; text-align: center; cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; align-items: center; gap: 10px;
+            }
+        .subject-card i { font-size: 28px; color: var(--primary); transition: var(--transition);
+            }
+        .subject-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: var(--shadow);
+            }
+        .subject-card:hover i { transform: scale(1.15) rotate(5deg);
+            }
+        .subject-card.selected { border-color: var(--primary); background: var(--primary-light);
+            }
+        .subject-card .q-count-badge { font-size: 11px; background: var(--border); padding: 3px 8px; border-radius: 20px;
+            color: var(--text-muted); font-weight: bold; }
+
+        .btn-launch { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: var(--radius-sm); cursor: pointer; width: 100%; display: flex; align-items: center;
+            justify-content: center; gap: 10px; transition: var(--transition); box-sizing: border-box; }
+        .btn-launch:hover { opacity: 0.95;
+            transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+            }
+        .btn-launch:active { transform: translateY(0);
+            }
+        .btn-launch:disabled { opacity: 0.6; cursor: not-allowed; transform: none;
+            }
+        
+        /* وتوسيط زر التالي ومحاذاته بشكل احترافي */
+        .btn-next-wrapper {
+            display: flex;
+            justify-content: center;
+            width: 100%;
+            margin-top: 15px;
         }
-        .toast-success { background: var(--success); }
-        .toast-error { background: var(--danger); }
+
+        .option-node { background: var(--card-bg);
+            border: 2px solid var(--border); padding: 14px; border-radius: var(--radius-sm); margin: 10px 0; text-align: right; width: 100%; cursor: pointer; font-size: 16px;
+            display: flex; justify-content: space-between; align-items: center; transition: var(--transition); box-sizing: border-box; word-break: break-word; white-space: normal;
+            }
+        .option-node:hover:not(:disabled) { border-color: var(--primary); background: var(--bg-gradient); transform: translateX(-4px);
+            }
+        .option-node.correct { background: #d1fae5 !important; border-color: #10b981 !important; color: #065f46; font-weight: bold;
+            }
+        .option-node.wrong { background: #fee2e2 !important; border-color: #ef4444 !important; color: #991b1b; font-weight: bold;
+            }
+
+        .leaderboard-list { display: flex; flex-direction: column; gap: 10px; max-height: 480px; overflow-y: auto;
+            }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-radius: var(--radius-sm);
+            border: 1px solid var(--border); background: var(--bg-gradient); transition: var(--transition); }
+        .user-row:hover { transform: scale(1.02);
+            }
+        .user-row img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
+            }
+
+        .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 15px; margin-bottom: 25px;
+            padding-top: 10px; border-bottom: 2px solid var(--border); padding-bottom: 15px; }
+        .podium-step { display: flex;
+            flex-direction: column; align-items: center; flex: 1; text-align: center; }
+        .podium-avatar { width: 50px;
+            height: 50px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; background: #fff;
+            }
+        .podium-step.first .podium-avatar { width: 65px; height: 65px; border-color: var(--warning);
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .podium-step.second .podium-avatar { border-color: #94a3b8;
+            }
+        .podium-step.third .podium-avatar { border-color: #b45309;
+            }
+        .podium-pillar { width: 100%; background: var(--border); border-radius: 8px 8px 0 0;
+            margin-top: 8px; display: flex; justify-content: center; align-items: center; font-weight: bold; color: var(--text-muted); transition: height 0.5s ease;
+            }
+        .podium-step.first .podium-pillar { height: 60px; background: linear-gradient(to top, #fef3c7, #fde68a); color: #92400e;
+            }
+        .podium-step.second .podium-pillar { height: 45px; background: linear-gradient(to top, #f1f5f9, #e2e8f0); color: #475569;
+            }
+        .podium-step.third .podium-pillar { height: 35px; background: linear-gradient(to top, #ffedd5, #fed7aa); color: #7c2d12;
+            }
+        
+        .practice-badge { background: var(--danger);
+            color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; display: none;
+            }
+        .resume-alert-box { background: linear-gradient(135deg, #fff9db 0%, #fff3bf 100%); border: 2px solid var(--warning);
+            border-radius: var(--radius-sm); padding: 15px; margin-bottom: 20px; display: none; color: #856404;
+            }
+        body.dark-mode .resume-alert-box { background: linear-gradient(135deg, #2c2401 0%, #463a03 100%); color: #ffe066;
+            border-color: #ecc94b; }
+
+        .circular-timer { position: relative; width: 60px; height: 60px;
+            }
+        .circular-timer svg { transform: rotate(-90deg); width: 60px; height: 60px;
+            }
+        .circular-timer circle { fill: none; stroke-width: 4;
+            }
+        .circular-timer .bg-circle { stroke: var(--border);
+            }
+        .circular-timer .progress-circle { stroke: var(--warning); stroke-dasharray: 176; stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear; stroke-linecap: round; }
+        .circular-timer .timer-text { position: absolute;
+            top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 14px; font-family: monospace;
+            }
+
+        .arena-progress-wrapper { width: 100%; background: var(--border); height: 8px; border-radius: 10px; overflow: hidden;
+            margin-bottom: 20px; }
+        .arena-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--success));
+            transition: width 0.3s ease; }
+
+        .admin-form-group { margin-bottom: 15px; text-align: right;
+            }
+        .admin-form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px;
+            }
+        .admin-form-group input, .admin-form-group select, .admin-form-group textarea { width: 100%; padding: 10px;
+            border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; background: var(--card-bg); color: var(--text-main);
+            }
+
+        .admin-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border);
+            padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
+        .admin-title { font-size: 24px;
+            font-weight: 800; color: var(--warning); margin: 0; }
+        
+        .tabs-nav { display: flex;
+            gap: 10px; background: var(--border); padding: 5px; border-radius: var(--radius-sm); margin-bottom: 25px; max-width: 600px; margin-right: auto; margin-left: auto; flex-wrap: wrap;
+            }
+        .tab-btn { flex: 1; padding: 10px; border: none; background: none; color: var(--text-muted);
+            font-weight: bold; border-radius: 8px; cursor: pointer; transition: var(--transition); font-size: 14px; min-width: 100px;
+            }
+        .tab-btn.active-upload { background: var(--success); color: white;
+            }
+        .tab-btn.active-students { background: var(--danger); color: white;
+            }
+        .tab-btn.active-logs { background: var(--primary); color: white;
+            }
+        
+        /* 3. شريط تبويبات لوحة الأدمن العلوية المتجاوبة (Navbar) */
+        .admin-navbar-tabs {
+            display: flex;
+            gap: 10px;
+            background: var(--border);
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            margin-bottom: 25px;
+            width: 100%;
+            box-sizing: border-box;
+            flex-wrap: wrap;
+        }
+        .admin-navbar-tabs .tab-btn {
+            flex: 1;
+            min-width: 120px;
+            text-align: center;
+        }
+
+        .bulk-upload-card { background: var(--bg-gradient);
+            border: 2px dashed var(--border); padding: 30px; border-radius: var(--radius-sm); text-align: center; margin-bottom: 25px;
+            }
+        .file-label { cursor: pointer; display: block;
+            }
+        .file-icon { font-size: 40px; color: var(--primary); margin-bottom: 10px; display: block;
+            }
+        
+        .student-table-container { overflow-x: auto;
+            margin-top: 15px; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+        .student-table { width: 100%;
+            border-collapse: collapse; text-align: right; min-width: 600px; }
+        .student-table th { background: var(--border);
+            padding: 12px; font-size: 14px; color: var(--text-main); }
+        .student-table td { padding: 12px;
+            border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
+        
+        .ban-btn { border: none;
+            padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: var(--transition);
+            }
+        .ban-btn.ban-active { background: #fee2e2; color: #ef4444;
+            }
+        .ban-btn.ban-inactive { background: #d1fae5; color: #10b981;
+            }
+        
+        .hidden-tab { display: none !important;
+            }
+
+        .xp-progress-container { background: var(--border); border-radius: 10px; height: 12px; width: 100%; margin-top: 8px;
+            overflow: hidden; position: relative; }
+        .xp-progress-bar { background: linear-gradient(90deg, #2563eb, #10b981); height: 100%;
+            width: 0%; transition: width 0.4s ease; }
+        
+        .achievements-grid { display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
+        .achievement-badge { background: var(--bg-gradient);
+            border: 1px solid var(--border); padding: 12px 8px; border-radius: var(--radius-sm); text-align: center; font-size: 12px; opacity: 0.35; filter: grayscale(100%); transition: var(--transition);
+            font-weight: bold; }
+        .achievement-badge i { font-size: 20px; margin-bottom: 5px; display: block;
+            }
+        .achievement-badge.unlocked { opacity: 1; filter: grayscale(0%); border-color: var(--warning);
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); color: #92400e; box-shadow: 0 4px 10px rgba(245, 158, 11, 0.15);
+            }
+        body.dark-mode .achievement-badge.unlocked { background: linear-gradient(135deg, #78350f 0%, #451a03 100%); color: #fef3c7;
+            }
+
+        .explanation-box { background: var(--primary-light); border-right: 5px solid var(--primary); padding: 15px; border-radius: var(--radius-sm);
+            margin-top: 20px; display: none; line-height: 1.6; word-break: break-word; }
+        body.dark-mode .explanation-box { background: #1e3a8a;
+            border-right-color: #3b82f6; }
+        
+        .search-box { width: 100%;
+            padding: 12px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); margin-bottom: 15px; box-sizing: border-box; font-size: 14px;
+            }
+        
+        .q-stat-tag { display: inline-block;
+            padding: 4px 8px; font-size: 11px; border-radius: 6px; font-weight: bold; margin-left: 5px; margin-top: 5px;
+            }
+        .q-stat-success { background: #d1fae5; color: #065f46;
+            }
+        .q-stat-wrong { background: #fee2e2; color: #991b1b;
+            }
+        .q-stat-rate { background: var(--primary-light); color: var(--primary);
+            }
+
+        .nav-tabs { display: flex; gap: 10px; border-bottom: 2px solid var(--border); margin-bottom: 20px;
+            }
+        .nav-tab-link { padding: 10px 20px; font-weight: bold; cursor: pointer; color: var(--text-muted);
+            border-bottom: 3px solid transparent; transition: var(--transition); }
+        .nav-tab-link.active { color: var(--primary); border-bottom-color: var(--primary);
+            }
+
+        .q-nav-dot { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--border);
+            background: var(--card-bg); color: var(--text-main); font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); font-size: 13px;
+            }
+        .q-nav-dot.active { border-color: var(--primary); background: var(--primary-light); color: var(--primary);
+            }
+        .q-nav-dot.flagged { background: var(--warning) !important; color: white !important; border-color: #d97706 !important;
+            }
+        .q-nav-dot.answered { background: var(--success); color: white; border-color: #059669;
+            }
+
+        .toast-msg { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px;
+            border-radius: 8px; color: white; font-weight: bold; z-index: 1000; display: none; animation: fadeInUp 0.3s ease;
+            }
+        .toast-success { background: var(--success);
+            }
+        .toast-error { background: var(--danger);
+            }
+
+        @keyframes fadeInUp {
+            from { opacity: 0;
+                transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0);
+                }
+        }
+
+        /* 1. شريط أرقام الأسئلة المرن + تكييف الشاشات والهواتف */
+        #arena-questions-navigation-dots {
+            display: flex !important;
+            overflow-x: auto !important;
+            white-space: nowrap !important;
+            max-width: 100% !important;
+            padding: 10px 5px !important;
+            gap: 8px !important;
+            justify-content: flex-start !important;
+            -webkit-overflow-scrolling: touch;
+        }
+        #arena-questions-navigation-dots::-webkit-scrollbar {
+            height: 5px;
+        }
+        #arena-questions-navigation-dots::-webkit-scrollbar-thumb {
+            background: var(--text-muted);
+            border-radius: 4px;
+        }
+
+        /* 📱 تعديل الـ CSS الشامل والمتكامل للهواتف الذكية لمنع المط العرضي والـ Scroll الأفقي */
+        @media (max-width: 768px) {
+            .app-layout { grid-template-columns: 1fr;
+                padding: 0 10px; margin: 15px auto; gap: 15px; }
+            header { padding: 10px 15px;
+                }
+            .brand { font-size: 22px;
+                }
+            .card { padding: 15px; width: 92% !important;
+                max-width: 100% !important; margin: 0 auto !important; float: none !important;
+                }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px;
+                }
+            .subject-grid { grid-template-columns: repeat(2, 1fr); gap: 10px;
+                }
+            .option-node { width: 100% !important;
+                margin: 8px 0 !important; font-size: 15px; padding: 12px; flex-direction: column; align-items: flex-start; gap: 8px; text-align: right;
+                }
+            .option-node i { align-self: flex-end;
+                }
+            #arena-questions-navigation-dots { gap: 5px; padding-bottom: 8px;
+                }
+            .q-nav-dot { width: 32px; height: 32px; font-size: 12px;
+                }
+            .nav-tabs { flex-direction: column; gap: 5px;
+                }
+            .nav-tab-link { padding: 8px 12px; text-align: center;
+                }
+            .admin-header-box { flex-direction: column; align-items: flex-start; gap: 10px;
+                }
+            .tabs-nav { flex-direction: column; width: 100%;
+                }
+            .tab-btn { width: 100%;
+                }
+            body { overflow-x: hidden;
+                }
+            #arena-question-text { font-size: 18px;
+                }
+        }
+
+        @media (max-width: 900px) and (min-width: 769px) { .app-layout { grid-template-columns: 1fr;
+            } }
     </style>
+
 </head>
 <body>
 
-    <!-- التنبيه السريع المنبثق -->
+    <script>
+        if (localStorage.getItem('amer_quiz_theme') === 'dark') {
+            document.body.classList.add('dark-mode');
+        }
+    </script>
+
     <div id="toast" class="toast-msg"></div>
 
-    <!-- 1️⃣ واجهة الدخول المتقدمة (تدعم الاسم الثلاثي وجوجل ككودك الأصلي) -->
-    <div id="view-register" class="main-container">
-        <div class="quiz-card">
-            <h2 id="auth-title">🎯 نظام AmerQuiz الأكاديمي</h2>
-            <p class="text-muted mb-4" id="auth-desc">سجل دخولك السريع عبر حساب جوجل للبدء فوراً</p>
-            
-            <div id="identity-group" class="input-group">
-                <label>الاسم الثلاثي للطالب (إلزامي للتوثيق)</label>
-                <input type="text" id="student-fullname" class="input-field" placeholder="ادخل اسمك ثلاثياً باللغة العربية">
-            </div>
-
-            <button class="btn-main" onclick="handleGoogleLogin()"><i class="fa-brands fa-google ml-2"></i> الدخول السريع عبر Google</button>
-            <button class="btn-main btn-secondary mt-3" onclick="switchView('view-admin-login')">🔒 لوحة الإشراف والمشرفين</button>
+    <header>
+        <div class="brand" onclick="showDashboardTab('dash')"><i class="fa-solid fa-graduation-cap"></i> AmerQuiz</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
+            <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
         </div>
-    </div>
+    </header>
 
-    <!-- 2️⃣ شاشة تسجيل دخول الأدمن بـ Token السرية -->
-    <div id="view-admin-login" class="main-container" style="display: none;">
-        <div class="quiz-card">
-            <h2>🔒 الوصول الآمن للمشرف</h2>
-            <p class="text-muted mb-4">الوصول خاص بالإدارة العليا فقط</p>
-            <div class="input-group">
-                <label>رمز المرور الإداري</label>
-                <input type="password" id="admin-token" class="input-field" placeholder="ادخل رمز التوثيق المشفر">
-            </div>
-            <button class="btn-main" onclick="verifyAdminToken()">التحقق وصلاحية الولوج</button>
-            <button class="btn-main btn-secondary" onclick="switchView('view-register')">رجوع للخلف</button>
-        </div>
-    </div>
-
-    <!-- 3️⃣ لوحة تحكم الطالب الرئيسية -->
-    <div id="view-dashboard" class="dashboard-layout" style="display: none;">
-        <div class="sidebar">
-            <h4 class="text-center mb-4 fw-bold text-primary">AmerQuiz v2.6</h4>
-            <button class="sidebar-btn active" onclick="showDashboardTab('dash')"><i class="fa-solid fa-graduation-cap"></i> ساحة الاختبارات</button>
-            <button class="sidebar-btn" onclick="showDashboardTab('profile')"><i class="fa-solid fa-user"></i> ملفي الأكاديمي</button>
-            <button class="sidebar-btn text-warning" onclick="switchView('view-leaderboard')"><i class="fa-solid fa-trophy"></i> لوحة الصدارة والأوائل</button>
-            <button class="sidebar-btn text-danger" style="margin-top: auto;" onclick="logout()"><i class="fa-solid fa-right-from-bracket"></i> خروج آمن</button>
-        </div>
+    <div class="app-layout">
         
-        <div class="content-area">
-            <div id="tab-dash">
-                <h3>👋 مرحباً بك في منبر التميز</h3>
-                <p class="text-muted">اختر المادة العلمية المستهدفة اليوم من بنك الأسئلة لبدء الامتحان الناري:</p>
-                <div id="subject-grid-container" class="subject-grid"></div>
-                <button class="btn-main mt-4" style="max-width: 250px;" onclick="startQuizArena()">ابدأ جولة التحدي الآن 🚀</button>
-            </div>
+        <div class="main-zone">
             
-            <div id="tab-profile" style="display: none;">
-                <h3>👤 ملفك الشخصي ومكتسباتك</h3>
-                <div class="quiz-card text-right mt-4" style="max-width: 100%;">
-                    <p><strong>الاسم المسجل بالمنظومة:</strong> <span id="prof-name">-</span></p>
-                    <p><strong>المستوى الأكاديمي (Level):</strong> <span id="prof-level">-</span></p>
-                    <p><strong>مجموع نقاط الخبرة الإجمالية (XP):</strong> <span id="prof-xp">-</span></p>
-                </div>
-            </div>
-        </div>
-    </div>
+            <div class="card" id="view-register" style="display: none;">
+                <h2 style="text-align: center;"><i class="fa-solid fa-user-plus"></i> انضم كطالب محارب</h2>
+                <p style="text-align: center; color: var(--text-muted);">سجل الدخول بحساب Google لتوثيق صورتك وبياناتك الشخصية فوراً بشكل آمن.</p>
+                <button id="google-login-btn" class="btn-launch" onclick="handleGoogleLogin()" style="background: #ea4335;"><i class="fa-brands fa-google"></i> تسجيل الدخول عبر Google</button>
+                
+                <div style="text-align: center; margin: 15px 0; color: var(--text-muted); font-weight: bold;">─ أو التسجيل اليدوي التقليدي ─</div>
 
-    <!-- 4️⃣ واجهة لوحة الأوائل المعزولة والمحسنة كلياً -->
-    <div id="view-leaderboard" class="main-container" style="display: none;">
-        <div class="leaderboard-view-container">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-                <h3>🏆 فرسان المنصة وأعلى الأوائل ترتيباً</h3>
-                <button class="btn-main btn-secondary" style="max-width: 130px; margin:0;" onclick="switchView('view-dashboard')"><i class="fa-solid fa-arrow-left"></i> العودة للرئيسية</button>
-            </div>
-            <p class="text-muted small">هذه اللوحة تعمل بنظام الـ Cache الموفر لبيانات الهاتف لضمان تجربة تصفح سريعة ومستقرة تماماً.</p>
-            
-            <!-- منصة الثلاثة الأوائل المتميزة -->
-            <div class="podium-container">
-                <div class="podium-step step-2">
-                    <img id="p2-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=2" class="podium-avatar">
-                    <h6 id="p2-name" class="text-truncate">الثاني</h6>
-                    <span id="p2-xp" class="badge bg-secondary">0 XP</span>
-                </div>
-                <div class="podium-step step-1">
-                    <img id="p1-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=1" class="podium-avatar">
-                    <h6 id="p1-name" class="text-truncate">الأول 🥇</h6>
-                    <span id="p1-xp" class="badge bg-warning text-dark">0 XP</span>
-                </div>
-                <div class="podium-step step-3">
-                    <img id="p3-avatar" src="https://api.dicebear.com/7.x/bottts/svg?seed=3" class="podium-avatar">
-                    <h6 id="p3-name" class="text-truncate">الثالث</h6>
-                    <span id="p3-xp" class="badge bg-danger">0 XP</span>
-                </div>
+                <input type="text" id="reg-student-name" placeholder="اكتب اسمك الثلاثي بدقة..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing:border-box; font-size:16px; background: var(--card-bg); color: var(--text-main);">
+                <button class="btn-launch" onclick="handleStudentRegistration()" style="margin-top: 20px;"><i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة</button>
+                <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('admin')" style="color:var(--primary); text-decoration:none; font-weight:bold;">🔐 دخول إدارة المنصة</a></p>
             </div>
 
-            <!-- قائمة ترتيب الطلاب الحركية (تستهدف فئة .leaderboard-list بكودك) -->
-            <div class="leaderboard-list" id="dynamic-leaderboard-rows"></div>
-        </div>
-    </div>
-
-    <!-- 5️⃣ شاشة تقديم الامتحانات الفعالة (تحتفظ بنقاط التنقل والأسئلة المفضلة) -->
-    <div id="view-arena" class="main-container" style="display: none;">
-        <div class="quiz-card" style="max-width: 750px;">
-            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px;">
-                <span id="arena-timer" class="text-danger fw-bold" style="font-size: 18px;">⏳ --:--</span>
-                <div>
-                    <button class="btn-main btn-secondary" style="display:inline-block; width:auto; padding:5px 10px; margin:0 5px;" onclick="toggleStarCurrentQuestion()"><i class="fa-regular fa-star text-warning" id="star-icon"></i> تفضيل</button>
-                    <button class="btn-main btn-secondary" style="display:inline-block; width:auto; padding:5px 10px; margin:0; background:rgba(239,68,68,0.1); color:var(--danger);" onclick="reportQuestionProblem()"><i class="fa-solid fa-triangle-exclamation"></i> إبلاغ</button>
-                </div>
-                <span id="arena-progress">سؤال - من -</span>
-            </div>
-            
-            <h4 id="arena-question-text" class="mb-4 text-right" style="line-height: 1.6; text-align: right;">جاري تحميل السؤال...</h4>
-            <div id="arena-options-container" style="display:flex; flex-direction:column; gap:12px;"></div>
-            
-            <!-- نقاط التنقل التفاعلية ككودك الأصلي تماماً -->
-            <div id="arena-questions-navigation-dots" class="dot-navigation"></div>
-        </div>
-    </div>
-
-    <!-- 6️⃣ شاشة عرض النتائج والمراجعة التفصيلية للاخطاء -->
-    <div id="view-result" class="main-container" style="display: none;">
-        <div class="quiz-card" style="max-width: 650px;">
-            <h2>📊 نتيجة فحص وتقييم مستواك</h2>
-            <h1 id="res-score" class="text-success my-3" style="font-size: 60px;">0%</h1>
-            <p id="res-xp-gain" class="text-warning" style="font-size: 18px; font-weight:600;">لقد نلت +0 XP نقاط إضافية</p>
-            
-            <div id="wrong-answers-review-box" style="text-align:right; margin: 20px 0; max-height:200px; overflow-y:auto; background:rgba(0,0,0,0.2); padding:15px; border-radius:12px; display:none;">
-                <h6 class="text-danger"><i class="fa-solid fa-circle-xmark"></i> مراجعة الإجابات الخاطئة لتصحيحها:</h6>
-                <div id="wrong-answers-list"></div>
+            <div class="card" id="view-admin-login" style="display: none;">
+                <h2 style="text-align: center; color: var(--warning);"><i class="fa-solid fa-user-shield"></i> بوابة السوبر أدمن</h2>
+                <div class="admin-form-group"><input type="email" id="admin-email" placeholder="البريد الإلكتروني للمشرف..."></div>
+                <div class="admin-form-group"><input type="password" id="admin-pass" placeholder="كلمة المرور..."></div>
+                <button class="btn-launch" style="background: var(--warning);" onclick="handleAdminLogin()">تسجيل الدخول للإدارة</button>
+                <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('student')" style="color:var(--text-muted); text-decoration:none;">العودة للطلاب</a></p>
             </div>
 
-            <button class="btn-main" onclick="switchView('view-dashboard')">العودة إلى لوحة القيادة</button>
-        </div>
-    </div>
-
-    <!-- 7️⃣ لوحة تحكم الأدمن الشاملة (تضم النسخ الاحتياطي، رفع السيرفر وزر كاش الأوائل الجديد) -->
-    <div id="view-admin-panel" class="dashboard-layout" style="display: none;">
-        <div class="sidebar" style="border-left:1px solid rgba(16, 185, 129, 0.2);">
-            <h4 class="text-center mb-4 fw-bold text-success">تحكم الإدارة العليا</h4>
-            <button class="sidebar-btn active"><i class="fa-solid fa-sliders"></i> لوحة التحكم الشاملة</button>
-            <button class="sidebar-btn text-danger" style="margin-top: auto;" onclick="switchView('view-register')"><i class="fa-solid fa-arrow-right-from-bracket"></i> مغادرة الإدارة</button>
-        </div>
-        <div class="content-area">
-            <h3>⚙️ لوحة القيادة وحفظ البيانات وتدشينها</h3>
-            
-            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap:20px; margin-top:25px;">
-                <!-- صندوق معالجة ورفع الـ CSV -->
-                <div class="quiz-card text-right" style="max-width: 100%; text-align:right;">
-                    <h5>📂 رفع بنك الأسئلة المركزي المطور (CSV)</h5>
-                    <p class="small text-muted">اختر المادة من القائمة بالخارج ثم ارفع الملف التابع لها هنا بصيغة ملف مجدول.</p>
-                    <input type="file" id="csv-file-input" class="input-field" accept=".csv" style="padding:8px;">
-                    <button class="btn-main mt-3" onclick="handleCSVUpload()">بدء معالجة الملف وضخه فوراً</button>
+            <div class="card" id="view-dashboard" style="display: none;">
+                <div id="daily-reward-box" style="background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 2px solid var(--warning); padding:15px; border-radius: var(--radius-sm); margin-bottom:15px; display:none; justify-content:space-between; align-items:center; animation: fadeInUp 0.4s ease;">
+                    <span style="color:#92400e; font-weight:bold;"><i class="fa-solid fa-gift"></i> مكافأة الدخول اليومية متاحة لك الآن! 🎁</span>
+                    <button class="ban-btn ban-inactive" onclick="claimDailyReward()">استلام +50 XP ⚡</button>
                 </div>
 
-                <!-- 🏆 صندوق التحكم السري بلوحة الأوائل وبناء الكاش المجمع (التعديل الجديد الموفر الخارق) -->
-                <div class="quiz-card text-right" style="max-width: 100%; text-align:right; border:1px solid var(--success);">
-                    <h5 class="text-success"><i class="fa-solid fa-bolt"></i> تحديث وضغط لوحة الأوائل (1 Read)</h5>
-                    <p class="small text-muted">يقوم هذا الزر بسحب الـ Top 100 طالب بناءً على نقاط الـ XP، وضغطهم في مستند كاش واحد لحماية وتوفير باقة الطلاب وقراءات الفايربيس تماماً.</p>
-                    <button onclick="rebuildLeaderboardCacheByAdmin()" class="btn-main" style="background: var(--success);"><i class="fa-solid fa-arrows-rotate"></i> تحديث كاش الأوائل المجمع 🏆</button>
+                <div class="nav-tabs">
+                    <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')">🏠 لوحة التحكم الرئيسية</div>
+                    <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')">👤 ملف الطالب وإنجازاته</div>
                 </div>
 
-                <!-- صندوق استخراج واستيراد النسخ الاحتياطية الكاملة ككودك الأصلي -->
-                <div class="quiz-card text-right" style="max-width: 100%; text-align:right;">
-                    <h5>💾 إدارة النسخ الاحتياطية الشاملة للسيستم (JSON)</h5>
-                    <div style="display:flex; gap:10px; margin-top:15px;">
-                        <button class="btn-main" style="background:#4b5563;" onclick="exportFullBackup()"><i class="fa-solid fa-download"></i> تصدير النسخة</button>
-                        <button class="btn-main" style="background:#4b5563;" onclick="document.getElementById('import-file').click()"><i class="fa-solid fa-upload"></i> استيراد نسخة</button>
+                <div id="dash-subtab-container">
+                    <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
+                        <img id="dash-student-avatar" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); display: none;">
+                        <h3>أهلاً بك: <span id="dash-student-name" style="color: var(--primary);"></span> <span id="dash-rank-delta" style="font-size:13px; margin-right:10px;"></span></h3>
                     </div>
-                    <input type="file" id="import-file" style="display:none;" accept=".json" onchange="importFullBackup(event)">
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box"><i class="fa-solid fa-award"></i><div id="stat-level">1</div><span>المستوى</span></div>
+                        <div class="stat-box"><i class="fa-solid fa-bolt" style="color:var(--warning)"></i><div id="stat-xp">0</div><span>إجمالي XP</span></div>
+                        <div class="stat-box"><i class="fa-solid fa-earth-americas" style="color:#0ea5e9"></i><div id="stat-rank">-</div><span>الترتيب العام</span></div>
+                        <div class="stat-box"><i class="fa-solid fa-check-double"></i><div id="stat-completed">0</div><span>محاولات رسمية</span></div>
+                    </div>
+
+                    <div style="margin-top: 20px; background: var(--card-bg); padding: 12px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; font-size: 14px;">
+                            <span>🎯 تقدم المستوى الحالي:</span>
+                            <span id="progress-xp-text" style="color: var(--primary);">0 / 200 XP</span>
+                        </div>
+                        <div class="xp-progress-container">
+                            <div id="progress-xp-fill" class="xp-progress-bar"></div>
+                        </div>
+                    </div>
+
+                    <div id="resume-alert" class="resume-alert-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                            <span><i class="fa-solid fa-circle-exclamation"></i> تنبيه: رصدنا جلسة غير مكتملة في مادة <strong><span id="resume-subject-name"></span></strong>! هل تود استكملها？</span>
+                            <button class="ban-btn ban-inactive" style="box-shadow: var(--shadow);" onclick="resumeSavedQuizArena()">🔄 نعم، استكمال الآن</button>
+                        </div>
+                    </div>
+
+                    <h3 style="margin-top:25px;"><i class="fa-solid fa-book"></i> اختر المادة الدراسية لتحدي بنك الأسئلة المحدث:</h3>
+                    <div class="subject-grid" id="subjects-container"></div>
+
+                    <div style="margin-top: 20px; padding: 15px; background: var(--bg-gradient); border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+                        <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-list-ol"></i> حدد عدد أسئلة الاختبار للرحلة:</label>
+                        <select id="quiz-question-count-select" style="padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-weight: bold; cursor: pointer;">
+                            <option value="10">10 أسئلة</option>
+                            <option value="20">20 سؤال</option>
+                            <option value="30">30 سؤال</option>
+                            <option value="all" selected>كل الأسئلة المتوفرة بالمادة</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 15px;">
+                        <div class="practice-badge" id="arena-practice-alert">⚠️ هذه محاولة تدريبية ولن تضيف XP جديد.</div>
+                        <button class="btn-launch" id="btn-start-quiz" onclick="startQuizArena()"><i class="fa-solid fa-play"></i> بدء التحدي الآن</button>
+                    </div>
+                </div>
+
+                <div id="profile-subtab-container" class="hidden-tab">
+                    <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid var(--border);">
+                        <img id="profile-big-avatar" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary); box-shadow: var(--shadow); margin-bottom: 15px;">
+                        <h2 id="profile-student-name" style="margin: 0 0 5px 0;"></h2>
+                        <span id="profile-student-title" class="q-stat-tag q-stat-rate" style="font-size: 13px; padding: 6px 12px; border-radius: 20px;">طالب جامعي محارب</span>
+                    </div>
+                    
+                    <h3 style="margin-top:25px;"><i class="fa-solid fa-medal" style="color: var(--warning);"></i> سجل الأوسمة والإنجازات المحققة بالمنصة</h3>
+                    <div class="achievements-grid">
+                        <div class="achievement-badge" id="ach-first"><i class="fa-solid fa-flag"></i>أول امتحان</div>
+                        <div class="achievement-badge" id="ach-100xp"><i class="fa-solid fa-bolt-lightning"></i>100 XP</div>
+                        <div class="achievement-badge" id="ach-500xp"><i class="fa-solid fa-fire"></i>500 XP</div>
+                        <div class="achievement-badge" id="ach-full"><i class="fa-solid fa-star"></i>درجة كاملة</div>
+                        <div class="achievement-badge" id="ach-subject"><i class="fa-solid fa-graduation-cap"></i>مُقفل المواد</div>
+                    </div>
+
+                    <div style="margin-top: 25px; background: var(--bg-gradient); padding: 15px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
+                        <h4 style="margin: 0 0 8px 0; font-size: 15px;"><i class="fa-solid fa-clock-rotate-left"></i> تفاصيل آخر نشاط رسمي لك:</h4>
+                        <p id="last-activity-text" style="margin: 0; color: var(--text-muted); font-size: 14px;">لا يوجد سجل محاولات حالياً، خض تحديك الأول!</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card" id="view-arena" style="display: none;">
+                <div class="arena-progress-wrapper">
+                    <div id="arena-progress-bar-fill" class="arena-progress-fill"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 10px; background: var(--bg-gradient); border-radius: var(--radius-sm); border: 1px solid var(--border); flex-wrap: wrap; gap: 10px;">
+                    <button class="ban-btn ban-inactive" onclick="toggleFlagQuestion()" style="background:#fff9db; color:#b45309;"><i class="fa-solid fa-thumbtack"></i> تمييز بمراجعة لاحقاً 📌</button>
+                    <button class="ban-btn ban-inactive" onclick="toggleStarQuestion()" style="background:#e0f2fe; color:#0369a1;"><i id="arena-star-icon" class="fa-regular fa-star"></i> حفظ المفضلة ⭐</button>
+                    <button class="ban-btn ban-active" onclick="reportQuestionProblem()"><i class="fa-solid fa-triangle-exclamation"></i> إبلاغ عن خطأ 🚩</button>
+                </div>
+
+                <div id="arena-questions-navigation-dots" style="display: flex; gap: 8px; margin-bottom: 20px; overflow-x: auto; padding: 5px 0;"></div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <span id="arena-counter" style="font-weight: bold;">السؤال 1 من 1</span>
+                    
+                    <div class="circular-timer">
+                        <svg>
+                            <circle class="bg-circle" cx="30" cy="30" r="28" />
+                            <circle id="arena-circle-fill" class="progress-circle" cx="30" cy="30" r="28" />
+                        </svg>
+                        <div id="timer-sec" class="timer-text">30</div>
+                    </div>
+                </div>
+                
+                <h2 id="arena-question-text" style="line-height: 1.5; margin-bottom: 25px; word-break: break-word;">جاري تحميل السؤال...</h2>
+                <div id="arena-options-box"></div>
+                
+                <div id="arena-explanation-box" class="explanation-box">
+                    <strong style="color: var(--primary);"><i class="fa-solid fa-circle-info"></i> الشرح العلمي المعتمد للحل:</strong>
+                    <p id="arena-explanation-text" style="margin: 6px 0 0 0;"></p>
+                </div>
+                
+                <div style="display: flex; gap: 15px; margin-top: 25px;">
+                    <button id="btn-save-exit" class="btn-launch" style="background: var(--text-muted); flex: 1;" onclick="saveAndExitQuizArena()"><i class="fa-solid fa-floppy-disk"></i> حفظ وخروج مؤقت</button>
+                    <button id="btn-next-question" class="btn-launch" style="display: none; background: var(--success); flex: 1.5;" onclick="advanceArenaQuestion()"><i class="fa-solid fa-circle-arrow-left"></i> السؤال التالي</button>
+                </div>
+            </div>
+
+            <div class="card" id="view-result" style="display: none;">
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <i class="fa-solid fa-trophy" style="font-size: 60px; color: var(--warning); filter: drop-shadow(0 4px 10px rgba(245,158,11,0.3));"></i>
+                </div>
+                <h2 style="text-align: center; color: var(--success); font-weight: 900; font-size: 26px;">تم إنهاء جولة الامتحان بنجاح!</h2>
+                
+                <div id="result-motivational-msg" style="text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); margin: 10px 0; padding: 10px; background: var(--primary-light); border-radius: 10px;"></div>
+
+                <div class="stats-grid" style="margin: 25px 0;">
+                    <div class="stat-box" style="background: var(--primary-light);"><i class="fa-solid fa-bullseye"></i><div id="result-score" style="font-weight:900; font-size:20px;">0 / 0</div><span>الدرجة النهائية</span></div>
+                    <div class="stat-box" style="background: #d1fae5;"><i class="fa-solid fa-bolt" style="color:var(--success)"></i><div id="result-xp-gained" style="font-weight:900; font-size:20px; color:var(--success);">+0</div><span>الـ XP المكتسب</span></div>
+                    <div class="stat-box"><i class="fa-solid fa-chart-pie" style="color:var(--warning)"></i><div id="result-percent" style="font-weight:900; font-size:20px;">0%</div><span>نسبة النجاح</span></div>
+                    <div class="stat-box" style="background: #f1f5f9;"><i class="fa-solid fa-star" style="color:#64748b"></i><div id="result-next-level" style="font-weight:900; font-size:20px;">1</div><span>المستوى الجديد</span></div>
+                </div>
+
+                <p id="result-xp-status" style="text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 25px;"></p>
+                
+                <button class="btn-launch" style="background: var(--success); margin-bottom: 12px;" onclick="toggleAnswersReviewZone()"><i class="fa-solid fa-magnifying-glass"></i> مراجعة كافة الأسئلة وإجاباتها</button>
+                <div id="review-answers-zone" style="display:none; max-height: 400px; overflow-y:auto; border:2px solid var(--border); padding:15px; border-radius:10px; margin-bottom:20px; background:var(--bg-gradient);"></div>
+
+                <button class="btn-launch" style="background: var(--text-main);" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
+            </div>
+
+            <div class="card" id="view-admin-panel" style="display: none;">
+                <div class="admin-header-box">
+                    <div>
+                        <h2 class="admin-title"><i class="fa-solid fa-sliders"></i> لوحة تحكم الـ SuperAdmin المطورة</h2>
+                        <p style="color: var(--text-muted); font-size: 14px; margin: 5px 0 0 0;">أهلاً بك يا قائد، تحكّم في بنك أسئلتك والرقابة على الطلاب بشكل حيوي ومباشر.</p>
+                    </div>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                        <button onclick="exportFullBackup()" class="ban-btn ban-inactive" style="background:#e0f2fe; color:#0369a1;"><i class="fa-solid fa-download"></i> نسخة احتياطية (Backup)</button>
+                        <button onclick="document.getElementById('importBackupFile').click()" class="ban-btn ban-inactive" style="background:#fef3c7; color:#b45309;"><i class="fa-solid fa-upload"></i> استعادة (Restore)</button>
+                        <input type="file" id="importBackupFile" accept=".json" style="display:none;" onchange="importFullBackup(event)">
+                        <button id="btn-rebuild-leaderboard-cache" onclick="rebuildLeaderboardCacheByAdmin(this)" class="ban-btn ban-inactive" style="background:#f0fdf4; color:#16a34a; border: 1px solid #86efac;"><i class="fa-solid fa-ranking-star"></i> تحديث كاش الأوائل 🏆</button>
+                        <button onclick="backToDashboard()" class="ban-btn ban-inactive" style="padding: 10px 15px;">⬅️ العودة للرئيسية</button>
+                    </div>
+                </div>
+
+                <div class="stats-grid" style="margin-bottom: 25px;">
+                    <div class="stat-box" style="background: var(--primary-light);"><i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">0</div><span>إجمالي الطلاب</span></div>
+                    <div class="stat-box" style="background: #fef3c7;"><i class="fa-solid fa-file-invoice" style="color:#b45309"></i><div id="admin-total-questions">0</div><span>إجمالي الأسئلة</span></div>
+                    <div class="stat-box" style="background: #d1fae5;"><i class="fa-solid fa-calendar-day" style="color:var(--success)"></i><div id="admin-daily-attempts">0</div><span>محاولات اليوم</span></div>
+                    <div class="stat-box" style="background: #e0f2fe;"><i class="fa-solid fa-chart-bar" style="color:#0284c7"></i><div id="admin-avg-score">0%</div><span>متوسط الدرجات</span></div>
+                    <div class="stat-box" style="background: #f3e8ff;"><i class="fa-solid fa-user-clock" style="color:#7c3aed"></i><div id="admin-active-students">0</div><span>نشطين (7 أيام)</span></div>
+                </div>
+
+                <div style="margin-bottom:20px; font-size:12px; display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-gradient); padding:10px; border-radius:8px; border:1px solid var(--border);">
+                    <strong>📚 توزيع الأسئلة:</strong>
+                    <span id="subject-count-math">الرياضة: 0</span> | 
+                    <span id="subject-count-english">مصطلحات: 0</span> | 
+                    <span id="subject-count-economics">اقتصاد: 0</span> | 
+                    <span id="subject-count-management">إدارة: 0</span> | 
+                    <span id="subject-count-office">حزم: 0</span>
+                </div>
+
+                <div style="background: var(--card-bg); padding:15px; border-radius:12px; border:2px solid var(--border); margin-bottom:20px; display:grid; grid-template-columns:1fr 1fr; gap:15px;">
+                    <div style="background:rgba(16,185,129,0.1); padding:10px; border-radius:8px;">
+                        <h5 style="margin:0 0 5px 0; color:#065f46;"><i class="fa-solid fa-circle-check"></i> أسهل الأسئلة (أعلى نسبة دقة)</h5>
+                        <p id="admin-analytics-easiest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري رصد وتحليل البيانات الحية...</p>
+                    </div>
+                    <div style="background:rgba(239,68,68,0.1); padding:10px; border-radius:8px;">
+                        <h5 style="margin:0 0 5px 0; color:#991b1b;"><i class="fa-solid fa-circle-xmark"></i> أصعب الأسئلة (أكثر خطأ من الطلاب)</h5>
+                        <p id="admin-analytics-hardest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري رصد وتحليل البيانات الحية...</p>
+                    </div>
+                </div>
+
+                <div class="tabs-nav">
+                    <button onclick="switchAdminTab('tab-upload')" id="btn-tab-upload" class="tab-btn active-upload">📥 إدارة الأسئلة</button>
+                    <button onclick="switchAdminTab('tab-students')" id="btn-tab-students" class="tab-btn">👥 إدارة الطلاب</button>
+                    <button onclick="switchAdminTab('tab-logs')" id="btn-tab-logs" class="tab-btn">📜 سجل النشاط</button>
+                </div>
+
+                <div id="tab-upload" class="admin-tab-content">
+                    <div class="bulk-upload-card">
+                        <input type="file" id="csvFileInput" accept=".csv" onchange="updateFileNameDisplay()" style="display: none;" />
+                        <label for="csvFileInput" class="file-label">
+                            <i class="fa-solid fa-file-excel file-icon"></i>
+                            <span id="fileNameDisplay" style="font-weight: bold; display: block; margin-bottom: 5px;">اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة</span>
+                            <small style="color: var(--text-muted); display: block;">الترتيب الإلزامي للأعمدة بالإكسيل: Question, A, B, C, D, Answer, Explanation</small>
+                        </label>
+                        
+                        <div style="margin: 20px auto 10px auto; max-width: 320px; text-align: right;">
+                            <label style="display: block; margin-bottom: 6px; font-weight: bold; font-size: 14px; color: var(--text-main);">📌 حدد المادة التعليمية لتلك الأسئلة:</label>
+                            <select id="csvFileSubject" style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); font-size: 14px; font-weight: bold; cursor: pointer;">
+                                <option value="">-- اختر المادة التعليمية --</option>
+                                <option value="math">الرياضة والتأمين</option>
+                                <option value="english">مصطلحات أجنبية</option>
+                                <option value="economics">علم الاقتصاد</option>
+                                <option value="management">مبادئ الإدارة</option>
+                                <option value="office">حزم تطبيقية</option>
+                            </select>
+                        </div>
+
+                        <button class="btn-launch" style="background: var(--success); margin-top: 15px; max-width: 320px; margin-right: auto; margin-left: auto;" onclick="uploadBulkQuestions()"><i class="fa-solid fa-cloud-arrow-up"></i> ابدأ الرفع التلقائي بالسيرفر</button>
+                        <button class="btn-launch" style="background: var(--danger); margin-top: 12px; max-width: 320px; margin-right: auto; margin-left: auto;" onclick="deleteAllQuestions()"><i class="fa-solid fa-trash-can"></i> مسح جميع الأسئلة من السيرفر</button>
+                    </div>
+
+                    <div style="text-align: center; margin: 25px 0; font-weight: bold; color: var(--text-muted);">─ أو إضافة / تعديل سؤال بشكل يدوي فردي ─</div>
+
+                    <div class="card" style="background: var(--bg-gradient); margin-bottom: 25px; border-color: var(--primary);">
+                        <input type="hidden" id="form-q-id">
+                        <div class="admin-form-group">
+                            <label>اختر المادة الدراسية:</label>
+                            <select id="form-q-subject">
+                                <option value="math">الرياضة والتأمين</option>
+                                <option value="english">مصطلحات أجنبية</option>
+                                <option value="economics">علم الاقتصاد</option>
+                                <option value="management">مبادئ الإدارة</option>
+                                <option value="office">حزم تطبيقية</option>
+                            </select>
+                        </div>
+                        <div class="admin-form-group"><input type="text" id="form-q-text" placeholder="نص السؤال..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt1" placeholder="الخيار الأول..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt2" placeholder="الخيار الثاني..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt3" placeholder="الخيار الثالث..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-opt4" placeholder="الخيار الرابع..."></div>
+                        <div class="admin-form-group"><input type="text" id="form-q-answer" placeholder="الإجابة الصحيحة (يجب أن تطابق نص الخيار تماماً)..."></div>
+                        <div class="admin-form-group"><textarea id="form-q-exp" placeholder="التوضيح العلمي للاستفادة مابعد الحل..."></textarea></div>
+                        <button class="btn-launch" style="background: var(--primary);" onclick="saveQuestionData()">حفظ السؤال بالسيرفر</button>
+                        <button class="btn-launch" style="background: var(--danger); margin-top:10px; display:none;" id="btn-cancel-edit" onclick="resetQuestionForm()">إلغاء التعديل</button>
+                    </div>
+
+                    <h3>🗂️ بنك الأسئلة المتاحة حالياً بالسيرفر</h3>
+                    
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                        <input type="text" id="admin-search-input" class="search-box" style="margin-bottom:0;" placeholder="🔍 ابحث بكلمات مفتاحية داخل السؤال، الإجابات، التوضيح الشارح..." oninput="filterQuestionsBank()">
+                        <select id="filter-admin-subject" class="search-box" style="margin-bottom:0; height:45px;" onchange="filterQuestionsBank()">
+                            <option value="">جميع المواد</option>
+                            <option value="math">الرياضة والتأمين</option>
+                            <option value="english">مصطلحات أجنبية</option>
+                            <option value="economics">علم الاقتصاد</option>
+                            <option value="management">مبادئ الإدارة</option>
+                            <option value="office">حزم تطبيقية</option>
+                        </select>
+                        <select id="filter-admin-difficulty" class="search-box" style="margin-bottom:0; height:45px;" onchange="filterQuestionsBank()">
+                            <option value="">كل مستويات الصعوبة</option>
+                            <option value="easy">سهل (نسبة نجاح > 70%)</option>
+                            <option value="medium">متوسط (35% - 70%)</option>
+                            <option value="hard">صعب (نسبة نجاح < 35%)</option>
+                        </select>
+                    </div>
+
+                    <div style="margin-bottom: 10px; text-align: right;">
+                        <button id="btn-bulk-delete-questions" class="ban-btn ban-active" style="display:none;" onclick="deleteSelectedQuestionsGroup()"><i class="fa-solid fa-trash"></i> حذف الأسئلة المحددة دفعة واحدة</button>
+                    </div>
+
+                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px;" id="admin-questions-list">
+                        جاري تحميل بنك الأسئلة...
+                    </div>
+                </div>
+
+                <div id="tab-students" class="admin-tab-content hidden-tab">
+                    <h3>👥 إدارة ورقابة مجتمع الطلاب المسجلين والتحكم بالمستويات</h3>
+                    <div class="student-table-container">
+                        <table class="student-table">
+                            <thead>
+                                <tr>
+                                    <th>اسم الطالب</th>
+                                    <th>نقاط الـ XP</th>
+                                    <th>المستوى</th>
+                                    <th>آخر دخول / آخر امتحان</th>
+                                    <th style="text-align: center;">إجراءات الرقابة الأدمن</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-students-table-body">
+                                <tr>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب بيانات ومزامنة الطلاب...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="tab-logs" class="admin-tab-content hidden-tab">
+                    <h3>📜 سجل نشاط الإدارة العملياتي الفوري</h3>
+                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg-gradient);" id="admin-logs-list">
+                        لا توجد عمليات مسجلة بالسجل حالياً.
+                    </div>
+                </div>
+                
+                <button class="btn-launch" style="background: var(--text-main); margin-top:25px;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-right-from-bracket"></i> الخروج من لوحة الإدارة</button>
+            </div>
+        </div>
+
+        <div class="side-zone">
+            <div class="card">
+                <h3 style="margin-top: 0;"><i class="fa-solid fa-trophy" style="color:var(--warning)"></i> أوائل المنصة (Top 100)</h3>
+                
+                <div style="display: flex; gap: 5px; background: var(--border); padding: 3px; border-radius: 8px; margin-bottom: 15px;">
+                    <button id="leader-filter-all" class="tab-btn active-upload" style="font-size:11px; padding: 6px;" onclick="toggleLeaderboardFilter('all')">كل الأوقات</button>
+                    <button id="leader-filter-month" class="tab-btn" style="font-size:11px; padding: 6px; color:var(--text-main);" onclick="toggleLeaderboardFilter('month')">الشهر الحالي</button>
+                    <button id="leader-filter-week" class="tab-btn" style="font-size:11px; padding: 6px; color:var(--text-main);" onclick="toggleLeaderboardFilter('week')">الأسبوع الحالي</button>
+                </div>
+
+                <button class="ban-btn ban-inactive" onclick="loadGlobalLeaderboard()" style="width:100%; margin-bottom: 15px; padding: 8px 0; font-size: 13px;"><i class="fa-solid fa-arrows-rotate"></i> تحديث اللوحة الحية حركياً</button>
+
+                <div id="leaderboard-podium" class="podium-container"></div>
+
+                <div class="leaderboard-list" id="dom-leaderboard">
+                    جاري المزامنة الحية للأوائل...
                 </div>
             </div>
         </div>
+
     </div>
 
-
-    <!-- ================================================================= -->
-    <!-- 🧠 المنطق البرمجي والـ JavaScript المتكامل للنظام بالكامل 🧠 -->
-    <!-- ================================================================= -->
     <script>
-        // 🧱 تهيئة إعدادات الفايربيس الأساسية
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+        var firebaseConfig = {
+          apiKey: "AIzaSyA7VLIloU_7jbHuexgC4oQUZ6Mj1dwCu1M",
+          authDomain: "amer-quiz-65ce2.firebaseapp.com",
+          projectId: "amer-quiz-65ce2",
+          storageBucket: "amer-quiz-65ce2.firebasestorage.app",
+          messagingSenderId: "14966645412",
+          appId: "1:14966645412:web:e6c8dee237d9caa6a03c31",
+          measurementId: "G-SG2TRRSZEL"
         };
-        
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
-        
-        const db = firebase.firestore();
-        const auth = firebase.auth();
-
-        // 🌐 متغيرات بيئة العمل الحركية والمتقدمة
-        let currentUser = null;
-        let activeCategory = "math";
-        let currentQuestions = [];
-        let qIndex = 0;
-        let score = 0;
-        let timeRemaining = 30;
-        let timerInterval = null;
-        let hasAnsweredCurrent = false;
-        let userQuizAnswersLog = [];
-        let starredQuestionsIds = [];
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        var db = firebase.firestore();
+        var auth = firebase.auth();
 
         const fixedSubjects = {
-            math: "الرياضة والتأمين 📊",
-            english: "مصطلحات أجنبية 🔤",
-            economics: "علم الاقتصاد 📈",
-            management: "مبادئ الإدارة 💼",
-            office: "حزم تطبيقية 💻"
+            "math": "الرياضة والتأمين",
+            "english": "مصطلحات أجنبية",
+            "economics": "علم الاقتصاد",
+            "management": "مبادئ الإدارة",
+            "office": "حزم تطبيقية"
         };
 
-        // تشغيل السيستم والمزامنة فور رندر الواجهة
-        document.addEventListener("DOMContentLoaded", () => {
-            checkAuthenticationState();
+        const subjectIcons = {
+            "math": "fa-calculator",
+            "english": "fa-language",
+            "economics": "fa-chart-line",
+            "management": "fa-briefcase",
+            "office": "fa-laptop-code"
+        };
+
+        let currentUser = null;
+        let activeCategory = "math";
+        let isPracticeMode = false;
+        let currentQuestions = [];
+        let cachedAdminQuestions = [];
+        let selectedAdminQuestionsGroup = [];
+        let qIndex = 0;
+        let score = 0;
+        let timerInterval;
+        let timeRemaining = 30;
+        let hasAnsweredCurrent = false;
+        let subjectCounts = {};
+        let currentLeaderFilter = "all";
+        
+        let userQuizAnswersLog = [];
+
+        window.onload = function() {
             fetchSubjectQuestionCounts();
-        });
+            checkAuthenticationState();
+            loadGlobalLeaderboard();
+        };
 
-        // التحقق الآمن من جلسات تسجيل الدخول
-        function checkAuthenticationState() {
-            auth.onAuthStateChanged((user) => {
-                if (user) {
-                    db.collection("users").doc(user.uid).get().then((docSnap) => {
-                        if (docSnap.exists) {
-                            currentUser = docSnap.data();
-                            currentUser.uid = user.uid;
-                            starredQuestionsIds = currentUser.starred_questions || [];
-                            
-                            // تحديث لوحة البيانات
-                            document.getElementById('prof-name').innerText = currentUser.name || "محارب أكاديمي";
-                            document.getElementById('prof-level').innerText = currentUser.level || 1;
-                            document.getElementById('prof-xp').innerText = currentUser.xp || 0;
-                            
-                            renderSubjects();
-                            switchView('view-dashboard');
-                        } else {
-                            switchView('view-register');
-                        }
-                    }).catch(() => switchView('view-register'));
-                } else {
-                    switchView('view-register');
-                }
-            });
+        function showToast(text, type = "success") {
+            const toast = document.getElementById("toast");
+            toast.innerText = text;
+            toast.className = `toast-msg ${type === 'success' ? 'toast-success' : 'toast-error'}`;
+            toast.style.display = "block";
+            setTimeout(() => { toast.style.display = "none"; }, 3500);
         }
 
-        // 🔐 تسجيل الدخول الاحترافي عبر حسابات Google والاسم الثلاثي ككودك
-        function handleGoogleLogin() {
-            const fullName = document.getElementById('student-fullname').value.trim();
-            if(!fullName && !auth.currentUser) {
-                showToast("❌ يرجى كتابة الاسم الثلاثي باللغة العربية أولاً لتوثيق الشهادة والأوائل", "error");
-                return;
-            }
-
-            const provider = new firebase.auth.GoogleAuthProvider();
-            auth.signInWithPopup(provider).then((result) => {
-                const user = result.user;
-                const userRef = db.collection("users").doc(user.uid);
-                
-                userRef.get().then((docSnap) => {
-                    if(!docSnap.exists) {
-                        // حساب جديد تماماً وضخ وثيقة الطالب الإلزامية
-                        userRef.set({
-                            name: fullName,
-                            email: user.email,
-                            xp: 0,
-                            level: 1,
-                            avatar: user.photoURL || "https://api.dicebear.com/7.x/bottts/svg?seed=" + user.uid,
-                            starred_questions: [],
-                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                        }).then(() => showToast("✨ تم إنشاء وتوثيق حسابك الأكاديمي بنجاح!"));
-                    } else {
-                        showToast("🎯 أهلاً بعودتك من جديد إلى الساحة الدراسية");
-                    }
-                });
-            }).catch(e => showToast(`❌ فشل الدخول: ${e.message}`, "error"));
-        }
-
-        // التحقق من رمز توثيق المشرف لفتح لوحة الأدمن
-        function verifyAdminToken() {
-            const token = document.getElementById('admin-token').value.trim();
-            if(token === "AmerAdmin2026") {
-                showToast("🔓 ترحيب حار بالمشرف عامر.. فتحت الصلاحيات");
-                switchView('view-admin-panel');
-            } else {
-                showToast("❌ الرمز السري الإداري خاطئ تماماً!", "error");
-            }
-        }
-
-        // تجميع وإحصاء عدد الأسئلة المتوفرة لكل مادة دراسية على السيرفر
         function fetchSubjectQuestionCounts() {
             db.collection("questions").get().then((snapshot) => {
-                let counts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
+                subjectCounts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
                 snapshot.forEach(doc => {
                     const sub = doc.data().subject;
-                    if(counts[sub] !== undefined) counts[sub]++;
+                    if(subjectCounts[sub] !== undefined) subjectCounts[sub]++;
                 });
-                window.subjectCounts = counts;
                 renderSubjects();
+                
+                // تحديث العدادات الداخلية في لوحة التحكم
+                Object.keys(subjectCounts).forEach(k => {
+                    const el = document.getElementById(`subject-count-${k}`);
+                    if(el) el.innerText = `${fixedSubjects[k].split(' ')[0]}: ${subjectCounts[k]}`;
+                });
+            }).catch(() => renderSubjects());
+        }
+
+        function checkAuthenticationState() {
+            const cachedUid = localStorage.getItem('amer_quiz_uid');
+            
+            auth.getRedirectResult().then((result) => {
+                if (result && result.user) {
+                    handleGoogleUserSuccess(result.user);
+                }
+            }).catch((error) => {
+                console.error("خطأ التوجيه بجوجل:", error);
+            });
+
+            auth.onAuthStateChanged((user) => {
+                if (user) {
+                    db.collection("admins").doc(user.uid).get().then(adminSnap => {
+                        if (adminSnap.exists) {
+                            document.getElementById('btn-goto-admin').style.display = "block";
+                        }
+                    });
+
+                    // تحديث الطابع الزمني لآخر نشاط حركي للطالب بالسيرفر
+                    db.collection("users").doc(user.uid).update({
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    }).catch(() => {});
+
+                    if (cachedUid && cachedUid === user.uid) {
+                        fetchUserRecord(user.uid);
+                    } else if (!cachedUid) {
+                        localStorage.setItem('amer_quiz_uid', user.uid);
+                        showView('view-register');
+                    } else {
+                        fetchUserRecord(cachedUid);
+                    }
+                } else {
+                    if (cachedUid) {
+                        auth.signInAnonymously().catch(() => {
+                            showView('view-register');
+                        });
+                    } else {
+                        auth.signInAnonymously();
+                    }
+                }
+            });
+        }
+
+        function fetchUserRecord(uid) {
+            db.collection("users").doc(uid).get().then((docSnap) => {
+                if (docSnap.exists) {
+                    currentUser = docSnap.data();
+                    
+                    if (currentUser.isBanned === true) {
+                        document.body.innerHTML = `
+                            <div style="text-align:center; padding:50px; font-family:'Segoe UI', sans-serif; direction:rtl; background:#0f172a; color:#fff; min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+                                <h2 style="color:#ef4444; font-size: 32px; margin-bottom: 15px;">🚫 عذراً، تم حظر حسابك من قبل الإدارة!</h2>
+                                <p style="color:#94a3b8; font-size: 18px; margin-top:0;">برجاء المراجعة والتواصل مع الأستاذ عامر لتسوية الحساب وفك القيد.</p>
+                            </div>`;
+                        return;
+                    }
+
+                    document.getElementById('dash-student-name').innerText = currentUser.name;
+                    
+                    if (currentUser.previousRank && currentUser.currentRank) {
+                        const diff = currentUser.previousRank - currentUser.currentRank;
+                        const deltaSpan = document.getElementById('dash-rank-delta');
+                        if (diff > 0) {
+                            deltaSpan.innerHTML = `<span style="color:var(--success)"><i class="fa-solid fa-circle-arrow-up"></i> صعدت ${diff} مراكز!</span>`;
+                        } else if (diff < 0) {
+                            deltaSpan.innerHTML = `<span style="color:var(--danger)"><i class="fa-solid fa-circle-arrow-down"></i> تراجعت ${Math.abs(diff)} مراكز</span>`;
+                        } else {
+                            deltaSpan.innerHTML = `<span style="color:var(--text-muted)"><i class="fa-solid fa-arrows-left-right"></i> مستقر في مركزك</span>`;
+                        }
+                    }
+
+                    if(currentUser.photoURL) {
+                        const avatarDash = document.getElementById('dash-student-avatar');
+                        avatarDash.src = currentUser.photoURL;
+                        avatarDash.style.display = "block";
+                        document.getElementById('profile-big-avatar').src = currentUser.photoURL;
+                    } else {
+                        const defaultImg = "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
+                        document.getElementById('profile-big-avatar').src = defaultImg;
+                    }
+
+                    document.getElementById('profile-student-name').innerText = currentUser.name;
+                    
+                    const level = currentUser.level || 1;
+                    const xp = currentUser.xp || 0;
+                    
+                    document.getElementById('stat-level').innerText = level;
+                    document.getElementById('stat-xp').innerText = xp;
+                    document.getElementById('stat-completed').innerText = currentUser.completedCount || 0;
+                    
+                    const xpInCurrentLevel = xp % 200;
+                    document.getElementById('progress-xp-text').innerText = `${xpInCurrentLevel} / 200 XP`;
+                    document.getElementById('progress-xp-fill').style.width = `${(xpInCurrentLevel / 200) * 100}%`;
+
+                    db.collection("users").where("xp", ">", xp).get().then(snap => {
+                        const currentComputedRank = snap.size + 1;
+                        document.getElementById('stat-rank').innerText = `#${currentComputedRank}`;
+                        
+                        if (!currentUser.currentRank || currentUser.currentRank !== currentComputedRank) {
+                            db.collection("users").doc(uid).update({
+                                previousRank: currentUser.currentRank || currentComputedRank,
+                                currentRank: currentComputedRank
+                            });
+                        }
+                    }).catch(() => {
+                        document.getElementById('stat-rank').innerText = `-`;
+                    });
+
+                    checkDailyRewardStatus();
+
+                    if (currentUser.completedCount >= 1) document.getElementById('ach-first').classList.add('unlocked');
+                    if (xp >= 100) document.getElementById('ach-100xp').classList.add('unlocked');
+                    if (xp >= 500) document.getElementById('ach-500xp').classList.add('unlocked');
+                    if (currentUser.hasFullScore === true) document.getElementById('ach-full').classList.add('unlocked');
+                    if (currentUser.completedSubjects && currentUser.completedSubjects.length >= 5) document.getElementById('ach-subject').classList.add('unlocked');
+
+                    if (currentUser.lastActivity) {
+                        const act = currentUser.lastActivity;
+                        document.getElementById('last-activity-text').innerHTML = `اختبار بمادة <strong>(${act.subjectName})</strong> 📝 بنتيجة <strong>${act.score} من ${act.total}</strong> بتاريخ: ${act.date}`;
+                    }
+                    
+                    checkSubjectAttemptStatus();
+                    checkSavedQuizSession();
+                    showView('view-dashboard');
+                } else {
+                    showView('view-register');
+                }
             }).catch(() => {
-                window.subjectCounts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
-                renderSubjects();
+                showView('view-register');
             });
         }
 
-        function renderSubjects() {
-            const grid = document.getElementById('subject-grid-container');
-            if(!grid) return;
-            grid.innerHTML = "";
-            const counts = window.subjectCounts || { math: 0, english: 0, economics: 0, management: 0, office: 0 };
+        function handleGoogleLogin() {
+            const loginBtn = document.getElementById('google-login-btn');
+            if (loginBtn) {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري الاتصال الآمن بجوجل...`;
+            }
 
-            Object.keys(fixedSubjects).forEach((key) => {
-                const card = document.createElement('div');
-                card.className = `subject-card ${activeCategory === key ? 'selected' : ''}`;
-                card.innerHTML = `
-                    <h4>${fixedSubjects[key]}</h4>
-                    <span class="badge bg-primary mt-2">${counts[key] || 0} سؤال جاهز بفولدر المادة</span>
-                `;
-                card.onclick = () => {
-                    activeCategory = key;
-                    document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
-                    card.classList.add('selected');
-                };
-                grid.appendChild(card);
+            var provider = new firebase.auth.GoogleAuthProvider();
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            
+            if (isMobile) {
+                auth.signInWithRedirect(provider);
+            } else {
+                auth.signInWithPopup(provider).then((result) => {
+                    if (result && result.user) {
+                        handleGoogleUserSuccess(result.user);
+                    }
+                }).catch(e => {
+                    if (loginBtn) {
+                        loginBtn.disabled = false;
+                        loginBtn.innerHTML = `<i class="fa-brands fa-google"></i> تسجيل الدخول عبر Google`;
+                    }
+                    if (e.code !== 'auth/popup-closed-by-user') {
+                        alert("فشل تسجيل الدخول عبر Google: " + e.message);
+                    }
+                });
+            }
+        }
+
+        function handleGoogleUserSuccess(user) {
+            const uid = user.uid;
+            db.collection("users").doc(uid).get().then((docSnap) => {
+                if (docSnap.exists) {
+                    localStorage.setItem('amer_quiz_uid', uid);
+                    fetchUserRecord(uid);
+                } else {
+                    const newUserData = {
+                        uid: uid,
+                        name: user.displayName,
+                        photoURL: user.photoURL,
+                        xp: 0,
+                        level: 1,
+                        completedCount: 0,
+                        completedSubjects: [],
+                        hasFullScore: false,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                    };
+                    db.collection("users").doc(uid).set(newUserData).then(() => {
+                        localStorage.setItem('amer_quiz_uid', uid);
+                        fetchUserRecord(uid);
+                    });
+                }
             });
         }
 
-        // ⏳ سحب وتوليد جولة الأسئلة العشوائية للامتحان التفاعلي
+        function handleStudentRegistration() {
+            const name = document.getElementById('reg-student-name').value.trim();
+            if (name.length < 8) { alert("يرجى كتابة الاسم الثلاثي كاملاً لتوثيق نتائجك."); return; }
+            
+            const uid = auth.currentUser.uid;
+            const newUserData = {
+                uid: uid,
+                name: name,
+                xp: 0,
+                level: 1,
+                completedCount: 0,
+                completedSubjects: [],
+                hasFullScore: false,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            db.collection("users").doc(uid).set(newUserData).then(() => {
+                localStorage.setItem('amer_quiz_uid', uid);
+                fetchUserRecord(uid);
+            }).catch(e => alert("خطأ في الاتصال بقاعدة البيانات: " + e.message));
+        }
+
+        function checkDailyRewardStatus() {
+            const todayStr = new Date().toDateString();
+            if (currentUser && currentUser.lastDailyClaimedDate !== todayStr) {
+                document.getElementById('daily-reward-box').style.display = "flex";
+            } else {
+                document.getElementById('daily-reward-box').style.display = "none";
+            }
+        }
+
+        function claimDailyReward() {
+            const todayStr = new Date().toDateString();
+            db.collection("users").doc(currentUser.uid).update({
+                xp: firebase.firestore.FieldValue.increment(50),
+                lastDailyClaimedDate: todayStr
+            }).then(() => {
+                confetti({ particleCount: 60, spread: 40 });
+                showToast("🎁 مبارك! استلمت 50 نقطة محارب إضافية لليوم.");
+                fetchUserRecord(currentUser.uid);
+            });
+        }
+
+        function checkSavedQuizSession() {
+            const savedState = localStorage.getItem(`saved_quiz_${currentUser.uid}`);
+            const alertBox = document.getElementById('resume-alert');
+            if (savedState) {
+                const parsed = JSON.parse(savedState);
+                document.getElementById('resume-subject-name').innerText = fixedSubjects[parsed.subjectId] || parsed.subjectId;
+                alertBox.style.display = "block";
+            } else {
+                alertBox.style.display = "none";
+            }
+        }
+
+        function checkSubjectAttemptStatus() {
+            if (!currentUser) return;
+            const alertBox = document.getElementById('arena-practice-alert');
+            
+            db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).get().then((docSnap) => {
+                if (docSnap.exists) {
+                    isPracticeMode = true;
+                    alertBox.style.display = "block";
+                } else {
+                    isPracticeMode = false;
+                    alertBox.style.display = "none";
+                }
+            });
+        }
+
         function startQuizArena() {
-            showToast("⏳ جاري سحب وتوفير أوراق الامتحان وتجهيز البورد...");
+            const startBtn = document.getElementById('btn-start-quiz');
+            startBtn.disabled = true;
+            startBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري استدعاء وتأمين التحدي الناري...`;
+
             db.collection("questions").where("subject", "==", activeCategory).get().then((snapshot) => {
-                if(snapshot.empty) {
-                    showToast("⚠️ لا توجد أي أسئلة مدشنة لهذه المادة حالياً בספריית המערכת", "error");
+                startBtn.disabled = false;
+                startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
+
+                if (snapshot.empty) {
+                    alert("لا توجد أسئلة مضافة في هذه المادة حالياً من قبل الإدارة.");
                     return;
                 }
-
-                currentQuestions = [];
+                
+                let rawQuestions = [];
                 snapshot.forEach(doc => {
                     let data = doc.data();
                     data.id = doc.id;
-                    currentQuestions.push(data);
+                    rawQuestions.push(data);
                 });
+                
+                rawQuestions.sort(() => Math.random() - 0.5);
+                
+                const selectedCountLimit = document.getElementById('quiz-question-count-select').value;
+                if (selectedCountLimit !== "all") {
+                    const limit = parseInt(selectedCountLimit);
+                    currentQuestions = rawQuestions.slice(0, limit);
+                } else {
+                    currentQuestions = rawQuestions;
+                }
 
-                currentQuestions.sort(() => Math.random() - 0.5);
-                if(currentQuestions.length > 10) currentQuestions = currentQuestions.slice(0, 10);
+                currentQuestions.forEach(q => {
+                    if (q.options && q.options.length > 0) {
+                        q.shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                    } else {
+                        q.shuffledOptions = [];
+                    }
+                    q.isFlagged = false;
+                });
+                
+                userQuizAnswersLog = new Array(currentQuestions.length).fill(null);
 
+                showView('view-arena');
                 qIndex = 0;
                 score = 0;
-                userQuizAnswersLog = [];
+                timeRemaining = 30;
+                buildQuestionsNavigationDots();
+                loadArenaQuestion();
+            }).catch(() => {
+                startBtn.disabled = false;
+                startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
+            });
+        }
+
+        function buildQuestionsNavigationDots() {
+            const dotsContainer = document.getElementById('arena-questions-navigation-dots');
+            dotsContainer.innerHTML = "";
+            currentQuestions.forEach((q, idx) => {
+                const dot = document.createElement('button');
+                dot.className = "q-nav-dot";
+                dot.id = `q-nav-dot-${idx}`;
+                dot.innerText = idx + 1;
+                dot.onclick = () => {
+                    jumpToSpecificQuestion(idx);
+                };
+                dotsContainer.appendChild(dot);
+            });
+        }
+
+        function updateQuestionsNavigationDotsUI() {
+            currentQuestions.forEach((q, idx) => {
+                const dot = document.getElementById(`q-nav-dot-${idx}`);
+                if (!dot) return;
                 
-                switchView('view-arena');
-                buildNavigationDots();
-                loadArenaQuestion();
-            }).catch(err => showToast(`❌ فشل السحب الرقمي: ${err.message}`, "error"));
-        }
-
-        // بناء نقاط تتبع سير الامتحان التفاعلية أسفل شاشة الاختبار ككودك
-        function buildNavigationDots() {
-            const dotBox = document.getElementById('arena-questions-navigation-dots');
-            if(!dotBox) return;
-            dotBox.innerHTML = "";
-            for(let i=0; i<currentQuestions.length; i++) {
-                const dot = document.createElement('div');
-                dot.className = "nav-dot";
-                dot.id = `nav-dot-${i}`;
-                dotBox.appendChild(dot);
-            }
-        }
-
-        // تحميل وعرض السؤال الفردي بداخل لوحة الاختبار التفاعلية
-        function loadArenaQuestion() {
-            hasAnsweredCurrent = false;
-            clearInterval(timerInterval);
-            
-            if(qIndex >= currentQuestions.length) {
-                finishQuizArena();
-                return;
-            }
-
-            // تحديث حالة نقطة التتبع النشطة حالياً
-            document.querySelectorAll('.nav-dot').forEach(d => d.classList.remove('active'));
-            const currentDot = document.getElementById(`nav-dot-${qIndex}`);
-            if(currentDot) currentDot.classList.add('active');
-
-            const q = currentQuestions[qIndex];
-            document.getElementById('arena-progress').innerText = `سؤال ${qIndex + 1} من ${currentQuestions.length}`;
-            document.getElementById('arena-question-text').innerText = q.question;
-
-            // تحديث أيقونة النجمة للأسئلة المفضلة
-            const starIcon = document.getElementById('star-icon');
-            if(starredQuestionsIds.includes(q.id)) {
-                starIcon.className = "fa-solid fa-star text-warning";
-            } else {
-                starIcon.className = "fa-regular fa-star text-warning";
-            }
-
-            const optionsBox = document.getElementById('arena-options-container');
-            optionsBox.innerHTML = "";
-
-            timeRemaining = 30;
-            document.getElementById('arena-timer').innerText = `⏳ 00:${timeRemaining < 10 ? '0' + timeRemaining : timeRemaining}`;
-
-            timerInterval = setInterval(() => {
-                timeRemaining--;
-                document.getElementById('arena-timer').innerText = `⏳ 00:${timeRemaining < 10 ? '0' + timeRemaining : timeRemaining}`;
-                if(timeRemaining <= 0) {
-                    clearInterval(timerInterval);
-                    handleSelection(null); // تخطي بسبب نفاد العداد
-                }
-            }, 1000);
-
-            q.options.forEach((opt) => {
-                const btn = document.createElement('button');
-                btn.className = "btn-main btn-secondary text-right";
-                btn.style.textAlign = "right";
-                btn.innerText = opt;
-                btn.onclick = () => handleSelection(opt);
-                optionsBox.appendChild(btn);
+                dot.className = "q-nav-dot";
+                if (idx === qIndex) dot.classList.add('active');
+                if (q.isFlagged) dot.classList.add('flagged');
+                else if (userQuizAnswersLog[idx] !== null) dot.classList.add('answered');
             });
         }
 
-        function handleSelection(chosenOption) {
-            if(hasAnsweredCurrent) return;
-            hasAnsweredCurrent = true;
+        function jumpToSpecificQuestion(idx) {
             clearInterval(timerInterval);
-
-            const q = currentQuestions[qIndex];
-            const isCorrect = (chosenOption === q.answer);
-            const currentDot = document.getElementById(`nav-dot-${qIndex}`);
-
-            if(isCorrect) {
-                score++;
-                if(currentDot) currentDot.classList.add('correct');
-                showToast("🎯 إجابة عبقرية صحيحة، تم رصد +10 XP", "success");
-            } else {
-                if(currentDot) currentDot.classList.add('incorrect');
-                showToast(`❌ إجابة خاطئة! الصواب هو: ${q.answer}`, "error");
-            }
-
-            userQuizAnswersLog.push({
-                question: q.question,
-                chosen: chosenOption || "انتهت مهلة التفكير والوقت",
-                correct: q.answer,
-                status: isCorrect
-            });
-
-            setTimeout(() => {
-                qIndex++;
-                loadArenaQuestion();
-            }, 2000);
+            qIndex = idx;
+            loadArenaQuestion(false); 
         }
 
-        // تفضيل وحفظ السؤال بملف الطالب للرجوع له
-        function toggleStarCurrentQuestion() {
-            const q = currentQuestions[qIndex];
-            if(!q) return;
-
-            if(starredQuestionsIds.includes(q.id)) {
-                starredQuestionsIds = starredQuestionsIds.filter(id => id !== q.id);
-                showToast("تمت الإزالة من الأسئلة المفضلة");
-            } else {
-                starredQuestionsIds.push(q.id);
-                showToast("⭐ تمت الإضافة لملف أسئلتك المفضلة بنجاح");
+        function toggleFlagQuestion() {
+            if (currentQuestions[qIndex]) {
+                currentQuestions[qIndex].isFlagged = !currentQuestions[qIndex].isFlagged;
+                showToast(currentQuestions[qIndex].isFlagged ? "📌 تم تمييز هذا السؤال لمراجعته قبل إنهاء الامتحان." : "تم إلغاء التمييز عن السؤال.");
+                updateQuestionsNavigationDotsUI();
             }
+        }
 
-            if(currentUser && currentUser.uid) {
-                db.collection("users").doc(currentUser.uid).update({
-                    starred_questions: starredQuestionsIds
+        function toggleStarQuestion() {
+            if (currentQuestions[qIndex]) {
+                const activeQ = currentQuestions[qIndex];
+                const starIcon = document.getElementById('arena-star-icon');
+                
+                db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).get().then(docSnap => {
+                    if (docSnap.exists) {
+                        db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).delete();
+                        starIcon.className = "fa-regular fa-star";
+                        showToast("⭐ تم إزالة السؤال من المفضلة بنجاح.");
+                    } else {
+                        db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).set(activeQ);
+                        starIcon.className = "fa-solid fa-star";
+                        showToast("⭐ تم حفظ السؤال في قائمة المفضلة للرجوع له والمذاكرة لاحقاً!");
+                    }
                 });
             }
-            
-            const starIcon = document.getElementById('star-icon');
-            starIcon.className = starredQuestionsIds.includes(q.id) ? "fa-solid fa-star text-warning" : "fa-regular fa-star text-warning";
         }
 
-        // نظام الإبلاغ السريع عن مشاكل الصياغة بالأسئلة ككودك
         function reportQuestionProblem() {
-            const q = currentQuestions[qIndex];
-            if(!q) return;
-            const reason = prompt("📝 يرجى كتابة الخلل أو المشكلة الملاحظة في هذا السؤال للإصلاح الفوري:");
-            if(!reason) return;
-
-            db.collection("reports").add({
-                questionId: q.id,
-                questionText: q.question,
-                reporterName: currentUser ? currentUser.name : "طالب مجهول",
-                reason: reason,
-                timestamp: firebase.firestore.FieldValue.serverTimestamp()
-            }).then(() => showToast("✅ تم إرسال البلاغ لغرفة الإشراف لعامر بنجاح، شكراً لك"));
+            if (currentQuestions[qIndex]) {
+                const activeQ = currentQuestions[qIndex];
+                if (confirm("🚩 هل أنت متأكد من الإبلاغ عن وجود خطأ في هذا السؤال لمراجعته من قبل أ/عامر؟")) {
+                    db.collection("reports").add({
+                        questionId: activeQ.id || "unknown",
+                        questionText: activeQ.question,
+                        reportedBy: currentUser.name,
+                        reportedByUid: currentUser.uid,
+                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                    }).then(() => {
+                        showToast("🎯 تم إرسال البلاغ فوراً لوحدة تحكم الإدارة. شكراً لمساعدتك في دقة المنصة!");
+                    });
+                }
+            }
         }
 
-        // إنهاء الامتحان وضخ التقييم وإظهار الأخطاء للمراجعة لعدم التكرار
-        function finishQuizArena() {
-            const finalPercentage = Math.round((score / currentQuestions.length) * 100);
-            const xpGained = score * 10;
+        function resumeSavedQuizArena() {
+            const savedState = localStorage.getItem(`saved_quiz_${currentUser.uid}`);
+            if(!savedState) return;
+            
+            const parsed = JSON.parse(savedState);
+            activeCategory = parsed.subjectId;
+            currentQuestions = parsed.currentQuestions;
+            qIndex = parsed.qIndex;
+            score = parsed.score;
+            timeRemaining = parsed.timeRemaining;
+            isPracticeMode = parsed.isPracticeMode;
+            userQuizAnswersLog = parsed.userQuizAnswersLog || new Array(currentQuestions.length).fill(null);
 
-            document.getElementById('res-score').innerText = `${finalPercentage}%`;
-            document.getElementById('res-xp-gain').innerText = `لقد اجتزت الاختبار بنجاح ونلت +${xpGained} XP نقاط خبرة مضافة لملفك`;
+            document.getElementById('resume-alert').style.display = "none";
+            checkSubjectAttemptStatus();
+            showView('view-arena');
+            buildQuestionsNavigationDots();
+            loadArenaQuestion(true); 
+        }
 
-            // بناء صندوق مراجعة الأخطاء التفصيلي ككودك المطور
-            const reviewBox = document.getElementById('wrong-answers-review-box');
-            const listContainer = document.getElementById('wrong-answers-list');
-            listContainer.innerHTML = "";
-            let hasWrongs = false;
+        function saveAndExitQuizArena() {
+            clearInterval(timerInterval);
+            const stateToSave = {
+                subjectId: activeCategory,
+                currentQuestions: currentQuestions,
+                qIndex: qIndex,
+                score: score,
+                timeRemaining: timeRemaining,
+                isPracticeMode: isPracticeMode,
+                userQuizAnswersLog: userQuizAnswersLog
+            };
+            localStorage.setItem(`saved_quiz_${currentUser.uid}`, JSON.stringify(stateToSave));
+            alert("🔒 تم حفظ تقدم الجلسة الحالية بنجاح، يمكنك العودة واستكمالها في أي وقت لاحق من لوحة التحكم.");
+            backToDashboard();
+        }
 
-            userQuizAnswersLog.forEach(log => {
-                if(!log.status) {
-                    hasWrongs = true;
-                    const item = document.createElement('div');
-                    item.style.borderBottom = "1px solid rgba(255,255,255,0.1)";
-                    item.style.padding = "8px 0";
-                    item.innerHTML = `
-                        <p class="mb-1 text-white">السؤال: ${log.question}</p>
-                        <p class="mb-0 text-danger small">إجابتك: ${log.chosen} | <span class="text-success">الصحيحة: ${log.correct}</span></p>
-                    `;
-                    listContainer.appendChild(item);
+        function loadArenaQuestion(isResumedFirstLoad = false) {
+            if (qIndex >= currentQuestions.length) { finishQuizSession(); return; }
+            
+            updateQuestionsNavigationDotsUI();
+            
+            document.getElementById('arena-counter').innerText = `السؤال ${qIndex + 1} من ${currentQuestions.length}`;
+            
+            const percentFill = ((qIndex) / currentQuestions.length) * 100;
+            document.getElementById('arena-progress-bar-fill').style.width = `${percentFill}%`;
+
+            const activeQ = currentQuestions[qIndex];
+            document.getElementById('arena-question-text').innerText = activeQ.question;
+            
+            document.getElementById('arena-explanation-box').style.display = "none";
+            document.getElementById('btn-next-question').style.display = "none";
+
+            const starIcon = document.getElementById('arena-star-icon');
+            db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).get().then(snap => {
+                starIcon.className = snap.exists ? "fa-solid fa-star" : "fa-regular fa-star";
+            }).catch(() => { starIcon.className = "fa-regular fa-star"; });
+
+            const box = document.getElementById('arena-options-box');
+            box.innerHTML = "";
+            
+            clearInterval(timerInterval);
+            
+            const dynamicLog = userQuizAnswersLog[qIndex];
+            
+            if (dynamicLog !== null) {
+                hasAnsweredCurrent = true;
+                document.getElementById('timer-sec').innerText = "-";
+                renderFrozenAnsweredQuestionUI(dynamicLog, activeQ, box);
+            } else {
+                hasAnsweredCurrent = false;
+                if (!isResumedFirstLoad) { timeRemaining = 30; }
+                updateCircularTimerUI();
+                
+                timerInterval = setInterval(() => {
+                    timeRemaining--;
+                    updateCircularTimerUI();
+                    if (timeRemaining <= 0) { handleSelection(null, null, activeQ); }
+                }, 1000);
+
+                activeQ.shuffledOptions.forEach(opt => {
+                    const node = document.createElement('button');
+                    node.className = "option-node";
+                    node.innerHTML = `<span>${opt}</span><i class="fa-regular fa-circle"></i>`;
+                    node.onclick = () => handleSelection(node, opt, activeQ);
+                    box.appendChild(node);
+                });
+            }
+        }
+
+        function renderFrozenAnsweredQuestionUI(logData, questionObj, box) {
+            const cleanAnswer = questionObj.answer.toString().trim();
+            questionObj.shuffledOptions.forEach(opt => {
+                const node = document.createElement('button');
+                node.className = "option-node";
+                node.disabled = true;
+                node.innerHTML = `<span>${opt}</span><i class="fa-regular fa-circle"></i>`;
+                
+                if (opt.toString().trim() === cleanAnswer) {
+                    node.classList.add('correct');
+                } else if (logData.chosen && opt.toString().trim() === logData.chosen.toString().trim()) {
+                    node.classList.add('wrong');
                 }
+                box.appendChild(node);
             });
+            
+            document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل.";
+            document.getElementById('arena-explanation-box').style.display = "block";
+            document.getElementById('btn-next-question').style.display = "flex";
+        }
 
-            reviewBox.style.display = hasWrongs ? "block" : "none";
+        function updateCircularTimerUI() {
+            document.getElementById('timer-sec').innerText = timeRemaining;
+            const circleFill = document.getElementById('arena-circle-fill');
+            const strokeOffset = 176 - (timeRemaining / 30) * 176;
+            circleFill.style.strokeDashoffset = strokeOffset;
+        }
 
-            if(currentUser && currentUser.uid) {
-                const newTotalXp = (currentUser.xp || 0) + xpGained;
-                const newLevel = Math.floor(newTotalXp / 100) + 1;
+        function handleSelection(selectedNode, chosen, questionObj) {
+            if (hasAnsweredCurrent) return;
+            hasAnsweredCurrent = true;
 
-                db.collection("users").doc(currentUser.uid).update({
-                    xp: newTotalXp,
-                    level: newLevel,
-                    lastQuizDate: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    currentUser.xp = newTotalXp;
-                    currentUser.level = newLevel;
+            clearInterval(timerInterval);
+            document.querySelectorAll('.option-node').forEach(b => b.disabled = true);
+            
+            const cleanAnswer = questionObj.answer.toString().trim();
+            const cleanChosen = chosen ? chosen.toString().trim() : "";
+            const isCorrect = (cleanChosen === cleanAnswer);
+
+            userQuizAnswersLog[qIndex] = {
+                question: questionObj.question,
+                chosen: cleanChosen,
+                correctAnswer: cleanAnswer,
+                isCorrect: isCorrect,
+                explanation: questionObj.explanation
+            };
+
+            if (questionObj.id) {
+                db.collection("questions").doc(questionObj.id).update({
+                    correctCount: firebase.firestore.FieldValue.increment(isCorrect ? 1 : 0),
+                    wrongCount: firebase.firestore.FieldValue.increment(isCorrect ? 0 : 1)
+                });
+            }
+            
+            if (isCorrect) {
+                score++;
+                if(selectedNode) selectedNode.className = "option-node correct";
+            } else {
+                if(selectedNode) selectedNode.className = "option-node wrong";
+                document.querySelectorAll('.option-node').forEach(b => {
+                    if (b.innerText.toString().trim() === cleanAnswer) b.classList.add('correct');
                 });
             }
 
-            if(finalPercentage >= 70) {
-                confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
-            }
-
-            switchView('view-result');
+            document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل لهذا السؤال من قبل المشرف.";
+            document.getElementById('arena-explanation-box').style.display = "block";
+            document.getElementById('btn-next-question').style.display = "flex";
+            updateQuestionsNavigationDotsUI();
         }
 
-        // ==========================================
-        // 🏆 [تعديل التوفير الناري للباقة] كود جلب كاش لوحة الصدارة بقراءة واحدة فقط (1 Read)
-        // ==========================================
-        function fetchLeaderboard() {
-            const rowsContainer = document.getElementById('dynamic-leaderboard-rows');
-            if(!rowsContainer) return;
+        function advanceArenaQuestion() {
+            qIndex++;
+            loadArenaQuestion();
+        }
 
-            rowsContainer.innerHTML = "<p class='text-center text-muted py-4'><i class='fa-solid fa-spinner fa-spin'></i> جاري جلب لوحة الشرف فائقة السرعة...</p>";
+        function toggleAnswersReviewZone() {
+            const zone = document.getElementById('review-answers-zone');
+            if(zone.style.display === "none") {
+                let html = "";
+                userQuizAnswersLog.forEach((log, i) => {
+                    if(!log) return;
+                    html += `
+                        <div style="padding:10px; border-bottom:1px solid var(--border); margin-bottom:10px;">
+                            <strong>س${i+1}: ${log.question}</strong>
+                            <p style="margin:5px 0; font-size:13px;">إجابتك: <span style="color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'}">${log.chosen || 'فاتك الوقت ⏱️'}</span></p>
+                            <p style="margin:5px 0; font-size:13px; color:var(--success);">الإجابة النموذجية: ${log.correctAnswer}</p>
+                            <small style="color:var(--text-muted); display:block; margin-top:4px;">💡 الشرح: ${log.explanation || 'لا يوجد شرح متوفر حالياً.'}</small>
+                        </div>
+                    `;
+                });
+                zone.innerHTML = html || "<p style='text-align:center;'>لم يتم تدوين إجابات صالحة للمراجعة.</p>";
+                zone.style.display = "block";
+            } else {
+                zone.style.display = "none";
+            }
+        }
 
-            // سحب مستند مجمع ومضغوط مسبقاً لحماية باقات الطلاب
+        function finishQuizSession() {
+            showView('view-result');
+            localStorage.removeItem(`saved_quiz_${currentUser.uid}`);
+            document.getElementById('review-answers-zone').style.display = "none";
+
+            document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
+            const xpGained = score * 20;
+            const percentage = currentQuestions.length > 0 ? Math.round((score / currentQuestions.length) * 100) : 0;
+            
+            document.getElementById('result-xp-gained').innerText = `+${isPracticeMode ? 0 : xpGained}`;
+            document.getElementById('result-percent').innerText = `${percentage}%`;
+
+            const motivationalContainer = document.getElementById('result-motivational-msg');
+            const msgsExcellent = ["أنت بطل حقيقي أذهل الجميع! الأستاذ عامر فخور بك جداً 🏆", "كالعادة تكتسح قمة AmerQuiz بجدارة أسطورية! 🌟", "مستوى عبقري لا غبار عليه، استمر للنهائي 🚀"];
+            const msgsGood = ["أداء رائع ومحاولة ممتازة، بضع خطوات وتصل للدرجة الكاملة! 💪", "مستوى قوي جداً يا محارب، القادم أفضل وأسلس بالتأكيد ✏️"];
+            const msgsFair = ["محاولة مقبولة، لكن عامر يعلم أنك تمتلك قدرات أكبر بكثير! وعُد للتحدي 📚", "لا بأس، كل خطأ هو خطوة نحو التعلم والامتياز. راجع إجاباتك وعاود الكرة 🔥"];
+            
+            if (percentage >= 90) {
+                motivationalContainer.innerText = msgsExcellent[Math.floor(Math.random() * msgsExcellent.length)];
+                motivationalContainer.style.color = "var(--success)";
+            } else if (percentage >= 60) {
+                motivationalContainer.innerText = msgsGood[Math.floor(Math.random() * msgsGood.length)];
+                motivationalContainer.style.color = "var(--warning)";
+            } else {
+                motivationalContainer.innerText = msgsFair[Math.floor(Math.random() * msgsFair.length)];
+                motivationalContainer.style.color = "var(--danger)";
+            }
+
+            const statusText = document.getElementById('result-xp-status');
+            
+            if (isPracticeMode) {
+                statusText.innerText = "✨ هذه جولة تدريبية مكررة، لم يتم إضافة نقاط تماشياً مع معايير المساواة.";
+                document.getElementById('result-next-level').innerText = currentUser.level || 1;
+            } else {
+                statusText.innerText = `🎉 جولة رسمية ناجحة! ربحت +${xpGained} XP وأضيفت لملفك الشخصي فوراُ.`;
+                confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
+
+                db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).set({
+                    subjectId: activeCategory,
+                    isOfficial: true,
+                    score: score,
+                    totalQuestions: currentQuestions.length,
+                    date: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                const nextXp = currentUser.xp + xpGained;
+                const nextLevel = Math.floor(nextXp / 200) + 1;
+                document.getElementById('result-next-level').innerText = nextLevel;
+                
+                let isFull = (score === currentQuestions.length && currentQuestions.length > 0);
+                const todayStr = new Date().toLocaleDateString('ar-EG');
+
+                db.collection("users").doc(currentUser.uid).update({
+                    xp: firebase.firestore.FieldValue.increment(xpGained),
+                    level: nextLevel,
+                    completedCount: firebase.firestore.FieldValue.increment(1),
+                    hasFullScore: currentUser.hasFullScore || isFull,
+                    completedSubjects: firebase.firestore.FieldValue.arrayUnion(activeCategory),
+                    lastActivity: {
+                        subjectName: fixedSubjects[activeCategory],
+                        score: score,
+                        total: currentQuestions.length,
+                        date: todayStr
+                    }
+                }).then(() => {
+                    loadGlobalLeaderboard();
+                });
+            }
+        }
+
+        function toggleLeaderboardFilter(filterType) {
+            currentLeaderFilter = filterType;
+            document.querySelectorAll('.side-zone .tab-btn').forEach(b => {
+                b.className = "tab-btn";
+                b.style.color = "var(--text-main)";
+            });
+            const activeBtn = document.getElementById(`leader-filter-${filterType}`);
+            activeBtn.className = "tab-btn active-upload";
+            activeBtn.style.color = "white";
+            loadGlobalLeaderboard();
+        }
+
+        function loadGlobalLeaderboard() {
+            const listEl = document.getElementById('dom-leaderboard');
+            const podiumEl = document.getElementById('leaderboard-podium');
+            
+            // عرض حالة التحميل أثناء الانتظار
+            listEl.innerHTML = `<div style="text-align:center; padding:25px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin" style="font-size:20px; margin-bottom:8px; display:block;"></i> جاري تحميل قائمة التميز...</div>`;
+            podiumEl.innerHTML = "";
+
+            // ✅ قراءة واحدة فقط (1 Read) من مستند الكاش المركزي
             db.collection("system").doc("leaderboard").get().then((docSnap) => {
-                if(!docSnap.exists) {
-                    rowsContainer.innerHTML = "<p class='text-center text-muted py-4'>لم يقم المسؤول عامر بضغط وتحديث لوحة الصدارة المجمعة بعد.</p>";
+
+                // حالة: مستند الكاش غير موجود بعد (لم يُبنَ من قبل الأدمن)
+                if (!docSnap.exists) {
+                    listEl.innerHTML = `
+                        <div style="text-align:center; padding:25px; background:var(--primary-light); border-radius:var(--radius-sm); border:1px dashed var(--primary);">
+                            <i class="fa-solid fa-database" style="font-size:30px; color:var(--primary); margin-bottom:10px; display:block;"></i>
+                            <strong style="color:var(--primary);">قائمة التميز تنتظر التفعيل ✨</strong><br>
+                            <small style="color:var(--text-muted); display:block; margin-top:6px;">لم يتم بناء فهرس الأوائل بعد.<br>يرجى مراجعة الإدارة لتفعيل لوحة الترتيب.</small>
+                        </div>`;
                     return;
                 }
 
-                const list = docSnap.data().users || [];
-                rowsContainer.innerHTML = "";
+                const cacheData = docSnap.data();
+                let usersArr = cacheData.users || [];
 
-                // رندر منصة التتويج الثلاثية لـ Top 3 طلاب
-                if(list[0]) {
-                    document.getElementById('p1-name').innerText = list[0].name;
-                    document.getElementById('p1-xp').innerText = `${list[0].xp} XP`;
-                    if(list[0].avatar) document.getElementById('p1-avatar').src = list[0].avatar;
-                }
-                if(list[1]) {
-                    document.getElementById('p2-name').innerText = list[1].name;
-                    document.getElementById('p2-xp').innerText = `${list[1].xp} XP`;
-                    if(list[1].avatar) document.getElementById('p2-avatar').src = list[1].avatar;
-                }
-                if(list[2]) {
-                    document.getElementById('p3-name').innerText = list[2].name;
-                    document.getElementById('p3-xp').innerText = `${list[2].xp} XP`;
-                    if(list[2].avatar) document.getElementById('p3-avatar').src = list[2].avatar;
+                // تطبيق فلتر الأسبوع أو الشهر من بيانات الكاش (client-side - بدون قراءات إضافية)
+                if (currentLeaderFilter === "week") {
+                    const oneWeekAgo = new Date();
+                    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+                    usersArr = usersArr.filter(u => {
+                        if (!u.createdAt) return false;
+                        const ts = u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
+                        return ts >= oneWeekAgo;
+                    });
+                } else if (currentLeaderFilter === "month") {
+                    const oneMonthAgo = new Date();
+                    oneMonthAgo.setDate(oneMonthAgo.getDate() - 30);
+                    usersArr = usersArr.filter(u => {
+                        if (!u.createdAt) return false;
+                        const ts = u.createdAt.toDate ? u.createdAt.toDate() : new Date(u.createdAt);
+                        return ts >= oneMonthAgo;
+                    });
                 }
 
-                // بناء صفوف باقي ترتيب فرسان المنصة بدءاً من المركز الرابع
-                let rowsHtml = "";
-                for(let i = 3; i < list.length; i++) {
-                    const avatarSrc = list[i].avatar || "https://api.dicebear.com/7.x/bottts/svg?seed=" + i;
-                    rowsHtml += `
+                let listHtml = "";
+                let podiumHtml = "";
+                const defaultAvatar = "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
+
+                // ✅ تعديل 4: منصة التتويج الثلاثية تُبنى من نفس بيانات الكاش المقروء
+                let top3 = { first: null, second: null, third: null };
+
+                usersArr.forEach((u, index) => {
+                    const rank = index + 1;
+                    const avatarSrc = u.avatar || defaultAvatar;
+
+                    if (rank === 1) top3.first  = { name: u.name, xp: u.xp, avatar: avatarSrc };
+                    else if (rank === 2) top3.second = { name: u.name, xp: u.xp, avatar: avatarSrc };
+                    else if (rank === 3) top3.third  = { name: u.name, xp: u.xp, avatar: avatarSrc };
+
+                    let medalBadge = `#${rank}`;
+                    if (rank === 1) medalBadge = "🥇 الأول";
+                    else if (rank === 2) medalBadge = "🥈 الثاني";
+                    else if (rank === 3) medalBadge = "🥉 الثالث";
+
+                    listHtml += `
                         <div class="user-row">
-                            <div style="display:flex; align-items:center; gap:12px;">
-                                <span class="badge bg-dark px-3 py-2">#${i + 1}</span>
-                                <img src="${avatarSrc}" style="width:34px; height:34px; border-radius:50%; object-fit:cover; border:1px solid rgba(255,255,255,0.2);">
-                                <span><strong>${list[i].name}</strong></span>
+                            <div style="display:flex; align-items:center; gap:10px;">
+                                <span style="font-weight:bold; min-width:50px;">${medalBadge}</span>
+                                <img src="${avatarSrc}">
+                                <span>${u.name}</span>
                             </div>
-                            <span class="text-warning fw-bold">${list[i].xp} XP <small style="color:var(--text-muted); font-weight:normal;">(Lvl ${list[i].level || 1})</small></span>
+                            <span><strong>${u.xp || 0}</strong> <small style="color:var(--text-muted)">XP</small> (Lvl ${u.level || 1})</span>
                         </div>
                     `;
+                });
+
+                // بناء منصة التتويج الثلاثية من بيانات الكاش
+                if (top3.first || top3.second || top3.third) {
+                    podiumHtml = `
+                        ${top3.second ? `
+                        <div class="podium-step second">
+                            <img class="podium-avatar" src="${top3.second.avatar}">
+                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${top3.second.name.split(' ')[0]}</div>
+                            <div class="podium-pillar">٢</div>
+                        </div>` : ''}
+                        
+                        ${top3.first ? `
+                        <div class="podium-step first">
+                            <i class="fa-solid fa-crown" style="color:var(--warning); margin-bottom:-4px; font-size:14px;"></i>
+                            <img class="podium-avatar" src="${top3.first.avatar}">
+                            <div style="font-size:12px; font-weight:black; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; color:var(--warning);">${top3.first.name.split(' ')[0]}</div>
+                            <div class="podium-pillar">١</div>
+                        </div>` : ''}
+
+                        ${top3.third ? `
+                        <div class="podium-step third">
+                            <img class="podium-avatar" src="${top3.third.avatar}">
+                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${top3.third.name.split(' ')[0]}</div>
+                            <div class="podium-pillar">٣</div>
+                        </div>` : ''}
+                    `;
                 }
-                rowsContainer.innerHTML = rowsHtml;
+
+                podiumEl.innerHTML = podiumHtml;
+
+                if (listHtml) {
+                    listEl.innerHTML = listHtml;
+                    // عرض توقيت آخر تحديث للكاش أسفل القائمة
+                    if (cacheData.lastUpdated && cacheData.lastUpdated.toDate) {
+                        const updateTime = cacheData.lastUpdated.toDate().toLocaleString('ar-EG', { hour12: true });
+                        const infoEl = document.createElement('div');
+                        infoEl.style.cssText = "font-size:10px; color:var(--text-muted); text-align:center; margin-top:8px; padding:4px; border-top:1px dashed var(--border);";
+                        infoEl.innerHTML = `<i class="fa-solid fa-clock"></i> آخر تحديث للقائمة: ${updateTime}`;
+                        listEl.appendChild(infoEl);
+                    }
+                } else {
+                    listEl.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);">لوحة الأوائل فارغة بانتظار تحدياتكم!</div>`;
+                }
+
             }).catch((err) => {
-                console.error("حدث خطأ بقراءة كاش لوحة الصدارة المجمعة:", err);
-                rowsContainer.innerHTML = "<p class='text-center text-danger py-4'>حدث عطل مفاجئ أثناء جلب ملف كاش لوحة الصدارة الموحد.</p>";
+                // ✅ تعديل 6: معالجة خطأ الاتصال مع رسالة تنبيهية مطمئنة للطلاب
+                listEl.innerHTML = `
+                    <div style="text-align:center; padding:20px; background:#fee2e2; border-radius:var(--radius-sm); border:1px solid #fca5a5;">
+                        <i class="fa-solid fa-tower-broadcast" style="font-size:26px; color:#ef4444; margin-bottom:8px; display:block;"></i>
+                        <strong style="color:#991b1b;">تعذّر الوصول لقائمة التميز</strong><br>
+                        <small style="color:#7f1d1d; display:block; margin-top:5px;">تحقق من اتصالك بالإنترنت ثم اضغط زر التحديث.</small>
+                    </div>`;
+                console.error("خطأ في قراءة كاش لوحة الأوائل:", err);
             });
         }
 
-        // ==========================================
-        // 🔄 [خاص بالأدمن عامر] دالة تجميع وضغط الترتيب ببيان كاش واحد موفر للباقة والكويريز
-        // ==========================================
-        function rebuildLeaderboardCacheByAdmin() {
-            if(!confirm("🔄 هل أنت متأكد من سحب وتجميع بيانات أفضل 100 طالب حركياً وضغطها في مستند كاش مركزي واحد لتوفير باقة الطلاب وقراءات الفايربيس بنسبة 99%؟")) return;
-            
-            showToast("⏳ جاري جلب وفهرسة البيانات الحية من خوادم جوجل...");
+        // ✅ تعديل 2: دالة إعادة بناء كاش الأوائل - مخصصة للأدمن فقط
+        // تقرأ أعلى 100 طالب حياً وتضغطهم في مستند system/leaderboard
+        function rebuildLeaderboardCacheByAdmin(btn) {
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري بناء الكاش...`;
 
-            db.collection("users").orderBy("xp", "desc").limit(100).get().then((snapshot) => {
-                let topUsers = [];
+            db.collection("users").orderBy("xp", "desc").limit(100).get().then(snapshot => {
+                const compressedUsers = [];
+
                 snapshot.forEach(doc => {
-                    const d = doc.data();
-                    topUsers.push({
-                        name: d.name || "طالب مجهول الصياغة",
-                        xp: d.xp || 0,
-                        level: d.level || 1,
-                        avatar: d.avatar || ""
+                    const u = doc.data();
+                    // ضغط البيانات الجوهرية فقط: الاسم، XP، المستوى، الصورة، تاريخ التسجيل
+                    compressedUsers.push({
+                        name: u.name || "طالب مجهول",
+                        xp: u.xp || 0,
+                        level: u.level || 1,
+                        avatar: u.photoURL || null,
+                        createdAt: u.createdAt || null
                     });
                 });
 
-                // ضغط وحفظ مصفوفة المائة لاعب بالكامل بمستند فريد واحد يسمى system/leaderboard
-                db.collection("system").doc("leaderboard").set({
-                    users: topUsers,
+                // حفظ المصفوفة المضغوطة في مستند الكاش الموحد مع توقيت السيرفر
+                return db.collection("system").doc("leaderboard").set({
+                    users: compressedUsers,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
-                    showToast("⚡ تهانينا عامر! تم بناء الكاش المجمع وتحديث لوحة الصدارة (Top 100) بنجاح!");
-                }).catch((e) => showToast(`❌ فشل ترحيل وضغط الكاش: ${e.message}`, "error"));
-            }).catch((e) => showToast(`❌ فشل سحب وفهرسة المستخدمين: ${e.message}`, "error"));
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    showToast(`✅ تم تحديث كاش الأوائل بنجاح! (${compressedUsers.length} طالب مُجمَّع)`);
+                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في system/leaderboard`);
+                });
+
+            }).catch(err => {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                showToast("❌ فشل بناء الكاش: " + err.message, "error");
+                console.error("خطأ في rebuildLeaderboardCacheByAdmin:", err);
+            });
         }
 
-        // 📂 ضخ وبناء بنوك الأسئلة الكبيرة عبر قراءة ملفات الـ CSV تلقائياً
-        function handleCSVUpload() {
-            const fileInput = document.getElementById('csv-file-input');
-            if(fileInput.files.length === 0) {
-                showToast("❌ يرجى اختيار ملف CSV صالح من ذاكرة الجهاز أولاً", "error");
-                return;
+        function showDashboardTab(tabName) {
+            const dashTab = document.getElementById('dash-subtab-container');
+            const profileTab = document.getElementById('profile-subtab-container');
+            const dashLink = document.getElementById('tab-link-dash');
+            const profileLink = document.getElementById('tab-link-profile');
+
+            if(tabName === 'dash') {
+                dashTab.classList.remove('hidden-tab');
+                profileTab.classList.add('hidden-tab');
+                dashLink.classList.add('active');
+                profileLink.classList.remove('active');
+            } else {
+                dashTab.classList.add('hidden-tab');
+                profileTab.classList.remove('hidden-tab');
+                dashLink.classList.remove('active');
+                profileLink.classList.add('active');
+            }
+        }
+
+        function logAdminAction(actionType, detail) {
+            const adminName = auth.currentUser ? (auth.currentUser.email.split('@')[0]) : "أدمن";
+            db.collection("admin_logs").add({
+                adminName: adminName,
+                actionType: actionType,
+                detail: detail,
+                timestamp: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                if(document.getElementById('view-admin-panel').style.display === "block") {
+                    loadAdminLogsList();
+                }
+            });
+        }
+
+        function handleAdminLogin() {
+            const email = document.getElementById('admin-email').value.trim();
+            const pass = document.getElementById('admin-pass').value.trim();
+            
+            auth.signInWithEmailAndPassword(email, pass).then((cred) => {
+                db.collection("admins").doc(cred.user.uid).get().then(snap => {
+                    if (snap.exists) {
+                        showToast("مرحباً بك يا قائد! تم فتح صلاحيات الإدارة.");
+                        logAdminAction("تسجيل دخول", "تم الدخول إلى لوحة التحكم");
+                        openAdminPanel();
+                    } else {
+                        alert("عذراً، هذا الحساب لا يملك صلاحيات سوبر أدمن.");
+                        auth.signOut();
+                    }
+                });
+            }).catch(e => alert("خطأ في التحقق: " + e.message));
+        }
+
+        function openAdminPanel() {
+            showView('view-admin-panel');
+            resetQuestionForm();
+            switchAdminTab('tab-upload');
+            document.getElementById('admin-search-input').value = "";
+            selectedAdminQuestionsGroup = [];
+            document.getElementById('btn-bulk-delete-questions').style.display = "none";
+            
+            db.collection("users").get().then(snap => {
+                document.getElementById('admin-total-students').innerText = snap.size;
+                
+                // احتساب الطلاب النشطين (آخر 7 أيام)
+                const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+                let activeCount = 0;
+                let totalScoreSum = 0;
+                let totalAttemptsCount = 0;
+
+                snap.forEach(userDoc => {
+                    const uData = userDoc.data();
+                    if(uData.lastLogin && uData.lastLogin.toMillis && uData.lastLogin.toMillis() >= sevenDaysAgo) {
+                        activeCount++;
+                    }
+                });
+                document.getElementById('admin-active-students').innerText = activeCount;
+            });
+
+            // حساب محاولات اليوم والنسب العامة
+            db.collectionGroup("attempts").get().then(snap => {
+                document.getElementById('admin-daily-attempts').innerText = snap.size; 
+                let scoreSum = 0;
+                let totalQ = 0;
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    scoreSum += (d.score || 0);
+                    totalQ += (d.totalQuestions || 1);
+                });
+                const avg = totalQ > 0 ? Math.round((scoreSum / totalQ) * 100) : 0;
+                document.getElementById('admin-avg-score').innerText = `${avg}%`;
+            });
+
+            db.collection("questions").get().then(snap => {
+                document.getElementById('admin-total-questions').innerText = snap.size;
+            });
+            
+            db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
+                cachedAdminQuestions = [];
+                snapshot.forEach(doc => {
+                    let q = doc.data();
+                    q.uid = doc.id;
+                    cachedAdminQuestions.push(q);
+                });
+                renderQuestionsListUI(cachedAdminQuestions);
+                calculateEasiestAndHardestQuestionsAnalytic(cachedAdminQuestions);
+            });
+        }
+
+        function calculateEasiestAndHardestQuestionsAnalytic(questionsList) {
+            let validQuestions = questionsList.filter(q => (q.correctCount || 0) + (q.wrongCount || 0) > 0);
+            if (validQuestions.length === 0) return;
+            
+            validQuestions.sort((a, b) => {
+                let rateA = (a.correctCount || 0) / ((a.correctCount || 0) + (a.wrongCount || 0));
+                let rateB = (b.correctCount || 0) / ((b.correctCount || 0) + (b.wrongCount || 0));
+                return rateA - rateB;
+            });
+
+            const hardest = validQuestions[0];
+            const easiest = validQuestions[validQuestions.length - 1];
+
+            const rateH = Math.round((hardest.correctCount || 0) / ((hardest.correctCount || 0) + (hardest.wrongCount || 0)) * 100);
+            const rateE = Math.round((easiest.correctCount || 0) / ((easiest.correctCount || 0) + (easiest.wrongCount || 0)) * 100);
+
+            document.getElementById('admin-analytics-hardest').innerHTML = `<strong>[${fixedSubjects[hardest.subject] || 'عام'}]</strong> ${hardest.question} <br> <span class='q-stat-tag q-stat-wrong'>نسبة دقة إجاباته: ${rateH}% فقط</span>`;
+            document.getElementById('admin-analytics-easiest').innerHTML = `<strong>[${fixedSubjects[easiest.subject] || 'عام'}]</strong> ${easiest.question} <br> <span class='q-stat-tag q-stat-success'>نسبة إجاباته الصحيحة: ${rateE}%</span>`;
+        }
+
+        function renderQuestionsListUI(list) {
+            let html = "";
+            list.forEach(q => {
+                const c = q.correctCount || 0;
+                const w = q.wrongCount || 0;
+                const totalAnswers = c + w;
+                const rate = totalAnswers > 0 ? Math.round((c / totalAnswers) * 100) : 0;
+                const isChecked = selectedAdminQuestionsGroup.includes(q.uid) ? "checked" : "";
+
+                html += `
+                    <div class="question-item" style="padding:15px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px;">
+                        <input type="checkbox" style="margin-top:5px; width:18px; height:18px; cursor:pointer;" ${isChecked} onchange="toggleSelectQuestionItem('${q.uid}', this.checked)">
+                        <div style="flex:1;">
+                            <strong>[${fixedSubjects[q.subject] || 'عام'}]</strong> ${q.question}
+                            <div style="margin: 5px 0;">
+                                <span class="q-stat-tag q-stat-success"><i class="fa-regular fa-circle-check"></i> إجابات صحيحة: ${c}</span>
+                                <span class="q-stat-tag q-stat-wrong"><i class="fa-regular fa-circle-xmark"></i> خاطئة: ${w}</span>
+                                <span class="q-stat-tag q-stat-rate"><i class="fa-solid fa-chart-pie"></i> نسبة النجاح: ${rate}%</span>
+                            </div>
+                            <div class="question-actions" style="margin-top:8px;">
+                                <button onclick="editQuestionInline('${q.uid}')" class="ban-btn ban-inactive" style="padding:4px 10px; font-size:12px;">تعديل 📝</button>
+                                <button onclick="deleteQuestionInline('${q.uid}')" class="ban-btn ban-active" style="padding:4px 10px; font-size:12px;">حذف 🗑️</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            document.getElementById('admin-questions-list').innerHTML = html || "لا توجد أسئلة تطابق الفلاتر المحددة حالياً.";
+        }
+
+        function toggleSelectQuestionItem(uid, isChecked) {
+            if(isChecked) {
+                if(!selectedAdminQuestionsGroup.includes(uid)) selectedAdminQuestionsGroup.push(uid);
+            } else {
+                selectedAdminQuestionsGroup = selectedAdminQuestionsGroup.filter(id => id !== uid);
+            }
+            document.getElementById('btn-bulk-delete-questions').style.display = selectedAdminQuestionsGroup.length > 0 ? "inline-block" : "none";
+        }
+
+        function deleteSelectedQuestionsGroup() {
+            if(confirm(`⚠️ هل أنت متأكد من حذف عدد (${selectedAdminQuestionsGroup.length}) سؤال دفعة واحدة نهائياً؟`)) {
+                let batch = db.batch();
+                selectedAdminQuestionsGroup.forEach(id => {
+                    batch.delete(db.collection("questions").doc(id));
+                });
+                batch.commit().then(() => {
+                    showToast("🎯 تم حذف مجموعة الأسئلة المحددة بنجاح!");
+                    logAdminAction("حذف جماعي", `تم حذف عدد ${selectedAdminQuestionsGroup.length} سؤال دفعة واحدة`);
+                    fetchSubjectQuestionCounts();
+                    openAdminPanel();
+                });
+            }
+        }
+
+        function filterQuestionsBank() {
+            const word = document.getElementById('admin-search-input').value.toLowerCase().trim();
+            const subjectFilter = document.getElementById('filter-admin-subject').value;
+            const difficultyFilter = document.getElementById('filter-admin-difficulty').value;
+
+            let filtered = cachedAdminQuestions;
+
+            if(subjectFilter) {
+                filtered = filtered.filter(q => q.subject === subjectFilter);
             }
 
-            const file = fileInput.files[0];
-            showToast("⏳ جاري فك ترميز ومعالجة أسطر ملف الأسئلة المرفوع...");
+            if(difficultyFilter) {
+                filtered = filtered.filter(q => {
+                    const total = (q.correctCount || 0) + (q.wrongCount || 0);
+                    if(total === 0) return difficultyFilter === "easy"; 
+                    const rate = (q.correctCount || 0) / total;
+                    if(difficultyFilter === "easy") return rate > 0.7;
+                    if(difficultyFilter === "medium") return rate >= 0.35 && rate <= 0.7;
+                    if(difficultyFilter === "hard") return rate < 0.35;
+                });
+            }
 
+            if(word) {
+                filtered = filtered.filter(q => {
+                    const inQ = q.question && q.question.toLowerCase().includes(word);
+                    const inAns = q.answer && q.answer.toLowerCase().includes(word);
+                    const inExp = q.explanation && q.explanation.toLowerCase().includes(word);
+                    const inOpts = q.options && q.options.some(o => o.toLowerCase().includes(word));
+                    return inQ || inAns || inExp || inOpts;
+                });
+            }
+
+            renderQuestionsListUI(filtered);
+        }
+
+        function deleteAllQuestions() {
+            if (confirm("🚨 هل تود مسح جميع الأسئلة نهائياً وبشكل كامل من السيرفر؟")) {
+                db.collection("questions").get().then(snap => {
+                    let batch = db.batch();
+                    snap.forEach(doc => batch.delete(doc.ref));
+                    batch.commit().then(() => {
+                        showToast("🎯 تم مسح بنك الأسئلة بالكامل بنجاح!");
+                        logAdminAction("تصفير الشامل", "مسح جميع أسئلة المنصة");
+                        fetchSubjectQuestionCounts();
+                        openAdminPanel();
+                    }).catch(err => alert("فشلت عملية الحذف الشامل: " + err.message));
+                });
+            }
+        }
+
+        function switchAdminTab(tabId) {
+            document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden-tab'));
+            document.getElementById(tabId).classList.remove('hidden-tab');
+            
+            const btnUpload = document.getElementById('btn-tab-upload');
+            const btnStudents = document.getElementById('btn-tab-students');
+            const btnLogs = document.getElementById('btn-tab-logs');
+            
+            btnUpload.className = "tab-btn";
+            btnStudents.className = "tab-btn";
+            btnLogs.className = "tab-btn";
+
+            if(tabId === 'tab-upload') {
+                btnUpload.className = "tab-btn active-upload";
+            } else if(tabId === 'tab-students') {
+                btnStudents.className = "tab-btn active-students";
+                loadAdminStudentsList();
+            } else {
+                btnLogs.className = "tab-btn active-logs";
+                loadAdminLogsList();
+            }
+        }
+
+        function updateFileNameDisplay() {
+            const fileInput = document.getElementById('csvFileInput');
+            const display = document.getElementById('fileNameDisplay');
+            if(fileInput.files.length > 0) {
+                display.innerText = "📁 الملف الجاهز للرفع: " + fileInput.files[0].name;
+                display.style.color = "var(--success)";
+            }
+        }
+
+        function uploadBulkQuestions() {
+            const fileInput = document.getElementById('csvFileInput');
+            const subjectSelect = document.getElementById('csvFileSubject');
+            const selectedSubject = subjectSelect.value;
+
+            if (fileInput.files.length === 0) { alert("يا قائد، يرجى اختيار ملف الـ CSV أولاً!"); return; }
+            if (!selectedSubject) { alert("يا قائد، يرجى تحديد المادة التعليمية أولاً!"); return; }
+
+            const file = fileInput.files[0];
+            
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const data = results.data;
-                    let batch = db.batch();
+                    const questionsArray = results.data;
+                    let batch = db.batch(); 
                     let count = 0;
-
-                    data.forEach((row) => {
-                        if(row.Question && row.Answer && row.A && row.B) {
-                            const newRef = db.collection("questions").doc();
-                            batch.set(newRef, {
-                                subject: activeCategory,
-                                question: row.Question.trim(),
-                                answer: row.Answer.trim(),
-                                options: [row.A, row.B, row.C || "", row.D || ""].filter(o => o !== ""),
-                                explanation: row.Explanation || "",
+                    
+                    questionsArray.forEach((q) => {
+                        if(q.Question && q.A && q.B && q.Answer) { 
+                            let newQuestionRef = db.collection("questions").doc(); 
+                            batch.set(newQuestionRef, {
+                                subject: selectedSubject,
+                                question: q.Question,
+                                options: [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== ""),
+                                answer: q.Answer,
+                                explanation: q.Explanation || "",
+                                correctCount: 0,
+                                wrongCount: 0,
                                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
                             });
                             count++;
                         }
                     });
 
-                    if(count > 0) {
-                        batch.commit().then(() => {
-                            showToast(`🎯 تم ضخ وحفظ عدد (${count}) سؤال بالكامل في فولدر المادة بنجاح.`);
-                            fetchSubjectQuestionCounts();
-                        }).catch(e => showToast(`❌ فشل حفظ الدفعة: ${e.message}`, "error"));
-                    } else {
-                        showToast("❌ لم نجد أي أسئلة متوافقة مع ترويسة الأعمدة الصحيحة (Question, Answer, A, B) بالملف المرفوع", "error");
+                    if(count === 0) {
+                        alert("لم نجد أسئلة صالحة، يرجى التأكد من العناوين الإجبارية بالأعمدة.");
+                        return;
                     }
+
+                    batch.commit().then(() => {
+                        showToast(`🎯 مبروك يا قائد! تم رفع عدد (${count}) سؤال بنجاح!`);
+                        logAdminAction("رفع ملف CSV", `تم رفع عدد ${count} سؤال لمادة ${fixedSubjects[selectedSubject]}`);
+                        fileInput.value = "";
+                        subjectSelect.value = "";
+                        document.getElementById('fileNameDisplay').innerText = "اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة";
+                        document.getElementById('fileNameDisplay').style.color = "";
+                        fetchSubjectQuestionCounts();
+                        openAdminPanel();
+                    }).catch(err => alert("حدث خطأ أثناء الرفع: " + err.message));
                 }
             });
         }
 
-        // 💾 تصدير واستخراج نسخة احتياطية شاملة للنظام بصيغة ملف JSON ككودك
-        function exportFullBackup() {
-            showToast("⏳ جاري سحب وتصنيف كامل قاعدة البيانات للتصدير الآمن...");
-            Promise.all([
-                db.collection("questions").get(),
-                db.collection("users").get()
-            ]).then(([qSnap, uSnap]) => {
-                let backup = { questions: [], users: [] };
-                qSnap.forEach(d => backup.questions.push({id: d.id, ...d.data()}));
-                uSnap.forEach(d => backup.users.push({id: d.id, ...d.data()}));
-
-                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup));
-                const downloadAnchor = document.createElement('a');
-                downloadAnchor.setAttribute("href", dataStr);
-                downloadAnchor.setAttribute("download", `AmerQuiz_Full_Backup_${new Date().toISOString().slice(0,10)}.json`);
-                document.body.appendChild(downloadAnchor);
-                downloadAnchor.click();
-                downloadAnchor.remove();
-                showToast("✅ تم استخراج وحفظ النسخة الاحتياطية لجهازك بنجاح");
-            }).catch(e => showToast(`❌ فشل تصدير النسخة: ${e.message}`, "error"));
+        function loadAdminStudentsList() {
+            const tbody = document.getElementById('admin-students-table-body');
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب ومزامنة الطلاب...</td></tr>`;
+            
+            db.collection("users").orderBy("xp", "desc").limit(100).get().then((snapshot) => {
+                tbody.innerHTML = "";
+                if(snapshot.empty) {
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">لا يوجد أي طلاب مسجلين حتى الآن.</td></tr>`;
+                    return;
+                }
+                
+                snapshot.forEach((doc) => {
+                    const student = doc.data();
+                    const uid = doc.id;
+                    const isBanned = student.isBanned === true;
+                    
+                    let dateStr = "غير محدد";
+                    if(student.lastLogin && student.lastLogin.toDate) {
+                        dateStr = student.lastLogin.toDate().toLocaleString('ar-EG', {hour12:true});
+                    }
+                    
+                    let lastQuizStr = student.lastActivity ? `${student.lastActivity.subjectName} (${student.lastActivity.score}/${student.lastActivity.total})` : "لا يوجد";
+                    
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td style="padding: 12px; font-weight: bold; ${isBanned ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${student.name || 'طالب مجهول'}</td>
+                        <td style="padding: 12px;">
+                            <input type="number" class="search-box" style="width:90px; margin:0; padding:6px;" value="${student.xp || 0}" onblur="updateStudentXpManually('${uid}', this.value, '${student.name}')">
+                        </td>
+                        <td style="padding: 12px;">
+                            <input type="number" class="search-box" style="width:60px; margin:0; padding:6px;" value="${student.level || 1}" onblur="updateStudentLevelManually('${uid}', this.value, '${student.name}')">
+                        </td>
+                        <td style="padding: 12px; font-size:12px; color:var(--text-muted);">
+                            <div>دخول: ${dateStr}</div>
+                            <div>آخر اختبار: ${lastQuizStr}</div>
+                        </td>
+                        <td style="padding: 12px; text-align: center; display:flex; gap:5px; justify-content:center;">
+                            <button onclick="toggleBanStudent('${uid}', ${isBanned}, '${student.name}')" class="ban-btn ${isBanned ? 'ban-inactive' : 'ban-active'}" style="font-size:11px;">
+                                ${isBanned ? '🔓 فك حظر' : '🚫 حظر'}
+                            </button>
+                            <button onclick="resetStudentAttemptsSpecific('${uid}', '${student.name}')" class="ban-btn ban-active" style="background:#f59e0b; color:white; font-size:11px;">
+                                🔄 تصفير مادة
+                            </button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            }).catch(err => {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 20px;">حدث خطأ في تحميل الطلاب: ${err.message}</td></tr>`;
+            });
         }
 
-        // 📥 استعادة واستيراد البيانات بالكامل من ملف JSON خارجي ككودك الأصلي
+        function updateStudentXpManually(uid, newXp, studentName) {
+            const xpVal = parseInt(newXp);
+            db.collection("users").doc(uid).update({ xp: xpVal }).then(() => {
+                showToast(`تم تحديث نقاط الطالب ${studentName} إلى ${xpVal}`);
+                logAdminAction("تعديل نقاط", `تغيير XP الطالب ${studentName} يدويًا إلى ${xpVal}`);
+            });
+        }
+
+        function updateStudentLevelManually(uid, newLevel, studentName) {
+            const lvlVal = parseInt(newLevel);
+            db.collection("users").doc(uid).update({ level: lvlVal }).then(() => {
+                showToast(`تم تحديث مستوى الطالب ${studentName} إلى ${lvlVal}`);
+                logAdminAction("تعديل مستوى", `تغيير مستوى الطالب ${studentName} يدويًا إلى ليفل ${lvlVal}`);
+            });
+        }
+
+        function toggleBanStudent(uid, currentStatus, studentName) {
+            const msg = currentStatus ? `هل تود إلغاء الحظر عن الطالب ${studentName}؟` : `هل أنت متأكد من حظر الطالب ${studentName}؟ لن يتمكن من دخول المنصة.`;
+            if (confirm(msg)) {
+                db.collection("users").doc(uid).update({ isBanned: !currentStatus }).then(() => {
+                    showToast("تم تحديث حالة الحظر بنجاح!");
+                    logAdminAction(currentStatus ? "فك حظر" : "حظر طالب", `الحالة المعدلة للطالب: ${studentName}`);
+                    loadAdminStudentsList();
+                }).catch(err => alert("فشلت عملية الرقابة: " + err.message));
+            }
+        }
+
+        function resetStudentAttemptsSpecific(uid, studentName) {
+            const subKey = prompt(`الرجاء كتابة رمز المادة المراد تصفير محاولاتها للطالب ${studentName}:\n (math / english / economics / management / office)`);
+            if(!subKey) return;
+            if(!fixedSubjects[subKey]) { alert("رمز المادة غير صحيح!"); return; }
+            
+            if(confirm(`هل أنت متأكد من مسح وتصفير سجل محاولات مادة (${fixedSubjects[subKey]}) للطالب ${studentName}؟`)) {
+                db.collection("users").doc(uid).collection("attempts").doc(subKey).delete().then(() => {
+                    // إزالة المادة من مصفوفة المواد المكتملة ليتثنى له ربح نقاطها مجدداً
+                    db.collection("users").doc(uid).update({
+                        completedSubjects: firebase.firestore.FieldValue.arrayRemove(subKey)
+                    }).then(() => {
+                        showToast(`🎯 تم تصفير محاولات مادة ${fixedSubjects[subKey]} للطالب بنجاح!`);
+                        logAdminAction("تصفير مادة لطالب", `تصفير مادة ${fixedSubjects[subKey]} للطالب ${studentName}`);
+                    });
+                });
+            }
+        }
+
+        function loadAdminLogsList() {
+            const container = document.getElementById('admin-logs-list');
+            db.collection("admin_logs").orderBy("timestamp", "desc").limit(40).get().then(snap => {
+                if(snap.empty) {
+                    container.innerHTML = "لا توجد عمليات مسجلة بالسجل حالياً.";
+                    return;
+                }
+                let html = "";
+                snap.forEach(doc => {
+                    const l = doc.data();
+                    let tStr = l.timestamp ? l.timestamp.toDate().toLocaleTimeString('ar-EG') : "";
+                    html += `
+                        <div style="padding:10px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
+                            <span><strong>[${l.adminName}]</strong> ${l.actionType}: ${l.detail}</span>
+                            <span style="color:var(--text-muted); font-size:11px;">${tStr}</span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            });
+        }
+
+        // 💾 تصدير قاعدة بيانات الأسئلة بالكامل بصيغة JSON كنسخة احتياطية
+        function exportFullBackup() {
+            db.collection("questions").get().then(snap => {
+                let backupData = [];
+                snap.forEach(doc => {
+                    backupData.push({ id: doc.id, ...doc.data() });
+                });
+                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `AmerQuiz_Questions_Backup_${new Date().toISOString().split('T')[0]}.json`;
+                a.click();
+                showToast("📥 تم استخراج وتحميل الـ Backup بنجاح!");
+            });
+        }
+
+        // 🔄 استعادة قاعدة بيانات الأسئلة من ملف JSON
         function importFullBackup(event) {
             const file = event.target.files[0];
-            if(!file) return;
-
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const backup = JSON.parse(e.target.result);
-                    let batch = db.batch();
-
-                    if(backup.questions) {
-                        backup.questions.forEach(q => {
-                            const ref = db.collection("questions").doc(q.id);
-                            const copy = {...q}; delete copy.id;
-                            batch.set(ref, copy);
+                    const imported = JSON.parse(e.target.result);
+                    if(!Array.isArray(imported)) { alert("هيكل ملف النسخة الاحتياطية غير صحيح!"); return; }
+                    
+                    if(confirm(`⚠️ أنت على وشك استيراد ودمج عدد (${imported.length}) سؤال في السيرفر. هل ترغب بالاستمرار؟`)) {
+                        let batch = db.batch();
+                        imported.forEach(q => {
+                            let ref = db.collection("questions").doc();
+                            batch.set(ref, {
+                                subject: q.subject,
+                                question: q.question,
+                                options: q.options || [],
+                                answer: q.answer,
+                                explanation: q.explanation || "",
+                                correctCount: q.correctCount || 0,
+                                wrongCount: q.wrongCount || 0,
+                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                            });
+                        });
+                        batch.commit().then(() => {
+                            showToast("🔄 تم استعادة الأسئلة ودمجها بالسيرفر بنجاح!");
+                            logAdminAction("استعادة نسخة احتياطية", `استيراد دمج عدد ${imported.length} سؤال عبر ملف JSON`);
+                            fetchSubjectQuestionCounts();
+                            openAdminPanel();
                         });
                     }
-
-                    if(backup.users) {
-                        backup.users.forEach(u => {
-                            const ref = db.collection("users").doc(u.id);
-                            const copy = {...u}; delete copy.id;
-                            batch.set(ref, copy);
-                        });
-                    }
-
-                    batch.commit().then(() => {
-                        showToast("✨ تم استعادة ودمج كافة البيانات المرفوعة بملف السيرفر بنجاح تامي!");
-                        fetchSubjectQuestionCounts();
-                    }).catch(err => showToast(`❌ فشل تدوين البيانات: ${err.message}`, "error"));
-
                 } catch(err) {
-                    showToast("❌ تنسيق ملف الـ JSON المرفوع غير سليم أو معطوب بالكامل", "error");
+                    alert("فشل قراءة وفك تشفير الملف البديل!");
                 }
             };
             reader.readAsText(file);
         }
 
-        // 📑 معالج الانتقال والتبويب الحركي السلس بين واجهات وشاشات المنصة
-        function switchView(viewId) {
-            const views = ['view-register', 'view-admin-login', 'view-dashboard', 'view-arena', 'view-result', 'view-admin-panel', 'view-leaderboard'];
-            views.forEach(v => {
-                const el = document.getElementById(v);
-                if(el) el.style.display = "none";
-            });
-            
-            const target = document.getElementById(viewId);
-            if(target) {
-                if(viewId === 'view-dashboard' || viewId === 'view-admin-panel') {
-                    target.style.display = "flex";
-                } else {
-                    target.style.display = "block";
-                }
+        function saveQuestionData() {
+            const qId = document.getElementById('form-q-id').value;
+            const subject = document.getElementById('form-q-subject').value;
+            const text = document.getElementById('form-q-text').value.trim();
+            const o1 = document.getElementById('form-q-opt1').value.trim();
+            const o2 = document.getElementById('form-q-opt2').value.trim();
+            const o3 = document.getElementById('form-q-opt3').value.trim();
+            const o4 = document.getElementById('form-q-opt4').value.trim();
+            const ans = document.getElementById('form-q-answer').value.trim();
+            const exp = document.getElementById('form-q-exp').value.trim();
+
+            if(!text || !o1 || !o2 || !ans) { alert("يرجى ملء نص السؤال والخيارات والإجابة الصحيحة على الأقل."); return; }
+
+            const payload = {
+                subject: subject,
+                question: text,
+                options: [o1, o2, o3, o4].filter(o => o !== ""),
+                answer: ans,
+                explanation: exp,
+                createdAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            if (qId) {
+                db.collection("questions").doc(qId).update(payload).then(() => {
+                    showToast("تم تعديل السؤال بنجاح!");
+                    logAdminAction("تعديل سؤال فردي", text.substring(0, 40) + "...");
+                    fetchSubjectQuestionCounts();
+                    openAdminPanel();
+                });
+            } else {
+                payload.correctCount = 0;
+                payload.wrongCount = 0;
+                db.collection("questions").add(payload).then(() => {
+                    showToast("تم إضافة السؤال لبنك الأسئلة بنجاح!");
+                    logAdminAction("إضافة سؤال فردي", text.substring(0, 40) + "...");
+                    fetchSubjectQuestionCounts();
+                    openAdminPanel();
+                });
             }
-
-            // [تعديل الحماية الباقية]: تفعيل القراءة الموحدة الخارقة فقط عند طلب لوحة الأوائل المعزولة
-            if(viewId === 'view-leaderboard') {
-                fetchLeaderboard();
-            }
         }
 
-        function showDashboardTab(id) {
-            const tabs = ['tab-dash', 'tab-profile'];
-            tabs.forEach(t => document.getElementById(t).style.display = "none");
-            document.getElementById(`tab-${id}`).style.display = "block";
-            
-            document.querySelectorAll('.sidebar-btn').forEach(b => b.classList.remove('active'));
-            event?.currentTarget?.classList?.add('active');
-        }
-
-        // 🚪 تسجيل الخروج وتدمير جلسة التصفح وتأمينها
-        function logout() {
-            auth.signOut().then(() => {
-                currentUser = null;
-                showToast("🔒 تم تسجيل الخروج بنجاح وجلسة الطالب مؤمنة الآن");
-                switchView('view-register');
+        function editQuestionInline(id) {
+            db.collection("questions").doc(id).get().then(doc => {
+                let q = doc.data();
+                document.getElementById('form-q-id').value = id;
+                document.getElementById('form-q-subject').value = q.subject;
+                document.getElementById('form-q-text').value = q.question;
+                document.getElementById('form-q-opt1').value = q.options[0] || "";
+                document.getElementById('form-q-opt2').value = q.options[1] || "";
+                document.getElementById('form-q-opt3').value = q.options[2] || "";
+                document.getElementById('form-q-opt4').value = q.options[3] || "";
+                document.getElementById('form-q-answer').value = q.answer;
+                document.getElementById('form-q-exp').value = q.explanation || "";
+                
+                document.getElementById('btn-cancel-edit').style.display = "block";
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         }
 
-        // 🔔 محرك التنبيهات المنبثقة الذكي والإرشادي بالنظام
-        function showToast(message, type = "success") {
-            const toast = document.getElementById('toast');
-            if(!toast) return;
-            toast.innerText = message;
-            toast.className = `toast-msg ${type === 'success' ? 'toast-success' : 'toast-error'}`;
-            toast.style.display = "block";
-            
-            setTimeout(() => {
-                toast.style.display = "none";
-            }, 3500);
+        function deleteQuestionInline(id) {
+            if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً؟")) {
+                db.collection("questions").doc(id).get().then(snap => {
+                    const qText = snap.data().question;
+                    db.collection("questions").doc(id).delete().then(() => {
+                        showToast("تم حذف السؤال!");
+                        logAdminAction("حذف سؤال", qText.substring(0, 40) + "...");
+                        fetchSubjectQuestionCounts();
+                        openAdminPanel();
+                    });
+                });
+            }
+        }
+
+        function resetQuestionForm() {
+            document.getElementById('form-q-id').value = "";
+            document.getElementById('form-q-text').value = "";
+            document.getElementById('form-q-opt1').value = "";
+            document.getElementById('form-q-opt2').value = "";
+            document.getElementById('form-q-opt3').value = "";
+            document.getElementById('form-q-opt4').value = "";
+            document.getElementById('form-q-answer').value = "";
+            document.getElementById('form-q-exp').value = "";
+            document.getElementById('btn-cancel-edit').style.display = "none";
+        }
+
+        function renderSubjects() {
+            const grid = document.getElementById('subjects-container');
+            grid.innerHTML = "";
+            Object.keys(fixedSubjects).forEach(key => {
+                const iconClass = subjectIcons[key] || "fa-book-open";
+                const qCount = subjectCounts[key] || 0;
+
+                const card = document.createElement('div');
+                card.className = `subject-card ${key === activeCategory ? 'selected' : ''}`;
+                card.innerHTML = `
+                    <i class="fa-solid ${iconClass}"></i>
+                    <h4 style="margin:5px 0 0 0; font-size:15px;">${fixedSubjects[key]}</h4>
+                    <span class="q-count-badge">${qCount} سؤال متاح</span>
+                `;
+                card.onclick = () => {
+                    activeCategory = key;
+                    document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
+                    card.classList.add('selected');
+                    checkSubjectAttemptStatus();
+                };
+                grid.appendChild(card);
+            });
+        }
+
+        function toggleLoginForm(type) {
+            if(type === 'admin') { showView('view-admin-login'); }
+            else { checkAuthenticationState(); }
+        }
+
+        function showAdminLogin() { showView('view-admin-login'); }
+        function backToDashboard() { showDashboardTab('dash'); checkAuthenticationState(); }
+
+        function showView(viewId) {
+            const views = ['view-register', 'view-admin-login', 'view-dashboard', 'view-arena', 'view-result', 'view-admin-panel'];
+            views.forEach(v => document.getElementById(v).style.display = "none");
+            document.getElementById(viewId).style.display = "block";
+        }
+
+        function toggleTheme() { 
+            document.body.classList.toggle('dark-mode'); 
+            if(document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('amer_quiz_theme', 'dark');
+            } else {
+                localStorage.setItem('amer_quiz_theme', 'light');
+            }
         }
     </script>
 </body>
