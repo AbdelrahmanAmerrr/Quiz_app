@@ -100,9 +100,9 @@ html, body {
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
         
         .app-layout { display: grid;
-            grid-template-columns: 2.2fr 1fr; max-width: 1400px; margin: 25px auto; gap: 25px; padding: 0 20px;
+            grid-template-columns: 1fr; max-width: 900px; margin: 25px auto; gap: 25px; padding: 0 20px;
             }
-        .main-zone, .side-zone { display: flex; flex-direction: column; gap: 25px;
+        .main-zone { display: flex; flex-direction: column; gap: 25px;
             }
 
         .card { 
@@ -342,10 +342,10 @@ html, body {
         .q-stat-rate { background: var(--primary-light); color: var(--primary);
             }
 
-        .nav-tabs { display: flex; gap: 10px; border-bottom: 2px solid var(--border); margin-bottom: 20px;
+        .nav-tabs { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap;
             }
-        .nav-tab-link { padding: 10px 20px; font-weight: bold; cursor: pointer; color: var(--text-muted);
-            border-bottom: 3px solid transparent; transition: var(--transition); }
+        .nav-tab-link { padding: 9px 14px; font-weight: bold; cursor: pointer; color: var(--text-muted); font-size: 13px;
+            border-bottom: 3px solid transparent; transition: var(--transition); white-space: nowrap; }
         .nav-tab-link.active { color: var(--primary); border-bottom-color: var(--primary);
             }
 
@@ -417,9 +417,9 @@ html, body {
                 }
             .q-nav-dot { width: 32px; height: 32px; font-size: 12px;
                 }
-            .nav-tabs { flex-direction: column; gap: 5px;
+            .nav-tabs { flex-wrap: wrap; gap: 4px; overflow-x: auto;
                 }
-            .nav-tab-link { padding: 8px 12px; text-align: center;
+            .nav-tab-link { padding: 8px 10px; font-size: 12px;
                 }
             .admin-header-box { flex-direction: column; align-items: flex-start; gap: 10px;
                 }
@@ -487,8 +487,9 @@ html, body {
                 </div>
 
                 <div class="nav-tabs">
-                    <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')">🏠 لوحة التحكم الرئيسية</div>
-                    <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')">👤 ملف الطالب وإنجازاته</div>
+                    <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')">🏠 لوحة التحكم</div>
+                    <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')">👤 ملف الطالب</div>
+                    <div id="tab-link-leaders" class="nav-tab-link" onclick="showDashboardTab('leaders')">🏆 لوحة الأوائل</div>
                 </div>
 
                 <div id="dash-subtab-container">
@@ -561,7 +562,28 @@ html, body {
                         <p id="last-activity-text" style="margin: 0; color: var(--text-muted); font-size: 14px;">لا يوجد سجل محاولات حالياً، خض تحديك الأول!</p>
                     </div>
                 </div>
-            </div>
+
+                <!-- ✅ تاب لوحة الأوائل الجديد - منقول من side-zone إلى هنا -->
+                <div id="leaders-subtab-container" class="hidden-tab">
+                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:15px;">
+                        <h3 style="margin:0;"><i class="fa-solid fa-trophy" style="color:var(--warning)"></i> أوائل المنصة (Top 100)</h3>
+                        <button class="ban-btn ban-inactive" onclick="loadGlobalLeaderboard()" style="padding: 8px 16px; font-size: 13px;"><i class="fa-solid fa-arrows-rotate"></i> تحديث</button>
+                    </div>
+
+                    <div id="leaders-filter-bar" style="display:flex; gap:5px; background:var(--border); padding:3px; border-radius:8px; margin-bottom:15px;">
+                        <button id="leader-filter-all" class="tab-btn active-upload" style="font-size:12px; padding:7px;" onclick="toggleLeaderboardFilter('all')">كل الأوقات</button>
+                        <button id="leader-filter-month" class="tab-btn" style="font-size:12px; padding:7px; color:var(--text-main);" onclick="toggleLeaderboardFilter('month')">الشهر الحالي</button>
+                        <button id="leader-filter-week" class="tab-btn" style="font-size:12px; padding:7px; color:var(--text-main);" onclick="toggleLeaderboardFilter('week')">الأسبوع الحالي</button>
+                    </div>
+
+                    <div id="leaderboard-podium" class="podium-container"></div>
+
+                    <div class="leaderboard-list" id="dom-leaderboard">
+                        <div style="text-align:center; padding:20px; color:var(--text-muted);">اضغط على التاب لتحميل قائمة الأوائل</div>
+                    </div>
+                </div>
+
+            </div><!-- /view-dashboard -->
 
             <div class="card" id="view-arena" style="display: none;">
                 <div class="arena-progress-wrapper">
@@ -786,26 +808,6 @@ html, body {
             </div>
         </div>
 
-        <div class="side-zone">
-            <div class="card">
-                <h3 style="margin-top: 0;"><i class="fa-solid fa-trophy" style="color:var(--warning)"></i> أوائل المنصة (Top 100)</h3>
-                
-                <div style="display: flex; gap: 5px; background: var(--border); padding: 3px; border-radius: 8px; margin-bottom: 15px;">
-                    <button id="leader-filter-all" class="tab-btn active-upload" style="font-size:11px; padding: 6px;" onclick="toggleLeaderboardFilter('all')">كل الأوقات</button>
-                    <button id="leader-filter-month" class="tab-btn" style="font-size:11px; padding: 6px; color:var(--text-main);" onclick="toggleLeaderboardFilter('month')">الشهر الحالي</button>
-                    <button id="leader-filter-week" class="tab-btn" style="font-size:11px; padding: 6px; color:var(--text-main);" onclick="toggleLeaderboardFilter('week')">الأسبوع الحالي</button>
-                </div>
-
-                <button class="ban-btn ban-inactive" onclick="loadGlobalLeaderboard()" style="width:100%; margin-bottom: 15px; padding: 8px 0; font-size: 13px;"><i class="fa-solid fa-arrows-rotate"></i> تحديث اللوحة الحية حركياً</button>
-
-                <div id="leaderboard-podium" class="podium-container"></div>
-
-                <div class="leaderboard-list" id="dom-leaderboard">
-                    جاري المزامنة الحية للأوائل...
-                </div>
-            </div>
-        </div>
-
     </div>
 
     <script>
@@ -857,7 +859,6 @@ html, body {
         window.onload = function() {
             fetchSubjectQuestionCounts();
             checkAuthenticationState();
-            loadGlobalLeaderboard();
         };
 
         function showToast(text, type = "success") {
@@ -1534,13 +1535,15 @@ html, body {
 
         function toggleLeaderboardFilter(filterType) {
             currentLeaderFilter = filterType;
-            document.querySelectorAll('.side-zone .tab-btn').forEach(b => {
+            document.querySelectorAll('#leaders-filter-bar .tab-btn').forEach(b => {
                 b.className = "tab-btn";
                 b.style.color = "var(--text-main)";
             });
             const activeBtn = document.getElementById(`leader-filter-${filterType}`);
-            activeBtn.className = "tab-btn active-upload";
-            activeBtn.style.color = "white";
+            if (activeBtn) {
+                activeBtn.className = "tab-btn active-upload";
+                activeBtn.style.color = "white";
+            }
             loadGlobalLeaderboard();
         }
 
@@ -1552,8 +1555,8 @@ html, body {
             listEl.innerHTML = `<div style="text-align:center; padding:25px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin" style="font-size:20px; margin-bottom:8px; display:block;"></i> جاري تحميل قائمة التميز...</div>`;
             podiumEl.innerHTML = "";
 
-            // ✅ قراءة واحدة فقط (1 Read) من مستند الكاش المركزي
-            db.collection("system").doc("leaderboard").get().then((docSnap) => {
+            // ✅ قراءة واحدة فقط (1 Read) من مستند الكاش داخل مجموعة users
+            db.collection("users").doc("_leaderboard_cache_").get().then((docSnap) => {
 
                 // حالة: مستند الكاش غير موجود بعد (لم يُبنَ من قبل الأدمن)
                 if (!docSnap.exists) {
@@ -1697,15 +1700,15 @@ html, body {
                     });
                 });
 
-                // حفظ المصفوفة المضغوطة في مستند الكاش الموحد مع توقيت السيرفر
-                return db.collection("system").doc("leaderboard").set({
+                // حفظ المصفوفة المضغوطة في مستند الكاش ضمن مجموعة users مع توقيت السيرفر
+                return db.collection("users").doc("_leaderboard_cache_").set({
                     users: compressedUsers,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     showToast(`✅ تم تحديث كاش الأوائل بنجاح! (${compressedUsers.length} طالب مُجمَّع)`);
-                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في system/leaderboard`);
+                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في users/_leaderboard_cache_`);
                 });
 
             }).catch(err => {
@@ -1717,21 +1720,32 @@ html, body {
         }
 
         function showDashboardTab(tabName) {
-            const dashTab = document.getElementById('dash-subtab-container');
-            const profileTab = document.getElementById('profile-subtab-container');
-            const dashLink = document.getElementById('tab-link-dash');
+            const dashTab     = document.getElementById('dash-subtab-container');
+            const profileTab  = document.getElementById('profile-subtab-container');
+            const leadersTab  = document.getElementById('leaders-subtab-container');
+            const dashLink    = document.getElementById('tab-link-dash');
             const profileLink = document.getElementById('tab-link-profile');
+            const leadersLink = document.getElementById('tab-link-leaders');
 
-            if(tabName === 'dash') {
+            // إخفاء الكل أولاً
+            dashTab.classList.add('hidden-tab');
+            profileTab.classList.add('hidden-tab');
+            leadersTab.classList.add('hidden-tab');
+            dashLink.classList.remove('active');
+            profileLink.classList.remove('active');
+            if (leadersLink) leadersLink.classList.remove('active');
+
+            if (tabName === 'dash') {
                 dashTab.classList.remove('hidden-tab');
-                profileTab.classList.add('hidden-tab');
                 dashLink.classList.add('active');
-                profileLink.classList.remove('active');
-            } else {
-                dashTab.classList.add('hidden-tab');
+            } else if (tabName === 'profile') {
                 profileTab.classList.remove('hidden-tab');
-                dashLink.classList.remove('active');
                 profileLink.classList.add('active');
+            } else if (tabName === 'leaders') {
+                leadersTab.classList.remove('hidden-tab');
+                if (leadersLink) leadersLink.classList.add('active');
+                // تحميل اللوحة عند أول فتح للتاب فقط
+                loadGlobalLeaderboard();
             }
         }
 
