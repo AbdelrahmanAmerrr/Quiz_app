@@ -1556,7 +1556,7 @@ html, body {
             podiumEl.innerHTML = "";
 
             // ✅ قراءة واحدة فقط (1 Read) من مستند الكاش في مجموعة questions
-            db.collection("questions").doc("__leaderboard__").get().then((docSnap) => {
+            db.collection("questions").doc("leaderboard-cache").get().then((docSnap) => {
 
                 // حالة: مستند الكاش غير موجود بعد (لم يُبنَ من قبل الأدمن)
                 if (!docSnap.exists) {
@@ -1701,14 +1701,14 @@ html, body {
                 });
 
                 // حفظ الكاش في مجموعة questions بمعرّف ثابت لا يتعارض مع الأسئلة العادية
-                return db.collection("questions").doc("__leaderboard__").set({
+                return db.collection("questions").doc("leaderboard-cache").set({
                     users: compressedUsers,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     showToast(`✅ تم تحديث كاش الأوائل بنجاح! (${compressedUsers.length} طالب مُجمَّع)`);
-                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في questions/__leaderboard__`);
+                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في questions/leaderboard-cache`);
                 });
 
             }).catch(err => {
@@ -1952,7 +1952,7 @@ html, body {
                     let batch = db.batch();
                     snap.forEach(doc => {
                         // حماية مستند كاش الأوائل من الحذف العشوائي
-                        if (doc.id === "__leaderboard__") return;
+                        if (doc.id === "leaderboard-cache") return;
                         batch.delete(doc.ref);
                     });
                     batch.commit().then(() => {
