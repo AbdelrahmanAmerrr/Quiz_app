@@ -1555,8 +1555,8 @@ html, body {
             listEl.innerHTML = `<div style="text-align:center; padding:25px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin" style="font-size:20px; margin-bottom:8px; display:block;"></i> جاري تحميل قائمة التميز...</div>`;
             podiumEl.innerHTML = "";
 
-            // ✅ قراءة واحدة فقط (1 Read) من مستند الكاش داخل مجموعة users
-            db.collection("users").doc("_leaderboard_cache_").get().then((docSnap) => {
+            // ✅ قراءة واحدة فقط (1 Read) من مستند الكاش في مجموعة questions
+            db.collection("questions").doc("__leaderboard__").get().then((docSnap) => {
 
                 // حالة: مستند الكاش غير موجود بعد (لم يُبنَ من قبل الأدمن)
                 if (!docSnap.exists) {
@@ -1700,15 +1700,15 @@ html, body {
                     });
                 });
 
-                // حفظ المصفوفة المضغوطة في مستند الكاش ضمن مجموعة users مع توقيت السيرفر
-                return db.collection("users").doc("_leaderboard_cache_").set({
+                // حفظ الكاش في مجموعة questions بمعرّف ثابت لا يتعارض مع الأسئلة العادية
+                return db.collection("questions").doc("__leaderboard__").set({
                     users: compressedUsers,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
                     showToast(`✅ تم تحديث كاش الأوائل بنجاح! (${compressedUsers.length} طالب مُجمَّع)`);
-                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في users/_leaderboard_cache_`);
+                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في questions/__leaderboard__`);
                 });
 
             }).catch(err => {
@@ -1950,7 +1950,11 @@ html, body {
             if (confirm("🚨 هل تود مسح جميع الأسئلة نهائياً وبشكل كامل من السيرفر؟")) {
                 db.collection("questions").get().then(snap => {
                     let batch = db.batch();
-                    snap.forEach(doc => batch.delete(doc.ref));
+                    snap.forEach(doc => {
+                        // حماية مستند كاش الأوائل من الحذف العشوائي
+                        if (doc.id === "__leaderboard__") return;
+                        batch.delete(doc.ref);
+                    });
                     batch.commit().then(() => {
                         showToast("🎯 تم مسح بنك الأسئلة بالكامل بنجاح!");
                         logAdminAction("تصفير الشامل", "مسح جميع أسئلة المنصة");
