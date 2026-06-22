@@ -525,13 +525,12 @@ html, body {
                     <h3 style="margin-top:25px;"><i class="fa-solid fa-book"></i> اختر المادة الدراسية لتحدي بنك الأسئلة المحدث:</h3>
                     <div class="subject-grid" id="subjects-container"></div>
 
-                    <div style="margin-top: 20px; padding: 15px; background: var(--bg-gradient); border-radius: var(--radius-sm); border: 1px solid var(--border); display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-                        <label style="font-weight: bold; color: var(--text-main);"><i class="fa-solid fa-list-ol"></i> حدد عدد أسئلة الاختبار للرحلة:</label>
-                        <select id="quiz-question-count-select" style="padding: 8px 15px; border-radius: 8px; border: 1px solid var(--border); background: var(--card-bg); color: var(--text-main); font-weight: bold; cursor: pointer;">
-                            <option value="10">10 أسئلة</option>
-                            <option value="20">20 سؤال</option>
-                            <option value="30">30 سؤال</option>
-                            <option value="all" selected>كل الأسئلة المتوفرة بالمادة</option>
+                    <div id="question-count-box" style="display:none; margin-top: 20px; padding: 15px; background: var(--bg-gradient); border-radius: var(--radius-sm); border: 2px solid var(--primary-light); animation: fadeInUp 0.35s ease;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+                            <label style="font-weight:bold; color:var(--text-main); font-size:14px;"><i class="fa-solid fa-sliders"></i> كم سؤالاً تريد في هذا الاختبار؟</label>
+                            <span id="subject-available-count" style="background:var(--primary); color:white; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:bold;"></span>
+                        </div>
+                        <select id="quiz-question-count-select" style="width:100%; padding:10px 15px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-weight:bold; cursor:pointer; font-size:15px;">
                         </select>
                     </div>
 
@@ -2330,9 +2329,39 @@ html, body {
                     document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
                     card.classList.add('selected');
                     checkSubjectAttemptStatus();
+                    updateQuestionCountOptions(key);
                 };
                 grid.appendChild(card);
             });
+            // تحديث الخيارات للمادة المحددة افتراضياً عند أول رندر
+            updateQuestionCountOptions(activeCategory);
+        }
+
+        function updateQuestionCountOptions(subjectKey) {
+            const total = subjectCounts[subjectKey] || 0;
+            const box    = document.getElementById('question-count-box');
+            const select = document.getElementById('quiz-question-count-select');
+            const badge  = document.getElementById('subject-available-count');
+
+            if (total === 0) {
+                box.style.display = 'none';
+                return;
+            }
+
+            // بناء الخيارات بذكاء بناءً على عدد الأسئلة الفعلي المتاح
+            let optionsHtml = '';
+            const steps = [5, 10, 15, 20, 25, 30, 40, 50];
+            steps.forEach(n => {
+                if (n < total) {
+                    optionsHtml += `<option value="${n}">${n} سؤال</option>`;
+                }
+            });
+            // الخيار الافتراضي دائماً هو كل الأسئلة
+            optionsHtml += `<option value="all" selected>كل الأسئلة (${total} سؤال) ✦</option>`;
+
+            select.innerHTML = optionsHtml;
+            badge.textContent = `${total} سؤال متاح`;
+            box.style.display = 'block';
         }
 
         function toggleLoginForm(type) {
