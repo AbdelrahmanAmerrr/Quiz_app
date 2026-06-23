@@ -155,6 +155,20 @@ html, body {
             }
         
         /* وتوسيط زر التالي ومحاذاته بشكل احترافي */
+        /* === شاشة اختيار عدد الأسئلة === */
+        .picker-card { text-align: center; padding: 30px 20px; }
+        .picker-number { font-size: 88px; font-weight: 900; color: var(--primary); line-height: 1;
+            transition: all 0.15s ease; }
+        .picker-controls { display: flex; align-items: center; gap: 14px; margin: 20px 0; }
+        .picker-btn { width: 44px; height: 44px; border-radius: 50%; border: none;
+            background: var(--primary); color: white; font-size: 22px; font-weight: bold;
+            cursor: pointer; flex-shrink: 0; transition: transform 0.1s; }
+        .picker-btn:active { transform: scale(0.9); }
+        input[type="range"].picker-slider { flex: 1; height: 6px; accent-color: var(--primary); cursor: pointer; }
+        .picker-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
+        .picker-back-link { color: var(--text-muted); font-size: 14px; cursor: pointer; text-decoration: none; }
+        .picker-back-link:hover { color: var(--primary); }
+
         .btn-next-wrapper {
             display: flex;
             justify-content: center;
@@ -525,15 +539,6 @@ html, body {
                     <h3 style="margin-top:25px;"><i class="fa-solid fa-book"></i> اختر المادة الدراسية لتحدي بنك الأسئلة المحدث:</h3>
                     <div class="subject-grid" id="subjects-container"></div>
 
-                    <div id="question-count-box" style="display:none; margin-top: 20px; padding: 15px; background: var(--bg-gradient); border-radius: var(--radius-sm); border: 2px solid var(--primary-light); animation: fadeInUp 0.35s ease;">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-                            <label style="font-weight:bold; color:var(--text-main); font-size:14px;"><i class="fa-solid fa-sliders"></i> كم سؤالاً تريد في هذا الاختبار؟</label>
-                            <span id="subject-available-count" style="background:var(--primary); color:white; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:bold;"></span>
-                        </div>
-                        <select id="quiz-question-count-select" style="width:100%; padding:10px 15px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-weight:bold; cursor:pointer; font-size:15px;">
-                        </select>
-                    </div>
-
                     <div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 15px;">
                         <div class="practice-badge" id="arena-practice-alert">⚠️ هذه محاولة تدريبية ولن تضيف XP جديد.</div>
                         <button class="btn-launch" id="btn-start-quiz" onclick="startQuizArena()"><i class="fa-solid fa-play"></i> بدء التحدي الآن</button>
@@ -584,6 +589,31 @@ html, body {
 
             </div><!-- /view-dashboard -->
 
+            <!-- ✅ شاشة اختيار عدد الأسئلة (تظهر بين الصفحة الرئيسية وشاشة الامتحان) -->
+            <div class="card picker-card" id="view-count-picker" style="display: none;">
+                <h2 style="margin: 0 0 6px 0;">كم عدد الأسئلة؟</h2>
+                <p style="color: var(--text-muted); margin: 0 0 20px 0; font-size: 14px;">
+                    المتاح: <strong id="picker-total-text" style="color:var(--primary);">0</strong> سؤال
+                </p>
+
+                <div id="picker-number-display" class="picker-number">10</div>
+
+                <div class="picker-controls">
+                    <button class="picker-btn" onclick="adjustPickerCount(-5)">−</button>
+                    <input type="range" class="picker-slider" id="picker-slider"
+                           min="5" max="10" step="5" value="10"
+                           oninput="updatePickerDisplay(this.value)">
+                    <button class="picker-btn" onclick="adjustPickerCount(5)">+</button>
+                </div>
+
+                <div class="picker-nav">
+                    <span class="picker-back-link" onclick="showView('view-dashboard')">→ السابق</span>
+                    <button class="btn-launch" style="padding: 12px 35px;" onclick="launchArenaWithCount()">
+                        <i class="fa-solid fa-chevron-left"></i> التالي
+                    </button>
+                </div>
+            </div>
+
             <div class="card" id="view-arena" style="display: none;">
                 <div class="arena-progress-wrapper">
                     <div id="arena-progress-bar-fill" class="arena-progress-fill"></div>
@@ -611,15 +641,30 @@ html, body {
                 
                 <h2 id="arena-question-text" style="line-height: 1.5; margin-bottom: 25px; word-break: break-word;">جاري تحميل السؤال...</h2>
                 <div id="arena-options-box"></div>
-                
+
+                <!-- ✅ أزرار التالي/السابق فوق الشرح مباشرة -->
+                <div id="arena-nav-buttons" style="display: none; gap: 10px; margin-top: 20px; margin-bottom: 5px; display: none;">
+                    <button id="btn-prev-question" class="btn-launch"
+                            style="background: var(--text-muted); flex:1;"
+                            onclick="goToPrevQuestion()">
+                        <i class="fa-solid fa-circle-arrow-right"></i> السؤال السابق
+                    </button>
+                    <button id="btn-next-question" class="btn-launch"
+                            style="background: var(--success); flex:1.5;"
+                            onclick="advanceArenaQuestion()">
+                        <i class="fa-solid fa-circle-arrow-left"></i> السؤال التالي
+                    </button>
+                </div>
+
                 <div id="arena-explanation-box" class="explanation-box">
                     <strong style="color: var(--primary);"><i class="fa-solid fa-circle-info"></i> الشرح العلمي المعتمد للحل:</strong>
                     <p id="arena-explanation-text" style="margin: 6px 0 0 0;"></p>
                 </div>
-                
-                <div style="display: flex; gap: 15px; margin-top: 25px;">
-                    <button id="btn-save-exit" class="btn-launch" style="background: var(--text-muted); flex: 1;" onclick="saveAndExitQuizArena()"><i class="fa-solid fa-floppy-disk"></i> حفظ وخروج مؤقت</button>
-                    <button id="btn-next-question" class="btn-launch" style="display: none; background: var(--success); flex: 1.5;" onclick="advanceArenaQuestion()"><i class="fa-solid fa-circle-arrow-left"></i> السؤال التالي</button>
+
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button id="btn-save-exit" class="btn-launch" style="background: var(--text-muted); flex: 1;" onclick="saveAndExitQuizArena()">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ وخروج مؤقت
+                    </button>
                 </div>
             </div>
 
@@ -1145,58 +1190,83 @@ html, body {
             });
         }
 
+        let pendingQuestions = [];
+
         function startQuizArena() {
             const startBtn = document.getElementById('btn-start-quiz');
             startBtn.disabled = true;
-            startBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري استدعاء وتأمين التحدي الناري...`;
+            startBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الأسئلة...`;
 
             db.collection("questions").where("subject", "==", activeCategory).get().then((snapshot) => {
                 startBtn.disabled = false;
                 startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
 
                 if (snapshot.empty) {
-                    alert("لا توجد أسئلة مضافة في هذه المادة حالياً من قبل الإدارة.");
+                    alert("لا توجد أسئلة مضافة في هذه المادة حالياً.");
                     return;
                 }
-                
-                let rawQuestions = [];
+
+                pendingQuestions = [];
                 snapshot.forEach(doc => {
                     let data = doc.data();
                     data.id = doc.id;
-                    rawQuestions.push(data);
+                    pendingQuestions.push(data);
                 });
-                
-                rawQuestions.sort(() => Math.random() - 0.5);
-                
-                const selectedCountLimit = document.getElementById('quiz-question-count-select').value;
-                if (selectedCountLimit !== "all") {
-                    const limit = parseInt(selectedCountLimit);
-                    currentQuestions = rawQuestions.slice(0, limit);
-                } else {
-                    currentQuestions = rawQuestions;
-                }
+                pendingQuestions.sort(() => Math.random() - 0.5);
 
-                currentQuestions.forEach(q => {
-                    if (q.options && q.options.length > 0) {
-                        q.shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
-                    } else {
-                        q.shuffledOptions = [];
-                    }
-                    q.isFlagged = false;
-                });
-                
-                userQuizAnswersLog = new Array(currentQuestions.length).fill(null);
+                // إعداد شاشة اختيار عدد الأسئلة
+                const total = pendingQuestions.length;
+                document.getElementById('picker-total-text').textContent = total;
 
-                showView('view-arena');
-                qIndex = 0;
-                score = 0;
-                timeRemaining = 30;
-                buildQuestionsNavigationDots();
-                loadArenaQuestion();
+                const slider = document.getElementById('picker-slider');
+                // الخطوة 5 أسئلة، الحد الأقصى هو العدد الكلي
+                slider.min  = Math.min(5, total);
+                slider.max  = total;
+                slider.step = total <= 20 ? 1 : 5;
+                slider.value = total;
+                document.getElementById('picker-number-display').textContent = total;
+
+                showView('view-count-picker');
+
             }).catch(() => {
                 startBtn.disabled = false;
                 startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
+                showToast("حدث خطأ أثناء تحميل الأسئلة. حاول مجدداً.", "error");
             });
+        }
+
+        function updatePickerDisplay(val) {
+            document.getElementById('picker-number-display').textContent = val;
+        }
+
+        function adjustPickerCount(delta) {
+            const slider = document.getElementById('picker-slider');
+            let newVal = parseInt(slider.value) + delta;
+            newVal = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), newVal));
+            slider.value = newVal;
+            updatePickerDisplay(newVal);
+        }
+
+        function launchArenaWithCount() {
+            const count = parseInt(document.getElementById('picker-slider').value);
+            currentQuestions = pendingQuestions.slice(0, count);
+
+            currentQuestions.forEach(q => {
+                if (q.options && q.options.length > 0) {
+                    q.shuffledOptions = [...q.options].sort(() => Math.random() - 0.5);
+                } else {
+                    q.shuffledOptions = [];
+                }
+                q.isFlagged = false;
+            });
+
+            userQuizAnswersLog = new Array(currentQuestions.length).fill(null);
+            showView('view-arena');
+            qIndex = 0;
+            score = 0;
+            timeRemaining = 30;
+            buildQuestionsNavigationDots();
+            loadArenaQuestion();
         }
 
         function buildQuestionsNavigationDots() {
@@ -1326,7 +1396,7 @@ html, body {
             document.getElementById('arena-question-text').innerText = activeQ.question;
             
             document.getElementById('arena-explanation-box').style.display = "none";
-            document.getElementById('btn-next-question').style.display = "none";
+            document.getElementById('arena-nav-buttons').style.display  = "none";
 
             const starIcon = document.getElementById('arena-star-icon');
             db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).get().then(snap => {
@@ -1383,7 +1453,8 @@ html, body {
             
             document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل.";
             document.getElementById('arena-explanation-box').style.display = "block";
-            document.getElementById('btn-next-question').style.display = "flex";
+            document.getElementById('arena-nav-buttons').style.display  = "flex";
+            document.getElementById('btn-prev-question').style.display  = qIndex > 0 ? "flex" : "none";
         }
 
         function updateCircularTimerUI() {
@@ -1431,13 +1502,21 @@ html, body {
 
             document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل لهذا السؤال من قبل المشرف.";
             document.getElementById('arena-explanation-box').style.display = "block";
-            document.getElementById('btn-next-question').style.display = "flex";
+            document.getElementById('arena-nav-buttons').style.display  = "flex";
+            document.getElementById('btn-prev-question').style.display  = qIndex > 0 ? "flex" : "none";
             updateQuestionsNavigationDotsUI();
         }
 
         function advanceArenaQuestion() {
             qIndex++;
             loadArenaQuestion();
+        }
+
+        function goToPrevQuestion() {
+            if (qIndex > 0) {
+                qIndex--;
+                loadArenaQuestion();
+            }
         }
 
         function toggleAnswersReviewZone() {
@@ -1468,8 +1547,11 @@ html, body {
             document.getElementById('review-answers-zone').style.display = "none";
 
             document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
-            const xpGained = score * 20;
             const percentage = currentQuestions.length > 0 ? Math.round((score / currentQuestions.length) * 100) : 0;
+
+            // ✅ نظام XP عادل: كلما ارتفعت دقتك كلما حصلت على XP أكثر لكل إجابة صحيحة
+            // صيغة: (نسبة الدقة × عدد الصحيح × 30) — النتيجة الكاملة = score*30، النتيجة النصفية = score*15
+            const xpGained = Math.round((percentage / 100) * score * 30);
             
             document.getElementById('result-xp-gained').innerText = `+${isPracticeMode ? 0 : xpGained}`;
             document.getElementById('result-percent').innerText = `${percentage}%`;
@@ -2338,30 +2420,7 @@ html, body {
         }
 
         function updateQuestionCountOptions(subjectKey) {
-            const total = subjectCounts[subjectKey] || 0;
-            const box    = document.getElementById('question-count-box');
-            const select = document.getElementById('quiz-question-count-select');
-            const badge  = document.getElementById('subject-available-count');
-
-            if (total === 0) {
-                box.style.display = 'none';
-                return;
-            }
-
-            // بناء الخيارات بذكاء بناءً على عدد الأسئلة الفعلي المتاح
-            let optionsHtml = '';
-            const steps = [5, 10, 15, 20, 25, 30, 40, 50];
-            steps.forEach(n => {
-                if (n < total) {
-                    optionsHtml += `<option value="${n}">${n} سؤال</option>`;
-                }
-            });
-            // الخيار الافتراضي دائماً هو كل الأسئلة
-            optionsHtml += `<option value="all" selected>كل الأسئلة (${total} سؤال) ✦</option>`;
-
-            select.innerHTML = optionsHtml;
-            badge.textContent = `${total} سؤال متاح`;
-            box.style.display = 'block';
+            // لم تعد مطلوبة - اختيار عدد الأسئلة أصبح عبر شاشة picker المنفصلة
         }
 
         function toggleLoginForm(type) {
@@ -2373,7 +2432,7 @@ html, body {
         function backToDashboard() { showDashboardTab('dash'); checkAuthenticationState(); }
 
         function showView(viewId) {
-            const views = ['view-register', 'view-admin-login', 'view-dashboard', 'view-arena', 'view-result', 'view-admin-panel'];
+            const views = ['view-register', 'view-admin-login', 'view-dashboard', 'view-count-picker', 'view-arena', 'view-result', 'view-admin-panel'];
             views.forEach(v => document.getElementById(v).style.display = "none");
             document.getElementById(viewId).style.display = "block";
         }
