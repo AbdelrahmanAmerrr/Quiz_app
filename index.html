@@ -154,27 +154,82 @@ html, body {
         .btn-launch:disabled { opacity: 0.6; cursor: not-allowed; transform: none;
             }
         
-        /* وتوسيط زر التالي ومحاذاته بشكل احترافي */
-        /* === شاشة اختيار عدد الأسئلة === */
-        .picker-card { text-align: center; padding: 30px 20px; }
-        .picker-number { font-size: 88px; font-weight: 900; color: var(--primary); line-height: 1;
-            transition: all 0.15s ease; }
-        .picker-controls { display: flex; align-items: center; gap: 14px; margin: 20px 0; }
-        .picker-btn { width: 44px; height: 44px; border-radius: 50%; border: none;
-            background: var(--primary); color: white; font-size: 22px; font-weight: bold;
-            cursor: pointer; flex-shrink: 0; transition: transform 0.1s; }
-        .picker-btn:active { transform: scale(0.9); }
-        input[type="range"].picker-slider { flex: 1; height: 6px; accent-color: var(--primary); cursor: pointer; }
-        .picker-nav { display: flex; justify-content: space-between; align-items: center; margin-top: 28px; }
-        .picker-back-link { color: var(--text-muted); font-size: 14px; cursor: pointer; text-decoration: none; }
-        .picker-back-link:hover { color: var(--primary); }
-
-        .btn-next-wrapper {
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            margin-top: 15px;
+        /* === شاشة اختيار عدد الأسئلة — تصميم احترافي === */
+        .picker-card {
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; padding: 32px 24px; min-height: 420px;
+            position: relative; overflow: hidden;
         }
+        .picker-subject-label {
+            font-size: 13px; color: var(--text-muted); font-weight: 600;
+            letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 2px;
+        }
+        .picker-subject-name {
+            font-size: 22px; font-weight: 900; color: var(--primary);
+            margin-bottom: 4px; text-align: center;
+        }
+        .picker-subject-sub {
+            font-size: 13px; color: var(--text-muted); margin-bottom: 28px;
+        }
+        /* العداد الكبير */
+        .picker-number-wrap {
+            position: relative; width: 180px; height: 140px;
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 6px; user-select: none;
+        }
+        .picker-number {
+            font-size: 100px; font-weight: 900; color: var(--primary);
+            line-height: 1; transition: transform 0.1s ease, opacity 0.1s ease;
+            font-variant-numeric: tabular-nums; letter-spacing: -4px;
+        }
+        .picker-number.bump { transform: scale(1.12); opacity: 0.85; }
+        .picker-swipe-hint {
+            font-size: 11px; color: var(--text-muted); margin-bottom: 24px;
+            opacity: 0.7;
+        }
+        /* شريط السحب */
+        .picker-slider-wrap {
+            width: 100%; display: flex; align-items: center; gap: 16px;
+            margin-bottom: 32px;
+        }
+        .picker-btn {
+            width: 42px; height: 42px; border-radius: 50%; border: none;
+            background: var(--primary); color: white; font-size: 20px; font-weight: bold;
+            cursor: pointer; flex-shrink: 0; transition: transform 0.1s, background 0.15s;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 3px 10px rgba(37,99,235,0.25);
+        }
+        .picker-btn:active { transform: scale(0.88); }
+        input[type="range"].picker-slider {
+            flex: 1; -webkit-appearance: none; appearance: none;
+            height: 6px; border-radius: 99px; cursor: pointer;
+            background: linear-gradient(to left, var(--border) 0%, var(--primary) 0%);
+            outline: none; transition: background 0.1s;
+        }
+        input[type="range"].picker-slider::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 26px; height: 26px;
+            border-radius: 50%; background: var(--primary);
+            box-shadow: 0 2px 8px rgba(37,99,235,0.4);
+            border: 3px solid white; cursor: grab; transition: transform 0.1s;
+        }
+        input[type="range"].picker-slider:active::-webkit-slider-thumb {
+            transform: scale(1.2); cursor: grabbing;
+        }
+        input[type="range"].picker-slider::-moz-range-thumb {
+            width: 26px; height: 26px; border-radius: 50%;
+            background: var(--primary); border: 3px solid white;
+            cursor: grab;
+        }
+        /* التنقل */
+        .picker-nav {
+            display: flex; justify-content: space-between; align-items: center;
+            width: 100%; margin-top: 0;
+        }
+        .picker-back-link {
+            color: var(--text-muted); font-size: 14px; cursor: pointer;
+            font-weight: 600; padding: 8px 4px;
+        }
+        .picker-back-link:hover { color: var(--primary); }
 
         .option-node { background: var(--card-bg);
             border: 2px solid var(--border); padding: 14px; border-radius: var(--radius-sm); margin: 10px 0; text-align: right; width: 100%; cursor: pointer; font-size: 16px;
@@ -589,26 +644,34 @@ html, body {
 
             </div><!-- /view-dashboard -->
 
-            <!-- ✅ شاشة اختيار عدد الأسئلة (تظهر بين الصفحة الرئيسية وشاشة الامتحان) -->
+            <!-- ✅ شاشة اختيار عدد الأسئلة — تصميم احترافي -->
             <div class="card picker-card" id="view-count-picker" style="display: none;">
-                <h2 style="margin: 0 0 6px 0;">كم عدد الأسئلة؟</h2>
-                <p style="color: var(--text-muted); margin: 0 0 20px 0; font-size: 14px;">
-                    المتاح: <strong id="picker-total-text" style="color:var(--primary);">0</strong> سؤال
-                </p>
-
-                <div id="picker-number-display" class="picker-number">10</div>
-
-                <div class="picker-controls">
-                    <button class="picker-btn" onclick="adjustPickerCount(-5)">−</button>
-                    <input type="range" class="picker-slider" id="picker-slider"
-                           min="5" max="10" step="5" value="10"
-                           oninput="updatePickerDisplay(this.value)">
-                    <button class="picker-btn" onclick="adjustPickerCount(5)">+</button>
+                <!-- اسم المادة -->
+                <div class="picker-subject-label">بنك أسئلة</div>
+                <div class="picker-subject-name" id="picker-subject-name">—</div>
+                <div class="picker-subject-sub">
+                    <span id="picker-total-text">0</span> سؤال متاح مع شرح لكل إجابة وشرح مرئي متحرّك
                 </div>
 
+                <!-- العداد الكبير + دعم السحب -->
+                <div class="picker-number-wrap" id="picker-drag-zone">
+                    <div class="picker-number" id="picker-number-display">10</div>
+                </div>
+                <div class="picker-swipe-hint">↕ اسحب للأعلى أو الأسفل لتغيير العدد</div>
+
+                <!-- الـ Slider + الأزرار -->
+                <div class="picker-slider-wrap">
+                    <button class="picker-btn" onclick="adjustPickerCount(-1)">−</button>
+                    <input type="range" class="picker-slider" id="picker-slider"
+                           min="5" max="10" step="1" value="10"
+                           oninput="updatePickerDisplay(this.value)">
+                    <button class="picker-btn" onclick="adjustPickerCount(1)">+</button>
+                </div>
+
+                <!-- التنقل -->
                 <div class="picker-nav">
                     <span class="picker-back-link" onclick="showView('view-dashboard')">→ السابق</span>
-                    <button class="btn-launch" style="padding: 12px 35px;" onclick="launchArenaWithCount()">
+                    <button class="btn-launch" style="padding: 13px 38px; font-size:16px;" onclick="launchArenaWithCount()">
                         <i class="fa-solid fa-chevron-left"></i> التالي
                     </button>
                 </div>
@@ -868,6 +931,15 @@ html, body {
         var db = firebase.firestore();
         var auth = firebase.auth();
 
+        // ✅ [OPT-1] تفعيل الكاش المحلي للمتصفح — يوفر 90%+ من قراءات البيانات المتكررة
+        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+            if (err.code === 'failed-precondition') {
+                console.warn('Persistence: تبويب متعدد مفتوح، سيعمل التاب النشط فقط مع الكاش.');
+            } else if (err.code === 'unimplemented') {
+                console.warn('Persistence: المتصفح لا يدعم الكاش المحلي.');
+            }
+        });
+
         const fixedSubjects = {
             "math": "الرياضة والتأمين",
             "english": "مصطلحات أجنبية",
@@ -900,6 +972,18 @@ html, body {
         
         let userQuizAnswersLog = [];
 
+        // ✅ [OPT-2] مصفوفة تجميع إحصائيات الأسئلة — تُرسل دفعة واحدة في نهاية الاختبار
+        let pendingQuestionStats = {};
+
+        // ✅ [OPT-3] كاش محلي للأسئلة المحفوظة — يُحمَّل مرة واحدة قبل الاختبار
+        let starredQuestionsCache = null; // null = لم يُحمَّل بعد، Set = جاهز
+
+        // ✅ [OPT-4] كاش لمحاولات المواد — يمنع قراءات متكررة لكل نقرة
+        let subjectAttemptCache = {}; // { subjectKey: true/false }
+
+        // ✅ [OPT-5] ترتيب المستخدم المحسوب من كاش اللوحة — بدون قراءة كل المستخدمين
+        let cachedLeaderboardUsers = null;
+
         window.onload = function() {
             fetchSubjectQuestionCounts();
             checkAuthenticationState();
@@ -913,21 +997,62 @@ html, body {
             setTimeout(() => { toast.style.display = "none"; }, 3500);
         }
 
+        // ✅ [OPT-6] قراءة واحدة (1 Read) من مستند العداد بدلاً من قراءة جميع الأسئلة
         function fetchSubjectQuestionCounts() {
-            db.collection("questions").get().then((snapshot) => {
-                subjectCounts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
-                snapshot.forEach(doc => {
-                    const sub = doc.data().subject;
-                    if(subjectCounts[sub] !== undefined) subjectCounts[sub]++;
-                });
-                renderSubjects();
-                
-                // تحديث العدادات الداخلية في لوحة التحكم
-                Object.keys(subjectCounts).forEach(k => {
-                    const el = document.getElementById(`subject-count-${k}`);
-                    if(el) el.innerText = `${fixedSubjects[k].split(' ')[0]}: ${subjectCounts[k]}`;
-                });
+            db.collection("questions").doc("--metadata--").get().then((doc) => {
+                if (doc.exists && doc.data().counts) {
+                    subjectCounts = Object.assign(
+                        { math: 0, english: 0, economics: 0, management: 0, office: 0 },
+                        doc.data().counts
+                    );
+                    _applySubjectCounts();
+                } else {
+                    // أول تشغيل: ابنِ مستند العداد تلقائياً من بيانات الأسئلة الحالية
+                    rebuildMetadataCounts();
+                }
             }).catch(() => renderSubjects());
+        }
+
+        function _applySubjectCounts() {
+            renderSubjects();
+            Object.keys(subjectCounts).forEach(k => {
+                const el = document.getElementById(`subject-count-${k}`);
+                if(el) el.innerText = `${fixedSubjects[k].split(' ')[0]}: ${subjectCounts[k]}`;
+            });
+        }
+
+        // يُستدعى مرة واحدة فقط عند غياب مستند العداد (تهيئة أولى أو تعافٍ)
+        function rebuildMetadataCounts() {
+            db.collection("questions").get().then(snapshot => {
+                const counts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
+                let totalQ = 0;
+                snapshot.forEach(doc => {
+                    if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
+                    const sub = doc.data().subject;
+                    if (counts[sub] !== undefined) { counts[sub]++; totalQ++; }
+                });
+                db.collection("questions").doc("--metadata--").set(
+                    { counts, totalQuestions: totalQ },
+                    { merge: true }
+                );
+                subjectCounts = counts;
+                _applySubjectCounts();
+            }).catch(() => renderSubjects());
+        }
+
+        // ✅ [OPT-7] تحديث عداد المادة بـ delta (+1 أو -1) بدون قراءة أي شيء
+        function updateSubjectCounterBy(subject, delta) {
+            if (!subject || !fixedSubjects[subject]) return;
+            const update = {};
+            update[`counts.${subject}`] = firebase.firestore.FieldValue.increment(delta);
+            update['totalQuestions'] = firebase.firestore.FieldValue.increment(delta);
+            db.collection("questions").doc("--metadata--").set(update, { merge: true })
+              .catch(err => console.warn("updateSubjectCounterBy error:", err));
+            // تحديث المتغير المحلي فوراً
+            if (subjectCounts[subject] !== undefined) {
+                subjectCounts[subject] = Math.max(0, (subjectCounts[subject] || 0) + delta);
+                _applySubjectCounts();
+            }
         }
 
         function checkAuthenticationState() {
@@ -949,10 +1074,16 @@ html, body {
                         }
                     });
 
-                    // تحديث الطابع الزمني لآخر نشاط حركي للطالب بالسيرفر
-                    db.collection("users").doc(user.uid).update({
-                        lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                    }).catch(() => {});
+                    // ✅ [OPT-8] throttle: تحديث lastLogin مرة واحدة كل 30 دقيقة فقط
+                    const lastLoginKey = `last_login_write_${user.uid}`;
+                    const lastWrite = parseInt(localStorage.getItem(lastLoginKey) || '0');
+                    if (Date.now() - lastWrite > 30 * 60 * 1000) {
+                        db.collection("users").doc(user.uid).update({
+                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                        }).then(() => {
+                            localStorage.setItem(lastLoginKey, Date.now().toString());
+                        }).catch(() => {});
+                    }
 
                     if (cachedUid && cachedUid === user.uid) {
                         fetchUserRecord(user.uid);
@@ -1025,19 +1156,8 @@ html, body {
                     document.getElementById('progress-xp-text').innerText = `${xpInCurrentLevel} / 200 XP`;
                     document.getElementById('progress-xp-fill').style.width = `${(xpInCurrentLevel / 200) * 100}%`;
 
-                    db.collection("users").where("xp", ">", xp).get().then(snap => {
-                        const currentComputedRank = snap.size + 1;
-                        document.getElementById('stat-rank').innerText = `#${currentComputedRank}`;
-                        
-                        if (!currentUser.currentRank || currentUser.currentRank !== currentComputedRank) {
-                            db.collection("users").doc(uid).update({
-                                previousRank: currentUser.currentRank || currentComputedRank,
-                                currentRank: currentComputedRank
-                            });
-                        }
-                    }).catch(() => {
-                        document.getElementById('stat-rank').innerText = `-`;
-                    });
+                    // ✅ [OPT-9] حساب الترتيب من كاش اللوحة (1 Read) بدلاً من استعلام كل المستخدمين
+                    _computeRankFromCache(uid, xp);
 
                     checkDailyRewardStatus();
 
@@ -1061,6 +1181,38 @@ html, body {
             }).catch(() => {
                 showView('view-register');
             });
+        }
+
+        function _computeRankFromCache(uid, xp) {
+            const rankEl = document.getElementById('stat-rank');
+            // إذا كان الكاش محملاً مسبقاً استخدمه مباشرة
+            if (cachedLeaderboardUsers !== null) {
+                const rank = cachedLeaderboardUsers.filter(u => (u.xp || 0) > xp).length + 1;
+                rankEl.innerText = `#${rank}`;
+                _saveRankIfChanged(uid, rank);
+                return;
+            }
+            // قراءة واحدة من مستند الكاش
+            db.collection("questions").doc("leaderboard-cache").get().then(docSnap => {
+                if (docSnap.exists) {
+                    cachedLeaderboardUsers = docSnap.data().users || [];
+                    const rank = cachedLeaderboardUsers.filter(u => (u.xp || 0) > xp).length + 1;
+                    rankEl.innerText = `#${rank}`;
+                    _saveRankIfChanged(uid, rank);
+                } else {
+                    // كاش غير موجود: استخدم الترتيب المحفوظ في ملف المستخدم
+                    rankEl.innerText = currentUser.currentRank ? `#${currentUser.currentRank}` : `-`;
+                }
+            }).catch(() => { rankEl.innerText = `-`; });
+        }
+
+        function _saveRankIfChanged(uid, newRank) {
+            if (!currentUser.currentRank || currentUser.currentRank !== newRank) {
+                db.collection("users").doc(uid).update({
+                    previousRank: currentUser.currentRank || newRank,
+                    currentRank: newRank
+                }).catch(() => {});
+            }
         }
 
         function handleGoogleLogin() {
@@ -1112,6 +1264,11 @@ html, body {
                         lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                     };
                     db.collection("users").doc(uid).set(newUserData).then(() => {
+                        // ✅ [OPT-28] تحديث عداد الطلاب في مستند الميتاداتا
+                        db.collection("questions").doc("--metadata--").set(
+                            { totalStudents: firebase.firestore.FieldValue.increment(1) },
+                            { merge: true }
+                        );
                         localStorage.setItem('amer_quiz_uid', uid);
                         fetchUserRecord(uid);
                     });
@@ -1137,6 +1294,11 @@ html, body {
             };
 
             db.collection("users").doc(uid).set(newUserData).then(() => {
+                // ✅ [OPT-29] تحديث عداد الطلاب في مستند الميتاداتا عند التسجيل اليدوي
+                db.collection("questions").doc("--metadata--").set(
+                    { totalStudents: firebase.firestore.FieldValue.increment(1) },
+                    { merge: true }
+                );
                 localStorage.setItem('amer_quiz_uid', uid);
                 fetchUserRecord(uid);
             }).catch(e => alert("خطأ في الاتصال بقاعدة البيانات: " + e.message));
@@ -1178,15 +1340,18 @@ html, body {
         function checkSubjectAttemptStatus() {
             if (!currentUser) return;
             const alertBox = document.getElementById('arena-practice-alert');
-            
+
+            // ✅ [OPT-10] استخدم الكاش المحلي إن وُجد (يمنع قراءة متكررة لكل نقرة على المادة)
+            if (subjectAttemptCache[activeCategory] !== undefined) {
+                isPracticeMode = subjectAttemptCache[activeCategory];
+                alertBox.style.display = isPracticeMode ? "block" : "none";
+                return;
+            }
+
             db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).get().then((docSnap) => {
-                if (docSnap.exists) {
-                    isPracticeMode = true;
-                    alertBox.style.display = "block";
-                } else {
-                    isPracticeMode = false;
-                    alertBox.style.display = "none";
-                }
+                isPracticeMode = docSnap.exists;
+                subjectAttemptCache[activeCategory] = isPracticeMode; // حفظ في الكاش
+                alertBox.style.display = isPracticeMode ? "block" : "none";
             });
         }
 
@@ -1197,46 +1362,95 @@ html, body {
             startBtn.disabled = true;
             startBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري تحميل الأسئلة...`;
 
-            db.collection("questions").where("subject", "==", activeCategory).get().then((snapshot) => {
+            // ✅ [OPT-34] كاش الأسئلة في localStorage — صفر قراءات للطلاب العائدين
+            // المدة: 6 ساعات. بعدها تُحدَّث من Firestore تلقائياً.
+            const CACHE_TTL    = 6 * 60 * 60 * 1000; // 6 ساعات
+            const cacheKey     = `aq_q_${activeCategory}`;
+            const cacheTimeKey = `aq_q_ts_${activeCategory}`;
+            const cachedRaw    = localStorage.getItem(cacheKey);
+            const cachedTs     = parseInt(localStorage.getItem(cacheTimeKey) || '0');
+            const isFresh      = cachedRaw && (Date.now() - cachedTs < CACHE_TTL);
+
+            function _onQuestionsLoaded(questions) {
                 startBtn.disabled = false;
                 startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
 
-                if (snapshot.empty) {
+                if (!questions || questions.length === 0) {
                     alert("لا توجد أسئلة مضافة في هذه المادة حالياً.");
                     return;
                 }
 
-                pendingQuestions = [];
-                snapshot.forEach(doc => {
-                    let data = doc.data();
-                    data.id = doc.id;
-                    pendingQuestions.push(data);
-                });
-                pendingQuestions.sort(() => Math.random() - 0.5);
+                // ✅ [OPT-35] خلط حقيقي من كامل بنك الأسئلة — يضمن تنويع الأسئلة في كل جلسة
+                // حتى لو حل الطالب 100 سؤال سابقاً، سيحصل على 100 مختلفة في الجلسة الجديدة
+                pendingQuestions = [...questions].sort(() => Math.random() - 0.5);
 
                 // إعداد شاشة اختيار عدد الأسئلة
                 const total = pendingQuestions.length;
                 document.getElementById('picker-total-text').textContent = total;
+                document.getElementById('picker-subject-name').textContent = fixedSubjects[activeCategory] || activeCategory;
 
                 const slider = document.getElementById('picker-slider');
-                // الخطوة 5 أسئلة، الحد الأقصى هو العدد الكلي
-                slider.min  = Math.min(5, total);
-                slider.max  = total;
-                slider.step = total <= 20 ? 1 : 5;
-                slider.value = total;
-                document.getElementById('picker-number-display').textContent = total;
+                slider.min   = Math.min(5, total);
+                slider.max   = total;
+                slider.step  = 1;
+                slider.value = Math.min(20, total); // قيمة افتراضية معقولة
+                document.getElementById('picker-number-display').textContent = slider.value;
+                _updateSliderFill(slider);
 
                 showView('view-count-picker');
+                _initPickerDrag(); // تفعيل السحب باللمس/الماوس
+            }
 
-            }).catch(() => {
+            if (isFresh) {
+                // ✅ من الكاش المحلي — 0 قراءات Firestore
+                try {
+                    _onQuestionsLoaded(JSON.parse(cachedRaw));
+                    return;
+                } catch(e) {
+                    localStorage.removeItem(cacheKey);
+                }
+            }
+
+            // جلب من Firestore (أول تشغيل أو انتهت صلاحية الكاش)
+            // ✅ [OPT-36] رفع الحد إلى 300 سؤال — يُخزَّن محلياً فور جلبه
+            db.collection("questions")
+              .where("subject", "==", activeCategory)
+              .limit(300)
+              .get()
+              .then((snapshot) => {
+                const questions = [];
+                snapshot.forEach(doc => {
+                    if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
+                    let data = doc.data();
+                    data.id = doc.id;
+                    questions.push(data);
+                });
+                // حفظ في localStorage للجلسات القادمة
+                try {
+                    localStorage.setItem(cacheKey, JSON.stringify(questions));
+                    localStorage.setItem(cacheTimeKey, Date.now().toString());
+                } catch(e) {
+                    // localStorage ممتلئ — استمر بدون كاش
+                    console.warn("localStorage full, skipping question cache.");
+                }
+                _onQuestionsLoaded(questions);
+            }).catch(err => {
                 startBtn.disabled = false;
                 startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
-                showToast("حدث خطأ أثناء تحميل الأسئلة. حاول مجدداً.", "error");
+                alert("تعذّر تحميل الأسئلة، يرجى التحقق من اتصالك بالإنترنت.");
             });
         }
 
         function updatePickerDisplay(val) {
             document.getElementById('picker-number-display').textContent = val;
+            const slider = document.getElementById('picker-slider');
+            _updateSliderFill(slider);
+            // تأثير الـ bump على الرقم
+            const numEl = document.getElementById('picker-number-display');
+            numEl.classList.remove('bump');
+            void numEl.offsetWidth;
+            numEl.classList.add('bump');
+            setTimeout(() => numEl.classList.remove('bump'), 150);
         }
 
         function adjustPickerCount(delta) {
@@ -1245,6 +1459,63 @@ html, body {
             newVal = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), newVal));
             slider.value = newVal;
             updatePickerDisplay(newVal);
+        }
+
+        // تحديث لون الـ slider ديناميكياً حسب القيمة الحالية
+        function _updateSliderFill(slider) {
+            const min = parseInt(slider.min), max = parseInt(slider.max), val = parseInt(slider.value);
+            const pct = max > min ? ((val - min) / (max - min)) * 100 : 0;
+            slider.style.background =
+                `linear-gradient(to left, var(--border) ${100-pct}%, var(--primary) ${100-pct}%)`;
+        }
+
+        // ✅ [OPT-37] دعم السحب باللمس والماوس على العداد الكبير
+        function _initPickerDrag() {
+            const zone   = document.getElementById('picker-drag-zone');
+            const slider = document.getElementById('picker-slider');
+            if (!zone || !slider) return;
+            // إزالة أي مستمعات سابقة
+            const fresh = zone.cloneNode(true);
+            zone.parentNode.replaceChild(fresh, zone);
+
+            let startY = null, startVal = null;
+            const STEP = 15; // بيكسل لكل سؤال واحد
+
+            function onStart(e) {
+                startY   = (e.touches ? e.touches[0].clientY : e.clientY);
+                startVal = parseInt(slider.value);
+                e.preventDefault();
+            }
+            function onMove(e) {
+                if (startY === null) return;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                const diff    = Math.round((startY - clientY) / STEP);
+                let newVal    = Math.max(parseInt(slider.min), Math.min(parseInt(slider.max), startVal + diff));
+                slider.value  = newVal;
+                updatePickerDisplay(newVal);
+            }
+            function onEnd() { startY = null; }
+
+            fresh.addEventListener('touchstart',  onStart, { passive: false });
+            fresh.addEventListener('touchmove',   onMove,  { passive: false });
+            fresh.addEventListener('touchend',    onEnd);
+            fresh.addEventListener('mousedown',   onStart);
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup',   onEnd);
+        }
+
+        // ✅ [OPT-38] مسح كاش الأسئلة عند تعديل الأدمن — يضمن رؤية الطلاب للأسئلة الجديدة خلال 6 ساعات
+        function _invalidateQuestionCache(subject) {
+            if (subject) {
+                localStorage.removeItem(`aq_q_${subject}`);
+                localStorage.removeItem(`aq_q_ts_${subject}`);
+            } else {
+                // مسح كاش كل المواد (للحذف الشامل والاستيراد)
+                ['math','english','economics','management','office'].forEach(sub => {
+                    localStorage.removeItem(`aq_q_${sub}`);
+                    localStorage.removeItem(`aq_q_ts_${sub}`);
+                });
+            }
         }
 
         function launchArenaWithCount() {
@@ -1261,6 +1532,17 @@ html, body {
             });
 
             userQuizAnswersLog = new Array(currentQuestions.length).fill(null);
+            pendingQuestionStats = {}; // ✅ [OPT-11] تصفير مصفوفة الإحصائيات المؤجلة
+
+            // ✅ [OPT-12] تحميل الأسئلة المفضلة مرة واحدة قبل بدء الاختبار
+            starredQuestionsCache = null;
+            if (currentUser) {
+                db.collection("users").doc(currentUser.uid).collection("starred_questions").get()
+                    .then(snap => {
+                        starredQuestionsCache = new Set(snap.docs.map(d => d.id));
+                    }).catch(() => { starredQuestionsCache = new Set(); });
+            }
+
             showView('view-arena');
             qIndex = 0;
             score = 0;
@@ -1311,21 +1593,25 @@ html, body {
         }
 
         function toggleStarQuestion() {
-            if (currentQuestions[qIndex]) {
-                const activeQ = currentQuestions[qIndex];
-                const starIcon = document.getElementById('arena-star-icon');
-                
-                db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).get().then(docSnap => {
-                    if (docSnap.exists) {
-                        db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).delete();
-                        starIcon.className = "fa-regular fa-star";
-                        showToast("⭐ تم إزالة السؤال من المفضلة بنجاح.");
-                    } else {
-                        db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).set(activeQ);
-                        starIcon.className = "fa-solid fa-star";
-                        showToast("⭐ تم حفظ السؤال في قائمة المفضلة للرجوع له والمذاكرة لاحقاً!");
-                    }
-                });
+            if (!currentQuestions[qIndex] || !currentUser) return;
+            // ✅ [OPT-14] قرار الإضافة/الحذف من الكاش فوراً (0 reads) — كتابة واحدة فقط
+            const activeQ = currentQuestions[qIndex];
+            const starId = activeQ.id || "q_" + qIndex;
+            const starIcon = document.getElementById('arena-star-icon');
+            const ref = db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(starId);
+
+            const isCurrentlyStarred = starredQuestionsCache ? starredQuestionsCache.has(starId) : false;
+
+            if (isCurrentlyStarred) {
+                ref.delete().catch(() => {});
+                if (starredQuestionsCache) starredQuestionsCache.delete(starId);
+                starIcon.className = "fa-regular fa-star";
+                showToast("⭐ تم إزالة السؤال من المفضلة بنجاح.");
+            } else {
+                ref.set(activeQ).catch(() => {});
+                if (starredQuestionsCache) starredQuestionsCache.add(starId);
+                starIcon.className = "fa-solid fa-star";
+                showToast("⭐ تم حفظ السؤال في قائمة المفضلة للرجوع له والمذاكرة لاحقاً!");
             }
         }
 
@@ -1398,10 +1684,14 @@ html, body {
             document.getElementById('arena-explanation-box').style.display = "none";
             document.getElementById('arena-nav-buttons').style.display  = "none";
 
+            // ✅ [OPT-13] استخدام الكاش المحلي بدلاً من قراءة Firestore لكل سؤال
             const starIcon = document.getElementById('arena-star-icon');
-            db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(activeQ.id || "q_" + qIndex).get().then(snap => {
-                starIcon.className = snap.exists ? "fa-solid fa-star" : "fa-regular fa-star";
-            }).catch(() => { starIcon.className = "fa-regular fa-star"; });
+            const starId = activeQ.id || "q_" + qIndex;
+            if (starredQuestionsCache !== null) {
+                starIcon.className = starredQuestionsCache.has(starId) ? "fa-solid fa-star" : "fa-regular fa-star";
+            } else {
+                starIcon.className = "fa-regular fa-star";
+            }
 
             const box = document.getElementById('arena-options-box');
             box.innerHTML = "";
@@ -1483,11 +1773,13 @@ html, body {
                 explanation: questionObj.explanation
             };
 
+            // ✅ [OPT-15] تجميع الإحصائيات محلياً — ترسل دفعة batch واحدة عند انتهاء الاختبار
             if (questionObj.id) {
-                db.collection("questions").doc(questionObj.id).update({
-                    correctCount: firebase.firestore.FieldValue.increment(isCorrect ? 1 : 0),
-                    wrongCount: firebase.firestore.FieldValue.increment(isCorrect ? 0 : 1)
-                });
+                if (!pendingQuestionStats[questionObj.id]) {
+                    pendingQuestionStats[questionObj.id] = { correct: 0, wrong: 0 };
+                }
+                if (isCorrect) pendingQuestionStats[questionObj.id].correct++;
+                else           pendingQuestionStats[questionObj.id].wrong++;
             }
             
             if (isCorrect) {
@@ -1541,7 +1833,26 @@ html, body {
             }
         }
 
+        // ✅ [OPT-16] إرسال إحصائيات الأسئلة دفعة batch واحدة في نهاية الاختبار
+        // يحوّل N كتابة (واحدة لكل سؤال) إلى كتابة واحدة فقط
+        function flushQuestionStats() {
+            const ids = Object.keys(pendingQuestionStats);
+            if (ids.length === 0) return;
+            const batch = db.batch();
+            ids.forEach(qId => {
+                const stats = pendingQuestionStats[qId];
+                const ref = db.collection("questions").doc(qId);
+                const update = {};
+                if (stats.correct > 0) update.correctCount = firebase.firestore.FieldValue.increment(stats.correct);
+                if (stats.wrong   > 0) update.wrongCount   = firebase.firestore.FieldValue.increment(stats.wrong);
+                if (Object.keys(update).length > 0) batch.update(ref, update);
+            });
+            batch.commit().catch(err => console.warn("flushQuestionStats error:", err));
+            pendingQuestionStats = {};
+        }
+
         function finishQuizSession() {
+            flushQuestionStats(); // ✅ إرسال إحصائيات الاختبار الآن (كتابة batch واحدة)
             showView('view-result');
             localStorage.removeItem(`saved_quiz_${currentUser.uid}`);
             document.getElementById('review-answers-zone').style.display = "none";
@@ -1589,6 +1900,12 @@ html, body {
                     date: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
+                // ✅ [OPT-30] تحديث عداد المحاولات في مستند الميتاداتا — بدلاً من collectionGroup
+                db.collection("questions").doc("--metadata--").set(
+                    { totalAttempts: firebase.firestore.FieldValue.increment(1) },
+                    { merge: true }
+                );
+
                 const nextXp = currentUser.xp + xpGained;
                 const nextLevel = Math.floor(nextXp / 200) + 1;
                 document.getElementById('result-next-level').innerText = nextLevel;
@@ -1609,7 +1926,13 @@ html, body {
                         date: todayStr
                     }
                 }).then(() => {
-                    loadGlobalLeaderboard();
+                    // ✅ [OPT-17] تحديث الكاش المحلي للمستخدم بدلاً من إعادة تحميل اللوحة
+                    currentUser.xp = (currentUser.xp || 0) + xpGained;
+                    currentUser.level = nextLevel;
+                    // تصفير كاش محاولة المادة حتى تُحدَّث عند العودة
+                    subjectAttemptCache[activeCategory] = true;
+                    // إبطال كاش اللوحة حتى يُعاد حسابه في الزيارة التالية
+                    cachedLeaderboardUsers = null;
                 });
             }
         }
@@ -1652,6 +1975,8 @@ html, body {
 
                 const cacheData = docSnap.data();
                 let usersArr = cacheData.users || [];
+                // ✅ [OPT-31] حفظ بيانات اللوحة في ذاكرة الجلسة — يُغني عن قراءة جديدة لحساب الترتيب
+                cachedLeaderboardUsers = usersArr;
 
                 // تطبيق فلتر الأسبوع أو الشهر من بيانات الكاش (client-side - بدون قراءات إضافية)
                 if (currentLeaderFilter === "week") {
@@ -1870,52 +2195,39 @@ html, body {
             selectedAdminQuestionsGroup = [];
             document.getElementById('btn-bulk-delete-questions').style.display = "none";
             
-            db.collection("users").get().then(snap => {
-                document.getElementById('admin-total-students').innerText = snap.size;
-                
-                // احتساب الطلاب النشطين (آخر 7 أيام)
-                const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
-                let activeCount = 0;
-                let totalScoreSum = 0;
-                let totalAttemptsCount = 0;
-
-                snap.forEach(userDoc => {
-                    const uData = userDoc.data();
-                    if(uData.lastLogin && uData.lastLogin.toMillis && uData.lastLogin.toMillis() >= sevenDaysAgo) {
-                        activeCount++;
-                    }
-                });
-                document.getElementById('admin-active-students').innerText = activeCount;
+            // ✅ [OPT-18] قراءة الإحصائيات من مستند العداد (1 Read) بدلاً من 4 استعلامات ثقيلة
+            db.collection("questions").doc("--metadata--").get().then(doc => {
+                if (doc.exists) {
+                    const meta = doc.data();
+                    document.getElementById('admin-total-students').innerText  = meta.totalStudents  || '—';
+                    document.getElementById('admin-active-students').innerText = meta.activeStudents || '—';
+                    document.getElementById('admin-daily-attempts').innerText  = meta.totalAttempts  || '—';
+                    document.getElementById('admin-avg-score').innerText       = meta.avgScore ? `${meta.avgScore}%` : '—';
+                    document.getElementById('admin-total-questions').innerText = meta.totalQuestions || 0;
+                }
             });
 
-            // حساب محاولات اليوم والنسب العامة
-            db.collectionGroup("attempts").get().then(snap => {
-                document.getElementById('admin-daily-attempts').innerText = snap.size; 
-                let scoreSum = 0;
-                let totalQ = 0;
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    scoreSum += (d.score || 0);
-                    totalQ += (d.totalQuestions || 1);
-                });
-                const avg = totalQ > 0 ? Math.round((scoreSum / totalQ) * 100) : 0;
-                document.getElementById('admin-avg-score').innerText = `${avg}%`;
-            });
-
-            db.collection("questions").get().then(snap => {
-                document.getElementById('admin-total-questions').innerText = snap.size;
-            });
-            
-            db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
-                cachedAdminQuestions = [];
-                snapshot.forEach(doc => {
-                    let q = doc.data();
-                    q.uid = doc.id;
-                    cachedAdminQuestions.push(q);
-                });
+            // ✅ [OPT-19] تحميل الأسئلة مرة واحدة في الجلسة — نفس البيانات تُعاد للـ UI بدون إعادة قراءة
+            if (cachedAdminQuestions.length > 0) {
                 renderQuestionsListUI(cachedAdminQuestions);
                 calculateEasiestAndHardestQuestionsAnalytic(cachedAdminQuestions);
-            });
+            } else {
+                db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
+                    cachedAdminQuestions = [];
+                    snapshot.forEach(doc => {
+                        if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
+                        let q = doc.data();
+                        q.uid = doc.id;
+                        cachedAdminQuestions.push(q);
+                    });
+                    // تحديث عدد الأسئلة الفعلي في مستند العداد إن لزم
+                    db.collection("questions").doc("--metadata--").set(
+                        { totalQuestions: cachedAdminQuestions.length }, { merge: true }
+                    );
+                    renderQuestionsListUI(cachedAdminQuestions);
+                    calculateEasiestAndHardestQuestionsAnalytic(cachedAdminQuestions);
+                });
+            }
         }
 
         function calculateEasiestAndHardestQuestionsAnalytic(questionsList) {
@@ -1979,14 +2291,35 @@ html, body {
 
         function deleteSelectedQuestionsGroup() {
             if(confirm(`⚠️ هل أنت متأكد من حذف عدد (${selectedAdminQuestionsGroup.length}) سؤال دفعة واحدة نهائياً؟`)) {
-                let batch = db.batch();
+                // ✅ [OPT-32] احسب عدد المحذوفات لكل مادة من الكاش قبل الحذف
+                const subjectDeltas = {};
                 selectedAdminQuestionsGroup.forEach(id => {
+                    const q = cachedAdminQuestions.find(item => item.uid === id);
+                    if (q && q.subject) {
+                        subjectDeltas[q.subject] = (subjectDeltas[q.subject] || 0) - 1;
+                    }
+                });
+                const deletedIds = [...selectedAdminQuestionsGroup];
+
+                let batch = db.batch();
+                deletedIds.forEach(id => {
                     batch.delete(db.collection("questions").doc(id));
                 });
                 batch.commit().then(() => {
                     showToast("🎯 تم حذف مجموعة الأسئلة المحددة بنجاح!");
-                    logAdminAction("حذف جماعي", `تم حذف عدد ${selectedAdminQuestionsGroup.length} سؤال دفعة واحدة`);
-                    fetchSubjectQuestionCounts();
+                    logAdminAction("حذف جماعي", `تم حذف عدد ${deletedIds.length} سؤال دفعة واحدة`);
+                    // تحديث عدادات المواد دفعة واحدة (كتابة واحدة بدلاً من re-fetch كامل)
+                    const counterUpdate = { totalQuestions: firebase.firestore.FieldValue.increment(-deletedIds.length) };
+                    Object.keys(subjectDeltas).forEach(sub => {
+                        counterUpdate[`counts.${sub}`] = firebase.firestore.FieldValue.increment(subjectDeltas[sub]);
+                        if (subjectCounts[sub] !== undefined) subjectCounts[sub] = Math.max(0, subjectCounts[sub] + subjectDeltas[sub]);
+                    });
+                    db.collection("questions").doc("--metadata--").set(counterUpdate, { merge: true });
+                    _applySubjectCounts();
+                    // مسح كاش localStorage للمواد المتأثرة
+                    Object.keys(subjectDeltas).forEach(sub => _invalidateQuestionCache(sub));
+                    cachedAdminQuestions = cachedAdminQuestions.filter(q => !deletedIds.includes(q.uid));
+                    selectedAdminQuestionsGroup = [];
                     openAdminPanel();
                 });
             }
@@ -2032,14 +2365,22 @@ html, body {
                 db.collection("questions").get().then(snap => {
                     let batch = db.batch();
                     snap.forEach(doc => {
-                        // حماية مستند كاش الأوائل من الحذف العشوائي
-                        if (doc.id === "leaderboard-cache") return;
+                        // حماية مستندات الكاش والعداد من الحذف العشوائي
+                        if (doc.id === "leaderboard-cache" || doc.id === "--metadata--") return;
                         batch.delete(doc.ref);
                     });
                     batch.commit().then(() => {
+                        // ✅ [OPT-23] إعادة ضبط مستند العداد بدلاً من re-fetch كل الأسئلة
+                        db.collection("questions").doc("--metadata--").set({
+                            counts: { math: 0, english: 0, economics: 0, management: 0, office: 0 },
+                            totalQuestions: 0
+                        }, { merge: true });
+                        subjectCounts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
+                        cachedAdminQuestions = [];
+                        _invalidateQuestionCache(null);
+                        _applySubjectCounts();
                         showToast("🎯 تم مسح بنك الأسئلة بالكامل بنجاح!");
                         logAdminAction("تصفير الشامل", "مسح جميع أسئلة المنصة");
-                        fetchSubjectQuestionCounts();
                         openAdminPanel();
                     }).catch(err => alert("فشلت عملية الحذف الشامل: " + err.message));
                 });
@@ -2125,7 +2466,10 @@ html, body {
                         subjectSelect.value = "";
                         document.getElementById('fileNameDisplay').innerText = "اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة";
                         document.getElementById('fileNameDisplay').style.color = "";
-                        fetchSubjectQuestionCounts();
+                        // ✅ [OPT-24] تحديث العداد بالعدد الفعلي المضاف (كتابة واحدة فقط)
+                        updateSubjectCounterBy(selectedSubject, count);
+                        _invalidateQuestionCache(selectedSubject);
+                        cachedAdminQuestions = [];
                         openAdminPanel();
                     }).catch(err => alert("حدث خطأ أثناء الرفع: " + err.message));
                 }
@@ -2252,20 +2596,32 @@ html, body {
         }
 
         // 💾 تصدير قاعدة بيانات الأسئلة بالكامل بصيغة JSON كنسخة احتياطية
+        // ✅ [OPT-27] استخدام الكاش المحلي إن وُجد — قراءة Firestore فقط إذا لم يكن الكاش جاهزاً
         function exportFullBackup() {
-            db.collection("questions").get().then(snap => {
-                let backupData = [];
-                snap.forEach(doc => {
-                    backupData.push({ id: doc.id, ...doc.data() });
-                });
-                const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+            function _doExport(data) {
+                const clean = data.filter(d => d.subject && d.question);
+                const blob = new Blob([JSON.stringify(clean, null, 2)], { type: "application/json" });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement("a");
                 a.href = url;
                 a.download = `AmerQuiz_Questions_Backup_${new Date().toISOString().split('T')[0]}.json`;
                 a.click();
                 showToast("📥 تم استخراج وتحميل الـ Backup بنجاح!");
-            });
+            }
+
+            if (cachedAdminQuestions.length > 0) {
+                _doExport(cachedAdminQuestions);
+            } else {
+                db.collection("questions").get().then(snap => {
+                    let backupData = [];
+                    snap.forEach(doc => {
+                        if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
+                        backupData.push({ id: doc.id, ...doc.data() });
+                    });
+                    cachedAdminQuestions = backupData; // احفظ في الكاش لاستخدام لاحق
+                    _doExport(backupData);
+                });
+            }
         }
 
         // 🔄 استعادة قاعدة بيانات الأسئلة من ملف JSON
@@ -2294,9 +2650,24 @@ html, body {
                             });
                         });
                         batch.commit().then(() => {
+                            // ✅ [OPT-25] تحديث العدادات من البيانات المستوردة — بدون re-fetch
+                            const deltaMap = {};
+                            imported.forEach(q => {
+                                if (q.subject && fixedSubjects[q.subject]) {
+                                    deltaMap[q.subject] = (deltaMap[q.subject] || 0) + 1;
+                                }
+                            });
+                            const counterUpdate = { totalQuestions: firebase.firestore.FieldValue.increment(imported.length) };
+                            Object.keys(deltaMap).forEach(sub => {
+                                counterUpdate[`counts.${sub}`] = firebase.firestore.FieldValue.increment(deltaMap[sub]);
+                                if (subjectCounts[sub] !== undefined) subjectCounts[sub] += deltaMap[sub];
+                            });
+                            db.collection("questions").doc("--metadata--").set(counterUpdate, { merge: true });
+                            _applySubjectCounts();
+                            _invalidateQuestionCache(null);
+                            cachedAdminQuestions = [];
                             showToast("🔄 تم استعادة الأسئلة ودمجها بالسيرفر بنجاح!");
                             logAdminAction("استعادة نسخة احتياطية", `استيراد دمج عدد ${imported.length} سؤال عبر ملف JSON`);
-                            fetchSubjectQuestionCounts();
                             openAdminPanel();
                         });
                     }
@@ -2330,10 +2701,24 @@ html, body {
             };
 
             if (qId) {
+                // تعديل: إيجاد السؤال القديم في الكاش لتحديث العداد إن تغيرت المادة
+                const oldQ = cachedAdminQuestions.find(q => q.uid === qId);
                 db.collection("questions").doc(qId).update(payload).then(() => {
                     showToast("تم تعديل السؤال بنجاح!");
                     logAdminAction("تعديل سؤال فردي", text.substring(0, 40) + "...");
-                    fetchSubjectQuestionCounts();
+                    // ✅ [OPT-38] مسح كاش الأسئلة المحلي عند التعديل
+                    _invalidateQuestionCache(subject);
+                    if (oldQ && oldQ.subject !== subject) _invalidateQuestionCache(oldQ.subject);
+                    // ✅ [OPT-20] تحديث الكاش المحلي للأدمن بدلاً من إعادة تحميل الكل
+                    if (oldQ) {
+                        Object.assign(oldQ, payload);
+                        // إذا تغيرت المادة: عدّل العدادات
+                        if (oldQ.subject !== subject) {
+                            updateSubjectCounterBy(oldQ.subject, -1);
+                            updateSubjectCounterBy(subject, +1);
+                        }
+                    }
+                    cachedAdminQuestions = []; // أعد التحميل في المرة القادمة للتزامن
                     openAdminPanel();
                 });
             } else {
@@ -2342,40 +2727,55 @@ html, body {
                 db.collection("questions").add(payload).then(() => {
                     showToast("تم إضافة السؤال لبنك الأسئلة بنجاح!");
                     logAdminAction("إضافة سؤال فردي", text.substring(0, 40) + "...");
-                    fetchSubjectQuestionCounts();
+                    _invalidateQuestionCache(subject); // مسح كاش المادة المضاف إليها
+                    // ✅ [OPT-21] زد العداد مباشرة بدلاً من re-fetch
+                    updateSubjectCounterBy(subject, +1);
+                    cachedAdminQuestions = [];
                     openAdminPanel();
                 });
             }
         }
 
         function editQuestionInline(id) {
-            db.collection("questions").doc(id).get().then(doc => {
-                let q = doc.data();
-                document.getElementById('form-q-id').value = id;
-                document.getElementById('form-q-subject').value = q.subject;
-                document.getElementById('form-q-text').value = q.question;
-                document.getElementById('form-q-opt1').value = q.options[0] || "";
-                document.getElementById('form-q-opt2').value = q.options[1] || "";
-                document.getElementById('form-q-opt3').value = q.options[2] || "";
-                document.getElementById('form-q-opt4').value = q.options[3] || "";
-                document.getElementById('form-q-answer').value = q.answer;
-                document.getElementById('form-q-exp').value = q.explanation || "";
-                
-                document.getElementById('btn-cancel-edit').style.display = "block";
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-            });
+            // ✅ [OPT-26] البيانات موجودة في الكاش المحلي — لا حاجة لقراءة Firestore
+            const q = cachedAdminQuestions.find(item => item.uid === id);
+            if (q) {
+                _populateEditForm(id, q);
+            } else {
+                // fallback: اقرأ من Firestore فقط إذا لم يُوجد في الكاش
+                db.collection("questions").doc(id).get().then(doc => {
+                    _populateEditForm(id, doc.data());
+                });
+            }
+        }
+
+        function _populateEditForm(id, q) {
+            document.getElementById('form-q-id').value = id;
+            document.getElementById('form-q-subject').value = q.subject;
+            document.getElementById('form-q-text').value = q.question;
+            document.getElementById('form-q-opt1').value = q.options[0] || "";
+            document.getElementById('form-q-opt2').value = q.options[1] || "";
+            document.getElementById('form-q-opt3').value = q.options[2] || "";
+            document.getElementById('form-q-opt4').value = q.options[3] || "";
+            document.getElementById('form-q-answer').value = q.answer;
+            document.getElementById('form-q-exp').value = q.explanation || "";
+            document.getElementById('btn-cancel-edit').style.display = "block";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function deleteQuestionInline(id) {
             if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً؟")) {
-                db.collection("questions").doc(id).get().then(snap => {
-                    const qText = snap.data().question;
-                    db.collection("questions").doc(id).delete().then(() => {
-                        showToast("تم حذف السؤال!");
-                        logAdminAction("حذف سؤال", qText.substring(0, 40) + "...");
-                        fetchSubjectQuestionCounts();
-                        openAdminPanel();
-                    });
+                // ✅ [OPT-22] استخدم الكاش المحلي بدلاً من قراءة الوثيقة من الـ server
+                const cachedQ = cachedAdminQuestions.find(q => q.uid === id);
+                const subjectKey = cachedQ ? cachedQ.subject : null;
+                const qText = cachedQ ? cachedQ.question : "سؤال";
+
+                db.collection("questions").doc(id).delete().then(() => {
+                    showToast("تم حذف السؤال!");
+                    logAdminAction("حذف سؤال", qText.substring(0, 40) + "...");
+                    if (subjectKey) { updateSubjectCounterBy(subjectKey, -1); _invalidateQuestionCache(subjectKey); }
+                    cachedAdminQuestions = cachedAdminQuestions.filter(q => q.uid !== id);
+                    openAdminPanel();
                 });
             }
         }
