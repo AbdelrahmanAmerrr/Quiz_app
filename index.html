@@ -722,11 +722,8 @@ html, body {
                         </div>
                     </div>
 
-                    <div id="resume-alert" class="resume-alert-box">
-                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                            <span><i class="fa-solid fa-circle-exclamation"></i> تنبيه: رصدنا جلسة غير مكتملة في مادة <strong><span id="resume-subject-name"></span></strong>! هل تود استكملها？</span>
-                            <button class="ban-btn ban-inactive" style="box-shadow: var(--shadow);" onclick="resumeSavedQuizArena()">🔄 نعم، استكمال الآن</button>
-                        </div>
+                    <div id="resume-alert" class="resume-alert-box" style="display:none;">
+                        <!-- مخفي — بقي للتوافقية فقط -->
                     </div>
 
                     <h3 style="margin-top:25px;"><i class="fa-solid fa-book"></i> اختر المادة الدراسية لتحدي بنك الأسئلة المحدث:</h3>
@@ -734,7 +731,17 @@ html, body {
 
                     <div style="margin-top: 25px; border-top: 2px dashed var(--border); padding-top: 15px;">
                         <div class="practice-badge" id="arena-practice-alert">⚠️ هذه محاولة تدريبية ولن تضيف XP جديد.</div>
-                        <button class="btn-launch" id="btn-start-quiz" onclick="startQuizArena()"><i class="fa-solid fa-play"></i> بدء التحدي الآن</button>
+                        <!-- زر الاستئناف يظهر فقط إذا كانت المادة المختارة بها جلسة محفوظة -->
+                        <div id="resume-btn-wrap" style="display:none; margin-bottom:10px;">
+                            <button class="btn-launch" id="btn-resume-quiz"
+                                style="background: var(--warning); color:#1a1a1a;"
+                                onclick="resumeSavedQuizArena()">
+                                <i class="fa-solid fa-rotate-right"></i> استئناف من حيث توقفت
+                            </button>
+                        </div>
+                        <button class="btn-launch" id="btn-start-quiz" onclick="startQuizArena()">
+                            <i class="fa-solid fa-play"></i> بدء التحدي الآن
+                        </button>
                     </div>
                 </div>
 
@@ -1152,6 +1159,10 @@ html, body {
         // ✅ [OPT-5] ترتيب المستخدم المحسوب من كاش اللوحة — بدون قراءة كل المستخدمين
         let cachedLeaderboardUsers = null;
 
+        // ═══ إعدادات نظام XP المضاد للغش ═══
+        const XP_CAP_PER_SUBJECT      = 500; // الحد الأقصى لـ XP من مادة واحدة
+        const MAX_XP_ATTEMPTS_PER_SUB = 3;   // أقصى محاولات تمنح XP في المادة
+
         window.onload = function() {
             fetchSubjectQuestionCounts();
             checkAuthenticationState();
@@ -1512,18 +1523,33 @@ html, body {
 
         function checkSubjectAttemptStatus() {
             if (!currentUser) return;
-            const alertBox = document.getElementById('arena-practice-alert');
+            const alertBox     = document.getElementById('arena-practice-alert');
+            const resumeWrap   = document.getElementById('resume-btn-wrap');
 
-            // ✅ [OPT-10] استخدم الكاش المحلي إن وُجد (يمنع قراءة متكررة لكل نقرة على المادة)
+            // ── فحص وجود جلسة محفوظة لهذه المادة تحديداً ──
+            const savedRaw = localStorage.getItem(`saved_quiz_${currentUser.uid}`);
+            let hasSavedForThisSubject = false;
+            if (savedRaw) {
+                try {
+                    const saved = JSON.parse(savedRaw);
+                    hasSavedForThisSubject = (saved.subjectId === activeCategory);
+                } catch(e) {}
+            }
+            if (resumeWrap) {
+                resumeWrap.style.display = hasSavedForThisSubject ? 'block' : 'none';
+            }
+
+            // ✅ [OPT-10] كاش محلي لحالة المحاولات — يمنع قراءة متكررة لكل نقرة
             if (subjectAttemptCache[activeCategory] !== undefined) {
                 isPracticeMode = subjectAttemptCache[activeCategory];
                 alertBox.style.display = isPracticeMode ? "block" : "none";
                 return;
             }
 
-            db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).get().then((docSnap) => {
+            db.collection("users").doc(currentUser.uid).collection("attempts")
+              .doc(activeCategory).get().then(docSnap => {
                 isPracticeMode = docSnap.exists;
-                subjectAttemptCache[activeCategory] = isPracticeMode; // حفظ في الكاش
+                subjectAttemptCache[activeCategory] = isPracticeMode;
                 alertBox.style.display = isPracticeMode ? "block" : "none";
             });
         }
@@ -1753,27 +1779,17 @@ html, body {
 
         function toggleStarQuestion() {
             if (!currentQuestions[qIndex] || !currentUser) return;
-            // ✅ [OPT-14] قرار الإضافة/الحذف من الكاش فوراً (0 reads) — كتابة واحدة فقط
             const activeQ = currentQuestions[qIndex];
-            const starId = activeQ.id || "q_" + qIndex;
-            const starIcon = document.getElementById('arena-star-icon');
-            const ref = db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(starId);
-
-            const isCurrentlyStarred = starredQuestionsCache ? starredQuestionsCache.has(starId) : false;
-
-            if (isCurrentlyStarred) {
+            const starId  = activeQ.id || "q_" + qIndex;
+            const ref     = db.collection("users").doc(currentUser.uid).collection("starred_questions").doc(starId);
+            const isStarred = starredQuestionsCache ? starredQuestionsCache.has(starId) : false;
+            if (isStarred) {
                 ref.delete().catch(() => {});
                 if (starredQuestionsCache) starredQuestionsCache.delete(starId);
-                starIcon.className = "fa-regular fa-star";
-                const starBtn = document.getElementById('btn-star-action');
-                if (starBtn) { starBtn.className = 'arena-action-btn'; starBtn.innerHTML = '<i class="fa-regular fa-star"></i> حفظ'; }
-                showToast("⭐ تم إزالة السؤال من المفضلة بنجاح.");
+                showToast("⭐ تم إزالة السؤال من المفضلة.");
             } else {
                 ref.set(activeQ).catch(() => {});
                 if (starredQuestionsCache) starredQuestionsCache.add(starId);
-                starIcon.className = "fa-solid fa-star";
-                const starBtn = document.getElementById('btn-star-action');
-                if (starBtn) { starBtn.className = 'arena-action-btn starred'; starBtn.innerHTML = '<i class="fa-solid fa-star"></i> محفوظ'; }
                 showToast("⭐ تم حفظ السؤال في المفضلة!");
             }
         }
@@ -1813,7 +1829,9 @@ html, body {
             isPracticeMode = parsed.isPracticeMode;
             userQuizAnswersLog = parsed.userQuizAnswersLog || new Array(currentQuestions.length).fill(null);
 
-            document.getElementById('resume-alert').style.display = "none";
+            document.getElementById('resume-alert').style.display   = "none";
+            const resumeWrap = document.getElementById('resume-btn-wrap');
+            if (resumeWrap) resumeWrap.style.display = "none";
             checkSubjectAttemptStatus();
             showView('view-arena');
             buildQuestionsNavigationDots();
@@ -1861,15 +1879,6 @@ html, body {
             
             document.getElementById('arena-explanation-box').style.display = "none";
             document.getElementById('arena-nav-buttons').style.display  = "none";
-
-            // ✅ [OPT-13] استخدام الكاش المحلي بدلاً من قراءة Firestore لكل سؤال
-            const starIcon = document.getElementById('arena-star-icon');
-            const starId = activeQ.id || "q_" + qIndex;
-            if (starredQuestionsCache !== null) {
-                starIcon.className = starredQuestionsCache.has(starId) ? "fa-solid fa-star" : "fa-regular fa-star";
-            } else {
-                starIcon.className = "fa-regular fa-star";
-            }
 
             const box = document.getElementById('arena-options-box');
             box.innerHTML = "";
@@ -2122,56 +2131,94 @@ html, body {
             }
 
             const statusText = document.getElementById('result-xp-status');
-            
+
+            // ══════════════════════════════════════════════════════════════
+            // [ANTI-SPAM] فحص سقف XP المادة وعدد المحاولات المسموحة
+            // ══════════════════════════════════════════════════════════════
+            const subjectXPMap       = currentUser.subjectXP            || {};
+            const subjectAttemptsMap = currentUser.subjectAttemptsCount  || {};
+            const currentSubjectXP   = subjectXPMap[activeCategory]       || 0;
+            const currentAttempts    = subjectAttemptsMap[activeCategory]  || 0;
+
+            // تحويل تلقائي لوضع التدريب إن تجاوز المحاولات أو XP المسموح
+            const isSpamBlocked = !isPracticeMode && (
+                currentAttempts >= MAX_XP_ATTEMPTS_PER_SUB ||
+                currentSubjectXP >= XP_CAP_PER_SUBJECT
+            );
+            if (isSpamBlocked) isPracticeMode = true;
+
             if (isPracticeMode) {
-                statusText.innerText = "✨ هذه جولة تدريبية مكررة، لم يتم إضافة نقاط تماشياً مع معايير المساواة.";
+                const reason = isSpamBlocked
+                    ? (currentAttempts >= MAX_XP_ATTEMPTS_PER_SUB
+                        ? `وصلت للحد الأقصى (${MAX_XP_ATTEMPTS_PER_SUB} محاولات) في هذه المادة.`
+                        : `وصلت لسقف XP هذه المادة (${XP_CAP_PER_SUBJECT} XP).`)
+                    : "هذه جولة تدريبية مكررة.";
+                statusText.innerText = `✨ ${reason} لم يتم إضافة نقاط تماشياً مع معايير المساواة.`;
                 document.getElementById('result-next-level').innerText = currentUser.level || 1;
+
             } else {
-                statusText.innerText = `🎉 جولة رسمية ناجحة! ربحت +${xpGained} XP وأضيفت لملفك الشخصي فوراُ.`;
+                // ── حساب XP النهائي مع تطبيق سقف المادة ──
+                const finalXPGained = Math.min(xpGained, XP_CAP_PER_SUBJECT - currentSubjectXP);
+
+                statusText.innerText = `🎉 جولة رسمية! ربحت +${finalXPGained} XP (${currentAttempts + 1}/${MAX_XP_ATTEMPTS_PER_SUB} محاولات في المادة).`;
                 confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } });
 
-                db.collection("users").doc(currentUser.uid).collection("attempts").doc(activeCategory).set({
-                    subjectId: activeCategory,
-                    isOfficial: true,
-                    score: score,
-                    totalQuestions: currentQuestions.length,
-                    date: firebase.firestore.FieldValue.serverTimestamp()
+                document.getElementById('result-xp-gained').innerHTML =
+                    `+${finalXPGained}
+                    <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-top:2px;">
+                        ${baseXP} × ${sizeMultiplier}
+                    </div>`;
+
+                const nextXp    = (currentUser.xp || 0) + finalXPGained;
+                const nextLevel = Math.floor(Math.sqrt(nextXp / 100)) + 1;
+                document.getElementById('result-next-level').innerText = nextLevel;
+
+                const isFull   = (score === currentQuestions.length && currentQuestions.length > 0);
+                const todayStr = new Date().toLocaleDateString('ar-EG');
+
+                // ── كتابة واحدة فقط إلى Firestore تشمل كل شيء ──
+                db.collection("users").doc(currentUser.uid).update({
+                    xp:             firebase.firestore.FieldValue.increment(finalXPGained),
+                    level:          nextLevel,
+                    completedCount: firebase.firestore.FieldValue.increment(1),
+                    hasFullScore:   currentUser.hasFullScore || isFull,
+                    completedSubjects: firebase.firestore.FieldValue.arrayUnion(activeCategory),
+                    [`subjectXP.${activeCategory}`]:
+                        firebase.firestore.FieldValue.increment(finalXPGained),
+                    [`subjectAttemptsCount.${activeCategory}`]:
+                        firebase.firestore.FieldValue.increment(1),
+                    lastActivity: {
+                        subjectName: fixedSubjects[activeCategory],
+                        score:  score,
+                        total:  currentQuestions.length,
+                        date:   todayStr
+                    }
+                }).then(() => {
+                    currentUser.xp    = nextXp;
+                    currentUser.level = nextLevel;
+                    if (!currentUser.subjectXP)            currentUser.subjectXP = {};
+                    if (!currentUser.subjectAttemptsCount) currentUser.subjectAttemptsCount = {};
+                    currentUser.subjectXP[activeCategory]           = currentSubjectXP + finalXPGained;
+                    currentUser.subjectAttemptsCount[activeCategory] = currentAttempts + 1;
+                    subjectAttemptCache[activeCategory] = true;
+                    cachedLeaderboardUsers = null;
                 });
 
-                // ✅ [OPT-30] تحديث عداد المحاولات في مستند الميتاداتا — بدلاً من collectionGroup
+                // ── تحديث عدادات الميتاداتا ──
                 db.collection("questions").doc("--metadata--").set(
                     { totalAttempts: firebase.firestore.FieldValue.increment(1) },
                     { merge: true }
                 );
 
-                const nextXp    = (currentUser.xp || 0) + xpGained;
-                // [LEVEL-CURVE] Level = floor(√(totalXP / 100)) + 1
-                const nextLevel = Math.floor(Math.sqrt(nextXp / 100)) + 1;
-                document.getElementById('result-next-level').innerText = nextLevel;
-                
-                let isFull = (score === currentQuestions.length && currentQuestions.length > 0);
-                const todayStr = new Date().toLocaleDateString('ar-EG');
-
-                db.collection("users").doc(currentUser.uid).update({
-                    xp: firebase.firestore.FieldValue.increment(xpGained),
-                    level: nextLevel,
-                    completedCount: firebase.firestore.FieldValue.increment(1),
-                    hasFullScore: currentUser.hasFullScore || isFull,
-                    completedSubjects: firebase.firestore.FieldValue.arrayUnion(activeCategory),
-                    lastActivity: {
-                        subjectName: fixedSubjects[activeCategory],
-                        score: score,
-                        total: currentQuestions.length,
-                        date: todayStr
-                    }
-                }).then(() => {
-                    // ✅ [OPT-17] تحديث الكاش المحلي للمستخدم بدلاً من إعادة تحميل اللوحة
-                    currentUser.xp = (currentUser.xp || 0) + xpGained;
-                    currentUser.level = nextLevel;
-                    // تصفير كاش محاولة المادة حتى تُحدَّث عند العودة
-                    subjectAttemptCache[activeCategory] = true;
-                    // إبطال كاش اللوحة حتى يُعاد حسابه في الزيارة التالية
-                    cachedLeaderboardUsers = null;
+                db.collection("users").doc(currentUser.uid).collection("attempts")
+                  .doc(activeCategory).set({
+                    subjectId:      activeCategory,
+                    isOfficial:     true,
+                    score:          score,
+                    totalQuestions: currentQuestions.length,
+                    xpEarned:       finalXPGained,
+                    attemptNo:      currentAttempts + 1,
+                    date:           firebase.firestore.FieldValue.serverTimestamp()
                 });
             }
         }
@@ -2434,16 +2481,42 @@ html, body {
             selectedAdminQuestionsGroup = [];
             document.getElementById('btn-bulk-delete-questions').style.display = "none";
             
-            // ✅ [OPT-18] قراءة الإحصائيات من مستند العداد (1 Read) بدلاً من 4 استعلامات ثقيلة
+            // ✅ [OPT-18] قراءة الإحصائيات من مستند العداد + fallback للحقول غير المحسوبة
             db.collection("questions").doc("--metadata--").get().then(doc => {
-                if (doc.exists) {
-                    const meta = doc.data();
-                    document.getElementById('admin-total-students').innerText  = meta.totalStudents  || '—';
-                    document.getElementById('admin-active-students').innerText = meta.activeStudents || '—';
-                    document.getElementById('admin-daily-attempts').innerText  = meta.totalAttempts  || '—';
-                    document.getElementById('admin-avg-score').innerText       = meta.avgScore ? `${meta.avgScore}%` : '—';
-                    document.getElementById('admin-total-questions').innerText = meta.totalQuestions || 0;
+                const meta = doc.exists ? doc.data() : {};
+
+                const totalQ   = meta.totalQuestions || cachedAdminQuestions.length || '—';
+                const totalAtt = meta.totalAttempts  || '—';
+                document.getElementById('admin-total-questions').innerText = totalQ;
+                document.getElementById('admin-daily-attempts').innerText  = totalAtt;
+
+                // totalStudents: من الميتاداتا أو من كاش اللوحة تقريباً
+                if (meta.totalStudents) {
+                    document.getElementById('admin-total-students').innerText = meta.totalStudents;
+                } else {
+                    // fallback خفيف: عدد المستخدمين في كاش اللوحة (≤100)
+                    const lb = cachedLeaderboardUsers;
+                    document.getElementById('admin-total-students').innerText =
+                        lb ? `${lb.length}+` : '—';
+                    // بناء العداد في الخلفية مرة واحدة
+                    db.collection("users").get({ source: 'cache' }).then(s => {
+                        document.getElementById('admin-total-students').innerText = s.size;
+                        db.collection("questions").doc("--metadata--")
+                          .set({ totalStudents: s.size }, { merge: true });
+                    }).catch(() => {
+                        db.collection("users").get().then(s => {
+                            document.getElementById('admin-total-students').innerText = s.size;
+                            db.collection("questions").doc("--metadata--")
+                              .set({ totalStudents: s.size }, { merge: true });
+                        }).catch(() => {});
+                    });
                 }
+
+                // activeStudents + avgScore: محسوبة تدريجياً من الميتاداتا
+                document.getElementById('admin-active-students').innerText =
+                    meta.activeStudents != null ? meta.activeStudents : '—';
+                document.getElementById('admin-avg-score').innerText =
+                    meta.avgScore ? `${Math.round(meta.avgScore)}%` : '—';
             });
 
             // ✅ [OPT-19] تحميل الأسئلة مرة واحدة في الجلسة — نفس البيانات تُعاد للـ UI بدون إعادة قراءة
