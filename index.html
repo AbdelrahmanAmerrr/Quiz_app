@@ -318,8 +318,31 @@ html, body {
             background: #fff9db; }
         .arena-action-btn.flagged  { color: #9333ea; border-color: #c084fc;
             background: #faf5ff; }
-        body.dark-mode .arena-action-btn.starred { background: #2c1f00; }
-        body.dark-mode .arena-action-btn.flagged  { background: #1f0d30; }
+        /* ═══ إصلاح الوضع الليلي — جميع الأزرار والكروت ═══ */
+        body.dark-mode .ban-btn.ban-inactive { background: #1e3a5f !important; color: #93c5fd !important; }
+        body.dark-mode .ban-btn.ban-active   { background: #450a0a !important; color: #fca5a5 !important; }
+
+        /* كروت نتيجة الاختبار */
+        body.dark-mode .stat-box[style*="#d1fae5"] { background: #064e3b !important; }
+        body.dark-mode .stat-box[style*="#f1f5f9"] { background: #1e293b !important; }
+        body.dark-mode .stat-box[style*="#fef3c7"] { background: #422006 !important; }
+        body.dark-mode .stat-box[style*="primary-light"],
+        body.dark-mode .stat-box[style*="var(--primary-light)"] { background: #1e3a8a !important; }
+
+        /* كروت الأدمن */
+        body.dark-mode #tab-upload .stat-box { background: var(--bg-gradient) !important; color: var(--text-main) !important; }
+        body.dark-mode #tab-upload .stat-box span,
+        body.dark-mode #tab-upload .stat-box div { color: var(--text-main) !important; }
+
+        /* أزرار الأدمن ذات الألوان المحددة */
+        body.dark-mode [style*="background:#e0f2fe"] { background: #0c4a6e !important; color: #7dd3fc !important; }
+        body.dark-mode [style*="background:#f0fdf4"] { background: #052e16 !important; color: #86efac !important; }
+        body.dark-mode [style*="color:#0369a1"]       { color: #7dd3fc !important; }
+        body.dark-mode [style*="color:#16a34a"]       { color: #86efac !important; }
+        body.dark-mode [style*="color:#b45309"]       { color: #fbbf24 !important; }
+
+        /* نص المعلومات والشرح */
+        body.dark-mode .explanation-box { background: #1e3a8a; color: #bfdbfe; }
 
         /* نص السؤال */
         .arena-question-text {
@@ -765,7 +788,7 @@ html, body {
                 <div class="picker-subject-label">بنك أسئلة</div>
                 <div class="picker-subject-name" id="picker-subject-name">—</div>
                 <div class="picker-subject-sub">
-                    <span id="picker-total-text">0</span> سؤال مع شرح لكل إجابة وشرح مرئي متحرّك
+                    <span id="picker-total-text">0</span> سؤال متاح في هذه المادة
                 </div>
 
                 <!-- السؤال -->
@@ -816,16 +839,13 @@ html, body {
                     </div>
                 </div>
 
-                <!-- شريط الإجراءات — 3 أيقونات صغيرة -->
+                <!-- شريط الإجراءات — أيقونتان فقط -->
                 <div class="arena-actions">
                     <button class="arena-action-btn" id="btn-flag-action" onclick="toggleFlagQuestion()">
-                        <i class="fa-solid fa-thumbtack"></i> مراجعة
-                    </button>
-                    <button class="arena-action-btn" id="btn-star-action" onclick="toggleStarQuestion()">
-                        <i id="arena-star-icon" class="fa-regular fa-star"></i> حفظ
+                        <i class="fa-solid fa-thumbtack"></i> تمييز للمراجعة
                     </button>
                     <button class="arena-action-btn" onclick="reportQuestionProblem()">
-                        <i class="fa-solid fa-flag"></i> إبلاغ
+                        <i class="fa-solid fa-flag"></i> إبلاغ عن خطأ
                     </button>
                 </div>
 
@@ -933,6 +953,7 @@ html, body {
                     <button onclick="switchAdminTab('tab-upload')" id="btn-tab-upload" class="tab-btn active-upload">📥 إدارة الأسئلة</button>
                     <button onclick="switchAdminTab('tab-students')" id="btn-tab-students" class="tab-btn">👥 إدارة الطلاب</button>
                     <button onclick="switchAdminTab('tab-logs')" id="btn-tab-logs" class="tab-btn">📜 سجل النشاط</button>
+                    <button onclick="switchAdminTab('tab-reports'); loadAdminReports();" id="btn-tab-reports" class="tab-btn">🚩 البلاغات <span id="reports-badge" style="display:none; background:#ef4444; color:#fff; border-radius:99px; padding:1px 7px; font-size:11px; margin-right:4px;">0</span></button>
                 </div>
 
                 <div id="tab-upload" class="admin-tab-content">
@@ -1040,6 +1061,21 @@ html, body {
                     <h3>📜 سجل نشاط الإدارة العملياتي الفوري</h3>
                     <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg-gradient);" id="admin-logs-list">
                         لا توجد عمليات مسجلة بالسجل حالياً.
+                    </div>
+                </div>
+
+                <!-- 🚩 تبويب البلاغات -->
+                <div id="tab-reports" class="admin-tab-content hidden-tab">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                        <h3 style="margin:0;">🚩 بلاغات الطلاب عن الأسئلة</h3>
+                        <button onclick="loadAdminReports()" class="ban-btn ban-inactive" style="font-size:12px;">
+                            <i class="fa-solid fa-rotate"></i> تحديث
+                        </button>
+                    </div>
+                    <div id="admin-reports-list" style="display:flex; flex-direction:column; gap:10px;">
+                        <p style="color:var(--text-muted); text-align:center; padding:20px;">
+                            <i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...
+                        </p>
                     </div>
                 </div>
                 
@@ -1277,16 +1313,21 @@ html, body {
 
                     document.getElementById('profile-student-name').innerText = currentUser.name;
                     
-                    const level = currentUser.level || 1;
-                    const xp = currentUser.xp || 0;
-                    
-                    document.getElementById('stat-level').innerText = level;
-                    document.getElementById('stat-xp').innerText = xp;
+                    const xp    = currentUser.xp || 0;
+                    // [LEVEL-CURVE] Level = floor(√(XP / 100)) + 1
+                    const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+
+                    document.getElementById('stat-level').innerText    = level;
+                    document.getElementById('stat-xp').innerText       = xp;
                     document.getElementById('stat-completed').innerText = currentUser.completedCount || 0;
-                    
-                    const xpInCurrentLevel = xp % 200;
-                    document.getElementById('progress-xp-text').innerText = `${xpInCurrentLevel} / 200 XP`;
-                    document.getElementById('progress-xp-fill').style.width = `${(xpInCurrentLevel / 200) * 100}%`;
+
+                    // شريط التقدم الديناميكي
+                    const levelStart = Math.pow(level - 1, 2) * 100;
+                    const levelEnd   = Math.pow(level,     2) * 100;
+                    const xpInLevel  = xp - levelStart;
+                    const xpNeeded   = levelEnd - levelStart;
+                    document.getElementById('progress-xp-text').innerText  = `${xpInLevel} / ${xpNeeded} XP`;
+                    document.getElementById('progress-xp-fill').style.width = `${Math.min(100,(xpInLevel / xpNeeded) * 100)}%`;
 
                     // ✅ [OPT-9] حساب الترتيب من كاش اللوحة (1 Read) بدلاً من استعلام كل المستخدمين
                     _computeRankFromCache(uid, xp);
@@ -1738,19 +1779,24 @@ html, body {
         }
 
         function reportQuestionProblem() {
-            if (currentQuestions[qIndex]) {
-                const activeQ = currentQuestions[qIndex];
-                if (confirm("🚩 هل أنت متأكد من الإبلاغ عن وجود خطأ في هذا السؤال لمراجعته من قبل أ/عامر؟")) {
-                    db.collection("reports").add({
-                        questionId: activeQ.id || "unknown",
-                        questionText: activeQ.question,
-                        reportedBy: currentUser.name,
-                        reportedByUid: currentUser.uid,
-                        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-                    }).then(() => {
-                        showToast("🎯 تم إرسال البلاغ فوراً لوحدة تحكم الإدارة. شكراً لمساعدتك في دقة المنصة!");
-                    });
-                }
+            if (!currentQuestions[qIndex] || !currentUser) return;
+            const activeQ = currentQuestions[qIndex];
+            if (confirm("🚩 هل تؤكد الإبلاغ عن خطأ في هذا السؤال لمراجعته من قِبَل الإدارة؟")) {
+                db.collection("admin_reports").add({
+                    questionId:     activeQ.id   || "unknown",
+                    questionText:   activeQ.question,
+                    correctAnswer:  activeQ.answer,
+                    subject:        activeQ.subject || activeCategory,
+                    reportedBy:     currentUser.name,
+                    reportedByUid:  currentUser.uid,
+                    status:         "pending",
+                    timestamp:      firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    showToast("✅ تم إرسال البلاغ للإدارة. شكراً لمساعدتك!");
+                    // تغيير لون الزر مؤقتاً للتأكيد
+                    const btn = document.querySelector('.arena-action-btn[onclick="reportQuestionProblem()"]');
+                    if (btn) { btn.style.color = 'var(--success)'; btn.innerHTML = '<i class="fa-solid fa-check"></i> أُرسل'; }
+                }).catch(() => showToast("⚠️ فشل الإرسال، تحقق من الاتصال.", "error"));
             }
         }
 
@@ -1776,18 +1822,28 @@ html, body {
 
         function saveAndExitQuizArena() {
             clearInterval(timerInterval);
-            const stateToSave = {
-                subjectId: activeCategory,
-                currentQuestions: currentQuestions,
-                qIndex: qIndex,
-                score: score,
-                timeRemaining: timeRemaining,
-                isPracticeMode: isPracticeMode,
-                userQuizAnswersLog: userQuizAnswersLog
-            };
-            localStorage.setItem(`saved_quiz_${currentUser.uid}`, JSON.stringify(stateToSave));
-            alert("🔒 تم حفظ تقدم الجلسة الحالية بنجاح، يمكنك العودة واستكمالها في أي وقت لاحق من لوحة التحكم.");
-            backToDashboard();
+            // حفظ الحالة قبل أي شيء
+            try {
+                const stateToSave = {
+                    subjectId:        activeCategory,
+                    currentQuestions: currentQuestions,
+                    qIndex:           qIndex,
+                    score:            score,
+                    timeRemaining:    Math.max(5, timeRemaining),
+                    isPracticeMode:   isPracticeMode,
+                    userQuizAnswersLog: userQuizAnswersLog
+                };
+                localStorage.setItem(`saved_quiz_${currentUser.uid}`, JSON.stringify(stateToSave));
+                showToast("✅ تم حفظ تقدمك. يمكنك الاستكمال لاحقاً من لوحة التحكم.");
+            } catch(e) {
+                showToast("⚠️ تعذّر الحفظ، المساحة الكافية غير متوفرة.", "error");
+            }
+            // تصفير حالة الاختبار لمنع أي استدعاء لـ finishQuizSession عند الانتقال
+            currentQuestions = [];
+            qIndex = 0;
+            hasAnsweredCurrent = false;
+            // انتقال مباشر — بدون أي دالة quiz
+            showView('view-dashboard');
         }
 
         function loadArenaQuestion(isResumedFirstLoad = false) {
@@ -1938,20 +1994,55 @@ html, body {
 
         function toggleAnswersReviewZone() {
             const zone = document.getElementById('review-answers-zone');
-            if(zone.style.display === "none") {
-                let html = "";
+            if (zone.style.display === "none") {
+                // فصل الممُيَّزة والعادية
+                const flagged = [];
+                const regular = [];
                 userQuizAnswersLog.forEach((log, i) => {
-                    if(!log) return;
-                    html += `
-                        <div style="padding:10px; border-bottom:1px solid var(--border); margin-bottom:10px;">
-                            <strong>س${i+1}: ${log.question}</strong>
-                            <p style="margin:5px 0; font-size:13px;">إجابتك: <span style="color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'}">${log.chosen || 'فاتك الوقت ⏱️'}</span></p>
-                            <p style="margin:5px 0; font-size:13px; color:var(--success);">الإجابة النموذجية: ${log.correctAnswer}</p>
-                            <small style="color:var(--text-muted); display:block; margin-top:4px;">💡 الشرح: ${log.explanation || 'لا يوجد شرح متوفر حالياً.'}</small>
-                        </div>
-                    `;
+                    if (!log) return;
+                    if (currentQuestions[i] && currentQuestions[i].isFlagged) flagged.push({ log, i });
+                    else regular.push({ log, i });
                 });
-                zone.innerHTML = html || "<p style='text-align:center;'>لم يتم تدوين إجابات صالحة للمراجعة.</p>";
+
+                function buildCard(log, i, isFlag) {
+                    return `
+                    <div style="padding:12px 14px; border-radius:10px; margin-bottom:10px;
+                        border: 1.5px solid ${isFlag ? '#f59e0b' : (log.isCorrect ? '#10b981' : '#ef4444')};
+                        background: ${isFlag ? 'rgba(245,158,11,0.06)' : 'var(--bg-gradient)'};">
+                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+                            ${isFlag ? '<span style="background:#f59e0b;color:#fff;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700;">📌 ممُيَّز للمراجعة</span>' : ''}
+                            <span style="font-size:11px;color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'};font-weight:700;">
+                                ${log.isCorrect ? '✅ صحيح' : '❌ خطأ'}
+                            </span>
+                        </div>
+                        <strong style="font-size:14px;">س${i+1}: ${log.question}</strong>
+                        <p style="margin:6px 0 3px 0; font-size:13px;">
+                            إجابتك: <span style="color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">
+                                ${log.chosen || 'فاتك الوقت ⏱️'}
+                            </span>
+                        </p>
+                        <p style="margin:3px 0; font-size:13px; color:var(--success);">
+                            ✔ الإجابة الصحيحة: <strong>${log.correctAnswer}</strong>
+                        </p>
+                        <small style="color:var(--text-muted);display:block;margin-top:5px;">
+                            💡 ${log.explanation || 'لا يوجد شرح متوفر.'}
+                        </small>
+                    </div>`;
+                }
+
+                let html = '';
+                if (flagged.length > 0) {
+                    html += `<div style="font-weight:800;color:#b45309;margin-bottom:10px;font-size:14px;">
+                        📌 الأسئلة الممُيَّزة للمراجعة (${flagged.length})</div>`;
+                    flagged.forEach(({ log, i }) => { html += buildCard(log, i, true); });
+                    html += `<hr style="border:none;border-top:1px dashed var(--border);margin:14px 0;">`;
+                }
+                if (regular.length > 0) {
+                    html += `<div style="font-weight:700;color:var(--text-muted);margin-bottom:10px;font-size:13px;">
+                        بقية الأسئلة (${regular.length})</div>`;
+                    regular.forEach(({ log, i }) => { html += buildCard(log, i, false); });
+                }
+                zone.innerHTML = html || "<p style='text-align:center;color:var(--text-muted);'>لم يتم تدوين إجابات للمراجعة.</p>";
                 zone.style.display = "block";
             } else {
                 zone.style.display = "none";
@@ -1985,11 +2076,33 @@ html, body {
             document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
             const percentage = currentQuestions.length > 0 ? Math.round((score / currentQuestions.length) * 100) : 0;
 
-            // ✅ نظام XP عادل: كلما ارتفعت دقتك كلما حصلت على XP أكثر لكل إجابة صحيحة
-            // صيغة: (نسبة الدقة × عدد الصحيح × 30) — النتيجة الكاملة = score*30، النتيجة النصفية = score*15
-            const xpGained = Math.round((percentage / 100) * score * 30);
+            // ══════════════════════════════════════════════
+            // [XP-NEW] نظام XP الديناميكي العادل
+            // ══════════════════════════════════════════════
+            // أولاً: النقاط الأساسية حسب نسبة الدقة
+            let baseXP;
+            if      (percentage >= 80) baseXP = 150;
+            else if (percentage >= 70) baseXP = 100;
+            else if (percentage >= 50) baseXP =  50;
+            else                       baseXP =  30;
+
+            // ثانياً: مُضاعِف حجم الاختبار
+            const totalQ = currentQuestions.length;
+            let sizeMultiplier;
+            if      (totalQ <= 15)  sizeMultiplier = 0.2;
+            else if (totalQ <= 49)  sizeMultiplier = 0.6;
+            else if (totalQ <= 89)  sizeMultiplier = 1.0;
+            else if (totalQ <= 179) sizeMultiplier = 1.8;
+            else                    sizeMultiplier = 3.0;
+
+            const xpGained = Math.round(baseXP * sizeMultiplier);
             
-            document.getElementById('result-xp-gained').innerText = `+${isPracticeMode ? 0 : xpGained}`;
+            const displayXP = isPracticeMode ? 0 : xpGained;
+            document.getElementById('result-xp-gained').innerHTML =
+                `+${displayXP}
+                <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-top:2px;">
+                    ${isPracticeMode ? 'وضع تدريبي' : `${baseXP} × ${sizeMultiplier}`}
+                </div>`;
             document.getElementById('result-percent').innerText = `${percentage}%`;
 
             const motivationalContainer = document.getElementById('result-motivational-msg');
@@ -2031,8 +2144,9 @@ html, body {
                     { merge: true }
                 );
 
-                const nextXp = currentUser.xp + xpGained;
-                const nextLevel = Math.floor(nextXp / 200) + 1;
+                const nextXp    = (currentUser.xp || 0) + xpGained;
+                // [LEVEL-CURVE] Level = floor(√(totalXP / 100)) + 1
+                const nextLevel = Math.floor(Math.sqrt(nextXp / 100)) + 1;
                 document.getElementById('result-next-level').innerText = nextLevel;
                 
                 let isFull = (score === currentQuestions.length && currentQuestions.length > 0);
@@ -2515,24 +2629,82 @@ html, body {
         function switchAdminTab(tabId) {
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden-tab'));
             document.getElementById(tabId).classList.remove('hidden-tab');
-            
-            const btnUpload = document.getElementById('btn-tab-upload');
-            const btnStudents = document.getElementById('btn-tab-students');
-            const btnLogs = document.getElementById('btn-tab-logs');
-            
-            btnUpload.className = "tab-btn";
-            btnStudents.className = "tab-btn";
-            btnLogs.className = "tab-btn";
 
-            if(tabId === 'tab-upload') {
-                btnUpload.className = "tab-btn active-upload";
-            } else if(tabId === 'tab-students') {
-                btnStudents.className = "tab-btn active-students";
-                loadAdminStudentsList();
-            } else {
-                btnLogs.className = "tab-btn active-logs";
-                loadAdminLogsList();
-            }
+            ['btn-tab-upload','btn-tab-students','btn-tab-logs','btn-tab-reports'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.className = "tab-btn";
+            });
+
+            if      (tabId === 'tab-upload')   document.getElementById('btn-tab-upload').className   = "tab-btn active-upload";
+            else if (tabId === 'tab-students') { document.getElementById('btn-tab-students').className = "tab-btn active-students"; loadAdminStudentsList(); }
+            else if (tabId === 'tab-logs')     { document.getElementById('btn-tab-logs').className     = "tab-btn active-logs";     loadAdminLogsList(); }
+            else if (tabId === 'tab-reports')  { document.getElementById('btn-tab-reports').className  = "tab-btn active-logs"; }
+        }
+
+        function loadAdminReports() {
+            const listEl = document.getElementById('admin-reports-list');
+            if (!listEl) return;
+            listEl.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</p>`;
+
+            db.collection("admin_reports").orderBy("timestamp", "desc").limit(50).get()
+              .then(snap => {
+                if (snap.empty) {
+                    listEl.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:30px;"><i class="fa-solid fa-check-circle" style="color:var(--success)"></i> لا توجد بلاغات معلقة.</p>`;
+                    return;
+                }
+                // تحديث الـ badge
+                const badge = document.getElementById('reports-badge');
+                if (badge) { badge.style.display = 'inline'; badge.textContent = snap.size; }
+
+                listEl.innerHTML = '';
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    const ts = r.timestamp ? new Date(r.timestamp.toDate()).toLocaleDateString('ar-SA') : '—';
+                    const isPending = r.status === 'pending';
+                    const card = document.createElement('div');
+                    card.style.cssText = `
+                        background:var(--bg-gradient); border:1px solid ${isPending ? '#fca5a5' : 'var(--border)'};
+                        border-radius:10px; padding:14px; direction:rtl;
+                    `;
+                    card.innerHTML = `
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
+                            <div style="flex:1;">
+                                <p style="margin:0 0 6px 0;font-weight:700;font-size:14px;color:var(--text-main);">
+                                    📌 ${r.questionText || 'نص غير متاح'}
+                                </p>
+                                <p style="margin:0;font-size:12px;color:var(--text-muted);">
+                                    الإجابة الصحيحة: <strong>${r.correctAnswer || '—'}</strong> &nbsp;|&nbsp;
+                                    المادة: <strong>${r.subject || '—'}</strong> &nbsp;|&nbsp;
+                                    البلاغ من: <strong>${r.reportedBy || '—'}</strong> &nbsp;|&nbsp;
+                                    التاريخ: ${ts}
+                                </p>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+                                <span style="font-size:11px;padding:3px 8px;border-radius:99px;
+                                    background:${isPending ? '#fee2e2' : '#d1fae5'};
+                                    color:${isPending ? '#991b1b' : '#065f46'};">
+                                    ${isPending ? '⏳ معلق' : '✅ تمت المراجعة'}
+                                </span>
+                                ${isPending ? `<button onclick="resolveReport('${doc.id}', this)"
+                                    style="font-size:11px;padding:4px 8px;border:1px solid var(--success);
+                                    background:none;color:var(--success);border-radius:6px;cursor:pointer;">
+                                    ✔ تم الحل
+                                </button>` : ''}
+                            </div>
+                        </div>`;
+                    listEl.appendChild(card);
+                });
+            }).catch(err => {
+                listEl.innerHTML = `<p style="color:var(--danger);text-align:center;">خطأ في التحميل: ${err.message}</p>`;
+            });
+        }
+
+        function resolveReport(reportId, btn) {
+            db.collection("admin_reports").doc(reportId).update({ status: "resolved" }).then(() => {
+                btn.closest('div[style]').querySelector('span').textContent = '✅ تمت المراجعة';
+                btn.remove();
+                showToast("✅ تم تحديث حالة البلاغ.");
+            }).catch(() => showToast("⚠️ فشل التحديث.", "error"));
         }
 
         function updateFileNameDisplay() {
