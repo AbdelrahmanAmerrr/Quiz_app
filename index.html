@@ -1242,81 +1242,108 @@ html, body {
 
         function checkAuthenticationState() {
             const cachedUid = localStorage.getItem('amer_quiz_uid');
-
-            // ── شاشة تحميل أثناء استعادة الجلسة ──
             showView('view-loading');
 
-            // معالجة نتيجة redirect جوجل أولاً
-            auth.getRedirectResult().then((result) => {
+            auth.getRedirectResult().then(result => {
                 if (result && result.user) handleGoogleUserSuccess(result.user);
             }).catch(() => {});
 
-            // ── الاستماع لحالة المصادقة ──
-            let authResolved = false;
-            auth.onAuthStateChanged((user) => {
-                // تجاهل التكرار إذا سبق الحل
-                if (authResolved) { authResolved = false; return; }
-
+            // مستمع واحد فقط — يُنفَّذ مرة واحدة ثم يُلغى
+            const unsubscribe = auth.onAuthStateChanged((user) => {
                 if (user) {
-                    authResolved = true;
-                    // إظهار زر لوحة الأدمن إن كان أدمن
-                    db.collection("admins").doc(user.uid).get()
-                      .then(adminSnap => {
-                        if (adminSnap.exists) {
-                            document.getElementById('btn-goto-admin').style.display = "block";
-                        }
-                    }).catch(() => {});
-
-                    // throttle: كتابة lastLogin مرة كل 30 دقيقة فقط
-                    const lastLoginKey = `last_login_write_${user.uid}`;
-                    const lastWrite = parseInt(localStorage.getItem(lastLoginKey) || '0');
-                    if (Date.now() - lastWrite > 30 * 60 * 1000) {
-                        db.collection("users").doc(user.uid).update({
-                            lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-                        }).then(() => {
-                            localStorage.setItem(lastLoginKey, Date.now().toString());
-                        }).catch(() => {});
+                    unsubscribe(); // إلغاء الاستماع بعد أول نجاح
+                    
+                    // throttle lastLogin
+                    const llKey   = 'last_login_write_' + user.uid;
+                    const llLast  = parseInt(localStorage.getItem(llKey) || '0');
+                    if (Date.now() - llLast > 30 * 60 * 1000) {
+                        db.collection("users").doc(user.uid)
+                          .update({ lastLogin: firebase.firestore.FieldValue.serverTimestamp() })
+                          .then(() => localStorage.setItem(llKey, Date.now().toString()))
+                          .catch(() => {});
                     }
 
+                    // فحص الأدمن بدون إيقاف التحميل
+                    db.collection("admins").doc(user.uid).get().then(snap => {
+                        if (snap.exists) document.getElementById('btn-goto-admin').style.display = "block";
+                    }).catch(() => {});
+
                     if (cachedUid && cachedUid === user.uid) {
-                        // ✅ نفس المستخدم — تحميل مباشر
                         fetchUserRecord(user.uid);
                     } else if (!cachedUid) {
-                        // مستخدم Firebase جديد بدون سجل محلي — يحتاج تسجيل
                         localStorage.setItem('amer_quiz_uid', user.uid);
                         showView('view-register');
                     } else {
-                        // cachedUid يختلف عن user.uid — جرّب الـ cached أولاً
                         fetchUserRecord(cachedUid);
                     }
+
                 } else {
-                    // ── لا يوجد مستخدم محادق ──
-                    if (cachedUid) {
-                        // الجلسة السابقة انتهت — سجّل مجهولاً (بتأخير لإتاحة الوقت لاستعادة JWT)
-                        setTimeout(() => {
-                            if (!auth.currentUser) {
-                                auth.signInAnonymously().catch(() => showView('view-register'));
-                            }
-                        }, 1500);
-                    } else {
-                        // أول زيارة — سجّل مجهولاً ثم أظهر صفحة التسجيل
-                        auth.signInAnonymously().catch(() => showView('view-register'));
-                    }
+                    // لا مستخدم — انتظر 1.5 ثانية قبل إنشاء مجهول (لإتاحة وقت لاستعادة الجلسة)
+                    setTimeout(() => {
+                        if (auth.currentUser) return; // تمت الاستعادة في هذه الأثناء
+                        if (cachedUid) {
+                            auth.signInAnonymously().catch(() => showView('view-register'));
+                        } else {
+                            auth.signInAnonymously().catch(() => showView('view-register'));
+                        }
+                    }, 1500);
                 }
             });
+
+            // حارس نهائي: إذا لم يحدث شيء بعد 8 ثوانٍ → عرض صفحة التسجيل
+            setTimeout(() => {
+                const current = document.getElementById('view-loading');
+                if (current && current.style.display !== 'none') {
+                    const cached = cachedUid ? localStorage.getItem('aq_user_' + cachedUid) : null;
+                    if (cached) {
+                        try {
+                            currentUser = JSON.parse(cached);
+                            currentUser.uid = cachedUid;
+                            showView('view-dashboard');
+                            fetchSubjectQuestionCounts();
+                            checkSavedQuizSession();
+                            showToast("⚠️ بطء في الاتصال — يعمل من الكاش المحلي.", "error");
+                            return;
+                        } catch(e) {}
+                    }
+                    showView('view-register');
+                }
+            }, 8000);
         }
 
         function fetchUserRecord(uid) {
+            // ── Timeout 5s: يهرب من تعليق Firestore على iOS/متعدد تبويبات ──
+            let settled = false;
+            const timeoutId = setTimeout(() => {
+                if (settled) return;
+                settled = true;
+                const cached = localStorage.getItem('aq_user_' + uid);
+                if (cached) {
+                    try {
+                        currentUser = JSON.parse(cached);
+                        currentUser.uid = uid;
+                        checkSubjectAttemptStatus();
+                        checkSavedQuizSession();
+                        showView('view-dashboard');
+                        fetchSubjectQuestionCounts();
+                        showToast("⚠️ يعمل التطبيق من الكاش المحلي مؤقتاً.", "error");
+                        return;
+                    } catch(e) {}
+                }
+                showView('view-register');
+            }, 5000);
+
             db.collection("users").doc(uid).get().then((docSnap) => {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
+
                 if (docSnap.exists) {
                     currentUser = docSnap.data();
+                    currentUser.uid = uid;
                     
                     if (currentUser.isBanned === true) {
-                        document.body.innerHTML = `
-                            <div style="text-align:center; padding:50px; font-family:'Segoe UI', sans-serif; direction:rtl; background:#0f172a; color:#fff; min-height:100vh; display:flex; flex-direction:column; justify-content:center; align-items:center;">
-                                <h2 style="color:#ef4444; font-size: 32px; margin-bottom: 15px;">🚫 عذراً، تم حظر حسابك من قبل الإدارة!</h2>
-                                <p style="color:#94a3b8; font-size: 18px; margin-top:0;">برجاء المراجعة والتواصل مع الأستاذ عامر لتسوية الحساب وفك القيد.</p>
-                            </div>`;
+                        document.body.innerHTML = \`<div style="text-align:center;padding:50px;font-family:'Segoe UI',sans-serif;direction:rtl;background:#0f172a;color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;"><h2 style="color:#ef4444;font-size:32px;margin-bottom:15px;">🚫 عذراً، تم حظر حسابك من قبل الإدارة!</h2><p style="color:#94a3b8;font-size:18px;margin-top:0;">برجاء المراجعة والتواصل مع الأستاذ عامر لتسوية الحساب وفك القيد.</p></div>\`;
                         return;
                     }
 
@@ -1325,95 +1352,80 @@ html, body {
                     if (currentUser.previousRank && currentUser.currentRank) {
                         const diff = currentUser.previousRank - currentUser.currentRank;
                         const deltaSpan = document.getElementById('dash-rank-delta');
-                        if (diff > 0) {
-                            deltaSpan.innerHTML = `<span style="color:var(--success)"><i class="fa-solid fa-circle-arrow-up"></i> صعدت ${diff} مراكز!</span>`;
-                        } else if (diff < 0) {
-                            deltaSpan.innerHTML = `<span style="color:var(--danger)"><i class="fa-solid fa-circle-arrow-down"></i> تراجعت ${Math.abs(diff)} مراكز</span>`;
-                        } else {
-                            deltaSpan.innerHTML = `<span style="color:var(--text-muted)"><i class="fa-solid fa-arrows-left-right"></i> مستقر في مركزك</span>`;
-                        }
+                        if (diff > 0)       deltaSpan.innerHTML = \`<span style="color:var(--success)"><i class="fa-solid fa-circle-arrow-up"></i> صعدت \${diff} مراكز!</span>\`;
+                        else if (diff < 0)  deltaSpan.innerHTML = \`<span style="color:var(--danger)"><i class="fa-solid fa-circle-arrow-down"></i> تراجعت \${Math.abs(diff)} مراكز</span>\`;
+                        else                deltaSpan.innerHTML = \`<span style="color:var(--text-muted)"><i class="fa-solid fa-arrows-left-right"></i> مستقر في مركزك</span>\`;
                     }
 
-                    if(currentUser.photoURL) {
+                    if (currentUser.photoURL) {
                         const avatarDash = document.getElementById('dash-student-avatar');
                         avatarDash.src = currentUser.photoURL;
                         avatarDash.style.display = "block";
                         document.getElementById('profile-big-avatar').src = currentUser.photoURL;
                     } else {
-                        const defaultImg = "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
-                        document.getElementById('profile-big-avatar').src = defaultImg;
+                        document.getElementById('profile-big-avatar').src = "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
                     }
 
                     document.getElementById('profile-student-name').innerText = currentUser.name;
                     
                     const xp    = currentUser.xp || 0;
-                    // [LEVEL-CURVE] Level = floor(√(XP / 100)) + 1
                     const level = Math.floor(Math.sqrt(xp / 100)) + 1;
 
-                    document.getElementById('stat-level').innerText    = level;
-                    document.getElementById('stat-xp').innerText       = xp;
+                    document.getElementById('stat-level').innerText     = level;
+                    document.getElementById('stat-xp').innerText        = xp;
                     document.getElementById('stat-completed').innerText = currentUser.completedCount || 0;
 
-                    // شريط التقدم الديناميكي
                     const levelStart = Math.pow(level - 1, 2) * 100;
-                    const levelEnd   = Math.pow(level,     2) * 100;
+                    const levelEnd   = Math.pow(level, 2) * 100;
                     const xpInLevel  = xp - levelStart;
                     const xpNeeded   = levelEnd - levelStart;
-                    document.getElementById('progress-xp-text').innerText  = `${xpInLevel} / ${xpNeeded} XP`;
-                    document.getElementById('progress-xp-fill').style.width = `${Math.min(100,(xpInLevel / xpNeeded) * 100)}%`;
+                    document.getElementById('progress-xp-text').innerText   = xpInLevel + ' / ' + xpNeeded + ' XP';
+                    document.getElementById('progress-xp-fill').style.width = Math.min(100, (xpInLevel / xpNeeded) * 100) + '%';
 
-                    // ✅ [OPT-9] حساب الترتيب من كاش اللوحة (1 Read) بدلاً من استعلام كل المستخدمين
                     _computeRankFromCache(uid, xp);
-
                     checkDailyRewardStatus();
 
-                    if (currentUser.completedCount >= 1) document.getElementById('ach-first').classList.add('unlocked');
-                    if (xp >= 100) document.getElementById('ach-100xp').classList.add('unlocked');
-                    if (xp >= 500) document.getElementById('ach-500xp').classList.add('unlocked');
-                    if (currentUser.hasFullScore === true) document.getElementById('ach-full').classList.add('unlocked');
+                    if (currentUser.completedCount >= 1)                                  document.getElementById('ach-first').classList.add('unlocked');
+                    if (xp >= 100)                                                         document.getElementById('ach-100xp').classList.add('unlocked');
+                    if (xp >= 500)                                                         document.getElementById('ach-500xp').classList.add('unlocked');
+                    if (currentUser.hasFullScore === true)                                 document.getElementById('ach-full').classList.add('unlocked');
                     if (currentUser.completedSubjects && currentUser.completedSubjects.length >= 5) document.getElementById('ach-subject').classList.add('unlocked');
 
                     if (currentUser.lastActivity) {
                         const act = currentUser.lastActivity;
-                        document.getElementById('last-activity-text').innerHTML = `اختبار بمادة <strong>(${act.subjectName})</strong> 📝 بنتيجة <strong>${act.score} من ${act.total}</strong> بتاريخ: ${act.date}`;
+                        document.getElementById('last-activity-text').innerHTML = 'اختبار بمادة <strong>(' + act.subjectName + ')</strong> 📝 بنتيجة <strong>' + act.score + ' من ' + act.total + '</strong> بتاريخ: ' + act.date;
                     }
-                    
+
                     checkSubjectAttemptStatus();
                     checkSavedQuizSession();
-                    // حفظ بيانات المستخدم محلياً للعمل offline
-                    try {
-                        localStorage.setItem(`aq_user_${uid}`, JSON.stringify(currentUser));
-                    } catch(e) {}
+                    try { localStorage.setItem('aq_user_' + uid, JSON.stringify(currentUser)); } catch(e) {}
                     showView('view-dashboard');
+                    fetchSubjectQuestionCounts();
+
                 } else {
-                    // المستند غير موجود — أول تسجيل
                     localStorage.setItem('amer_quiz_uid', uid);
                     showView('view-register');
                 }
             }).catch((err) => {
-                console.warn("fetchUserRecord error:", err);
-                // أعد المحاولة من الكاش المحلي قبل عرض صفحة التسجيل
-                const cachedUser = localStorage.getItem(`aq_user_${uid}`);
-                if (cachedUser) {
+                if (settled) return;
+                settled = true;
+                clearTimeout(timeoutId);
+                console.warn("fetchUserRecord catch:", err);
+                const cached = localStorage.getItem('aq_user_' + uid);
+                if (cached) {
                     try {
-                        currentUser     = JSON.parse(cachedUser);
+                        currentUser = JSON.parse(cached);
                         currentUser.uid = uid;
+                        checkSubjectAttemptStatus();
                         checkSavedQuizSession();
                         showView('view-dashboard');
                         fetchSubjectQuestionCounts();
-                        showToast("⚠️ يعمل التطبيق في وضع عدم الاتصال مؤقتاً.", "error");
+                        showToast("⚠️ يعمل التطبيق من الكاش المحلي مؤقتاً.", "error");
                         return;
                     } catch(e) {}
                 }
-                // لا كاش — أعد المحاولة مرة واحدة بعد ثانيتين
-                if (!fetchUserRecord._retried) {
-                    fetchUserRecord._retried = true;
-                    setTimeout(() => { fetchUserRecord._retried = false; fetchUserRecord(uid); }, 2000);
-                } else {
-                    fetchUserRecord._retried = false;
-                    showView('view-register');
-                    showToast("⚠️ فشل الاتصال بالخادم. تحقق من الإنترنت.", "error");
-                }
+                showView('view-register');
+                showToast("⚠️ فشل الاتصال. تحقق من الإنترنت.", "error");
             });
         }
 
