@@ -667,6 +667,12 @@ html, body {
         
         <div class="main-zone">
             
+            <!-- شاشة تحميل أثناء استعادة الجلسة -->
+            <div class="card" id="view-loading" style="display:none; text-align:center; padding:60px 20px;">
+                <i class="fa-solid fa-spinner fa-spin" style="font-size:40px; color:var(--primary); margin-bottom:16px; display:block;"></i>
+                <p style="color:var(--text-muted); font-size:16px; margin:0;">جاري التحقق من هويتك...</p>
+            </div>
+
             <div class="card" id="view-register" style="display: none;">
                 <h2 style="text-align: center;"><i class="fa-solid fa-user-plus"></i> انضم كطالب محارب</h2>
                 <p style="text-align: center; color: var(--text-muted);">سجل الدخول بحساب Google لتوثيق صورتك وبياناتك الشخصية فوراً بشكل آمن.</p>
@@ -675,7 +681,7 @@ html, body {
                 <div style="text-align: center; margin: 15px 0; color: var(--text-muted); font-weight: bold;">─ أو التسجيل اليدوي التقليدي ─</div>
 
                 <input type="text" id="reg-student-name" placeholder="اكتب اسمك الثلاثي بدقة..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing:border-box; font-size:16px; background: var(--card-bg); color: var(--text-main);">
-                <button class="btn-launch" onclick="handleStudentRegistration()" style="margin-top: 20px;"><i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة</button>
+                <button id="btn-manual-register" class="btn-launch" onclick="handleStudentRegistration()" style="margin-top: 20px;"><i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة</button>
                 <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('admin')" style="color:var(--primary); text-decoration:none; font-weight:bold;">🔐 دخول إدارة المنصة</a></p>
             </div>
 
@@ -1236,24 +1242,32 @@ html, body {
 
         function checkAuthenticationState() {
             const cachedUid = localStorage.getItem('amer_quiz_uid');
-            
-            auth.getRedirectResult().then((result) => {
-                if (result && result.user) {
-                    handleGoogleUserSuccess(result.user);
-                }
-            }).catch((error) => {
-                console.error("خطأ التوجيه بجوجل:", error);
-            });
 
+            // ── شاشة تحميل أثناء استعادة الجلسة ──
+            showView('view-loading');
+
+            // معالجة نتيجة redirect جوجل أولاً
+            auth.getRedirectResult().then((result) => {
+                if (result && result.user) handleGoogleUserSuccess(result.user);
+            }).catch(() => {});
+
+            // ── الاستماع لحالة المصادقة ──
+            let authResolved = false;
             auth.onAuthStateChanged((user) => {
+                // تجاهل التكرار إذا سبق الحل
+                if (authResolved) { authResolved = false; return; }
+
                 if (user) {
-                    db.collection("admins").doc(user.uid).get().then(adminSnap => {
+                    authResolved = true;
+                    // إظهار زر لوحة الأدمن إن كان أدمن
+                    db.collection("admins").doc(user.uid).get()
+                      .then(adminSnap => {
                         if (adminSnap.exists) {
                             document.getElementById('btn-goto-admin').style.display = "block";
                         }
-                    });
+                    }).catch(() => {});
 
-                    // ✅ [OPT-8] throttle: تحديث lastLogin مرة واحدة كل 30 دقيقة فقط
+                    // throttle: كتابة lastLogin مرة كل 30 دقيقة فقط
                     const lastLoginKey = `last_login_write_${user.uid}`;
                     const lastWrite = parseInt(localStorage.getItem(lastLoginKey) || '0');
                     if (Date.now() - lastWrite > 30 * 60 * 1000) {
@@ -1265,20 +1279,28 @@ html, body {
                     }
 
                     if (cachedUid && cachedUid === user.uid) {
+                        // ✅ نفس المستخدم — تحميل مباشر
                         fetchUserRecord(user.uid);
                     } else if (!cachedUid) {
+                        // مستخدم Firebase جديد بدون سجل محلي — يحتاج تسجيل
                         localStorage.setItem('amer_quiz_uid', user.uid);
                         showView('view-register');
                     } else {
+                        // cachedUid يختلف عن user.uid — جرّب الـ cached أولاً
                         fetchUserRecord(cachedUid);
                     }
                 } else {
+                    // ── لا يوجد مستخدم محادق ──
                     if (cachedUid) {
-                        auth.signInAnonymously().catch(() => {
-                            showView('view-register');
-                        });
+                        // الجلسة السابقة انتهت — سجّل مجهولاً (بتأخير لإتاحة الوقت لاستعادة JWT)
+                        setTimeout(() => {
+                            if (!auth.currentUser) {
+                                auth.signInAnonymously().catch(() => showView('view-register'));
+                            }
+                        }, 1500);
                     } else {
-                        auth.signInAnonymously();
+                        // أول زيارة — سجّل مجهولاً ثم أظهر صفحة التسجيل
+                        auth.signInAnonymously().catch(() => showView('view-register'));
                     }
                 }
             });
@@ -1358,12 +1380,40 @@ html, body {
                     
                     checkSubjectAttemptStatus();
                     checkSavedQuizSession();
+                    // حفظ بيانات المستخدم محلياً للعمل offline
+                    try {
+                        localStorage.setItem(`aq_user_${uid}`, JSON.stringify(currentUser));
+                    } catch(e) {}
                     showView('view-dashboard');
                 } else {
+                    // المستند غير موجود — أول تسجيل
+                    localStorage.setItem('amer_quiz_uid', uid);
                     showView('view-register');
                 }
-            }).catch(() => {
-                showView('view-register');
+            }).catch((err) => {
+                console.warn("fetchUserRecord error:", err);
+                // أعد المحاولة من الكاش المحلي قبل عرض صفحة التسجيل
+                const cachedUser = localStorage.getItem(`aq_user_${uid}`);
+                if (cachedUser) {
+                    try {
+                        currentUser     = JSON.parse(cachedUser);
+                        currentUser.uid = uid;
+                        checkSavedQuizSession();
+                        showView('view-dashboard');
+                        fetchSubjectQuestionCounts();
+                        showToast("⚠️ يعمل التطبيق في وضع عدم الاتصال مؤقتاً.", "error");
+                        return;
+                    } catch(e) {}
+                }
+                // لا كاش — أعد المحاولة مرة واحدة بعد ثانيتين
+                if (!fetchUserRecord._retried) {
+                    fetchUserRecord._retried = true;
+                    setTimeout(() => { fetchUserRecord._retried = false; fetchUserRecord(uid); }, 2000);
+                } else {
+                    fetchUserRecord._retried = false;
+                    showView('view-register');
+                    showToast("⚠️ فشل الاتصال بالخادم. تحقق من الإنترنت.", "error");
+                }
             });
         }
 
@@ -1462,30 +1512,47 @@ html, body {
 
         function handleStudentRegistration() {
             const name = document.getElementById('reg-student-name').value.trim();
-            if (name.length < 8) { alert("يرجى كتابة الاسم الثلاثي كاملاً لتوثيق نتائجك."); return; }
-            
-            const uid = auth.currentUser.uid;
-            const newUserData = {
-                uid: uid,
-                name: name,
-                xp: 0,
-                level: 1,
-                completedCount: 0,
-                completedSubjects: [],
-                hasFullScore: false,
-                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-                lastLogin: firebase.firestore.FieldValue.serverTimestamp()
-            };
+            if (name.length < 3) {
+                showToast("⚠️ يرجى كتابة اسمك كاملاً.", "error");
+                return;
+            }
 
-            db.collection("users").doc(uid).set(newUserData).then(() => {
-                // ✅ [OPT-29] تحديث عداد الطلاب في مستند الميتاداتا عند التسجيل اليدوي
-                db.collection("questions").doc("--metadata--").set(
-                    { totalStudents: firebase.firestore.FieldValue.increment(1) },
-                    { merge: true }
-                );
-                localStorage.setItem('amer_quiz_uid', uid);
-                fetchUserRecord(uid);
-            }).catch(e => alert("خطأ في الاتصال بقاعدة البيانات: " + e.message));
+            const btn = document.getElementById('btn-manual-register');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التسجيل...'; }
+
+            function _doRegister(uid) {
+                const newUserData = {
+                    uid, name,
+                    xp: 0, level: 1,
+                    completedCount: 0,
+                    completedSubjects: [],
+                    hasFullScore: false,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    lastLogin:  firebase.firestore.FieldValue.serverTimestamp()
+                };
+                db.collection("users").doc(uid).set(newUserData).then(() => {
+                    db.collection("questions").doc("--metadata--")
+                      .set({ totalStudents: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+                    localStorage.setItem('amer_quiz_uid', uid);
+                    fetchUserRecord(uid);
+                }).catch(e => {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة'; }
+                    showToast(`⚠️ فشل التسجيل: ${e.message}`, "error");
+                });
+            }
+
+            // حارس null — auth.currentUser قد يكون null إذا لم تكتمل المصادقة بعد
+            if (auth.currentUser) {
+                _doRegister(auth.currentUser.uid);
+            } else {
+                // سجّل مجهولاً ثم أكمل
+                auth.signInAnonymously().then((cred) => {
+                    _doRegister(cred.user.uid);
+                }).catch(e => {
+                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة'; }
+                    showToast("⚠️ فشل الاتصال بالخادم. تحقق من الإنترنت.", "error");
+                });
+            }
         }
 
         function checkDailyRewardStatus() {
@@ -3199,12 +3266,26 @@ html, body {
         }
 
         function showAdminLogin() { showView('view-admin-login'); }
-        function backToDashboard() { showDashboardTab('dash'); checkAuthenticationState(); }
+        function backToDashboard() {
+            // لا نُعيد checkAuthenticationState لأنها تُضيف مستمعاً جديداً في كل مرة
+            // بدلاً من ذلك: عُد للوحة مباشرةً إذا كان currentUser محمّلاً
+            currentQuestions = [];
+            if (currentUser) {
+                checkSubjectAttemptStatus();
+                showView('view-dashboard');
+            } else {
+                checkAuthenticationState();
+            }
+        }
 
         function showView(viewId) {
-            const views = ['view-register', 'view-admin-login', 'view-dashboard', 'view-count-picker', 'view-arena', 'view-result', 'view-admin-panel'];
-            views.forEach(v => document.getElementById(v).style.display = "none");
-            document.getElementById(viewId).style.display = "block";
+            const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-count-picker', 'view-arena', 'view-result', 'view-admin-panel'];
+            views.forEach(v => {
+                const el = document.getElementById(v);
+                if (el) el.style.display = "none";
+            });
+            const target = document.getElementById(viewId);
+            if (target) target.style.display = "block";
         }
 
         function toggleTheme() { 
