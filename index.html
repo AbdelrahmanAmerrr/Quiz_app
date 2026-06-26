@@ -1324,7 +1324,7 @@ html, body {
                     } catch(e) {}
                 }
                 showView('view-register');
-            }, 5000);
+            }, 10000);
 
             db.collection("users").doc(uid).get().then((docSnap) => {
                 if (settled) return;
@@ -1391,6 +1391,7 @@ html, body {
 
                     checkSubjectAttemptStatus();
                     checkSavedQuizSession();
+                    // حفظ دائم في localStorage — يضمن عمل الكاش في المرات القادمة
                     try { localStorage.setItem('aq_user_' + uid, JSON.stringify(currentUser)); } catch(e) {}
                     showView('view-dashboard');
                     fetchSubjectQuestionCounts();
@@ -1548,6 +1549,11 @@ html, body {
                 db.collection("users").doc(uid).set(newUserData)
                   .then(() => {
                     clearTimeout(writeTimeout);
+                    // ✅ احفظ البيانات محلياً فوراً — حتى لو تأخرت القراءة يفتح التطبيق من الكاش
+                    try {
+                        const cacheData = Object.assign({}, newUserData, { uid });
+                        localStorage.setItem('aq_user_' + uid, JSON.stringify(cacheData));
+                    } catch(e) {}
                     db.collection("questions").doc("--metadata--")
                       .set({ totalStudents: firebase.firestore.FieldValue.increment(1) }, { merge: true })
                       .catch(() => {});
