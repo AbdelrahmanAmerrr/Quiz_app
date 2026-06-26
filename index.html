@@ -1343,7 +1343,7 @@ html, body {
                     currentUser.uid = uid;
                     
                     if (currentUser.isBanned === true) {
-                        document.body.innerHTML = \`<div style="text-align:center;padding:50px;font-family:'Segoe UI',sans-serif;direction:rtl;background:#0f172a;color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;"><h2 style="color:#ef4444;font-size:32px;margin-bottom:15px;">🚫 عذراً، تم حظر حسابك من قبل الإدارة!</h2><p style="color:#94a3b8;font-size:18px;margin-top:0;">برجاء المراجعة والتواصل مع الأستاذ عامر لتسوية الحساب وفك القيد.</p></div>\`;
+                        document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:Arial,sans-serif;direction:rtl;background:#0f172a;color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;"><h2 style="color:#ef4444;font-size:28px;">🚫 تم حظر حسابك من قبل الإدارة!</h2><p style="color:#94a3b8;font-size:16px;">برجاء التواصل مع الأستاذ عامر لتسوية الحساب.</p></div>';
                         return;
                     }
 
@@ -1352,9 +1352,9 @@ html, body {
                     if (currentUser.previousRank && currentUser.currentRank) {
                         const diff = currentUser.previousRank - currentUser.currentRank;
                         const deltaSpan = document.getElementById('dash-rank-delta');
-                        if (diff > 0)       deltaSpan.innerHTML = \`<span style="color:var(--success)"><i class="fa-solid fa-circle-arrow-up"></i> صعدت \${diff} مراكز!</span>\`;
-                        else if (diff < 0)  deltaSpan.innerHTML = \`<span style="color:var(--danger)"><i class="fa-solid fa-circle-arrow-down"></i> تراجعت \${Math.abs(diff)} مراكز</span>\`;
-                        else                deltaSpan.innerHTML = \`<span style="color:var(--text-muted)"><i class="fa-solid fa-arrows-left-right"></i> مستقر في مركزك</span>\`;
+                        if (diff > 0)       deltaSpan.innerHTML = `<span style="color:var(--success)"><i class="fa-solid fa-circle-arrow-up"></i> صعدت ${diff} مراكز!</span>`;
+                        else if (diff < 0)  deltaSpan.innerHTML = `<span style="color:var(--danger)"><i class="fa-solid fa-circle-arrow-down"></i> تراجعت ${Math.abs(diff)} مراكز</span>`;
+                        else                deltaSpan.innerHTML = `<span style="color:var(--text-muted)"><i class="fa-solid fa-arrows-left-right"></i> مستقر في مركزك</span>`;
                     }
 
                     if (currentUser.photoURL) {
