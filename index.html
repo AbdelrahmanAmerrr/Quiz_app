@@ -1109,17 +1109,10 @@ html, body {
           measurementId: "G-SG2TRRSZEL"
         };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
-        var db = firebase.firestore();
+        var db   = firebase.firestore();
         var auth = firebase.auth();
-
-        // ✅ [OPT-1] تفعيل الكاش المحلي للمتصفح — يوفر 90%+ من قراءات البيانات المتكررة
-        db.enablePersistence({ synchronizeTabs: true }).catch(err => {
-            if (err.code === 'failed-precondition') {
-                console.warn('Persistence: تبويب متعدد مفتوح، سيعمل التاب النشط فقط مع الكاش.');
-            } else if (err.code === 'unimplemented') {
-                console.warn('Persistence: المتصفح لا يدعم الكاش المحلي.');
-            }
-        });
+        // ملاحظة: enablePersistence مُزالة — تسبب تجميد iOS مع تبويبات متعددة
+        // كاش الأسئلة يعمل عبر localStorage بشكل مستقل
 
         const fixedSubjects = {
             "math": "الرياضة والتأمين",
@@ -1523,14 +1516,17 @@ html, body {
         }
 
         function handleStudentRegistration() {
-            const name = document.getElementById('reg-student-name').value.trim();
+            const name = (document.getElementById('reg-student-name').value || '').trim();
             if (name.length < 3) {
                 showToast("⚠️ يرجى كتابة اسمك كاملاً.", "error");
                 return;
             }
-
             const btn = document.getElementById('btn-manual-register');
             if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> جاري التسجيل...'; }
+
+            function _resetBtn() {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة'; }
+            }
 
             function _doRegister(uid) {
                 const newUserData = {
@@ -1542,28 +1538,38 @@ html, body {
                     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                     lastLogin:  firebase.firestore.FieldValue.serverTimestamp()
                 };
-                db.collection("users").doc(uid).set(newUserData).then(() => {
+
+                // timeout على عملية الكتابة — تحسباً لأي تعليق
+                const writeTimeout = setTimeout(() => {
+                    _resetBtn();
+                    showToast("⚠️ بطء في الاتصال، حاول مجدداً.", "error");
+                }, 8000);
+
+                db.collection("users").doc(uid).set(newUserData)
+                  .then(() => {
+                    clearTimeout(writeTimeout);
                     db.collection("questions").doc("--metadata--")
-                      .set({ totalStudents: firebase.firestore.FieldValue.increment(1) }, { merge: true });
+                      .set({ totalStudents: firebase.firestore.FieldValue.increment(1) }, { merge: true })
+                      .catch(() => {});
                     localStorage.setItem('amer_quiz_uid', uid);
                     fetchUserRecord(uid);
-                }).catch(e => {
-                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة'; }
-                    showToast(`⚠️ فشل التسجيل: ${e.message}`, "error");
-                });
+                  })
+                  .catch(e => {
+                    clearTimeout(writeTimeout);
+                    _resetBtn();
+                    showToast("⚠️ فشل التسجيل: " + e.message, "error");
+                  });
             }
 
-            // حارس null — auth.currentUser قد يكون null إذا لم تكتمل المصادقة بعد
             if (auth.currentUser) {
                 _doRegister(auth.currentUser.uid);
             } else {
-                // سجّل مجهولاً ثم أكمل
-                auth.signInAnonymously().then((cred) => {
-                    _doRegister(cred.user.uid);
-                }).catch(e => {
-                    if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة'; }
-                    showToast("⚠️ فشل الاتصال بالخادم. تحقق من الإنترنت.", "error");
-                });
+                auth.signInAnonymously()
+                  .then(cred => _doRegister(cred.user.uid))
+                  .catch(() => {
+                    _resetBtn();
+                    showToast("⚠️ فشل الاتصال بالخادم.", "error");
+                  });
             }
         }
 
