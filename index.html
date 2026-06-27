@@ -1232,16 +1232,46 @@ html, body {
         // ✅ [OPT-6] قراءة واحدة (1 Read) من مستند العداد بدلاً من قراءة جميع الأسئلة
         function fetchSubjectQuestionCounts() {
             db.collection("questions").doc("--metadata--").get().then((doc) => {
-                if (doc.exists && doc.data().counts) {
+                if (doc.exists) {
+                    const data = doc.data();
+                    let counts = null;
+
+                    // هيكل صحيح: { counts: { math: 50, ... } }
+                    if (data.counts && typeof data.counts === 'object') {
+                        counts = data.counts;
+                    }
+                    // هيكل قديم مكسور: { 'counts.math': 50, ... } — أصلحه وأعد كتابته
+                    else {
+                        counts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
+                        let foundDotKeys = false;
+                        Object.keys(data).forEach(k => {
+                            if (k.startsWith('counts.')) {
+                                const sub = k.replace('counts.', '');
+                                if (counts[sub] !== undefined) {
+                                    counts[sub] = data[k] || 0;
+                                    foundDotKeys = true;
+                                }
+                            }
+                        });
+                        if (foundDotKeys) {
+                            // أصلح هيكل Firestore تلقائياً
+                            db.collection("questions").doc("--metadata--").set(
+                                { counts, totalQuestions: Object.values(counts).reduce((a,b)=>a+b,0) },
+                                { merge: false }
+                            );
+                        } else {
+                            rebuildMetadataCounts();
+                            return;
+                        }
+                    }
+
                     subjectCounts = Object.assign(
                         { math: 0, english: 0, economics: 0, management: 0, office: 0 },
-                        doc.data().counts
+                        counts
                     );
-                    // ✅ حفظ في localStorage للعرض الفوري في المرة القادمة
                     try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
                     _applySubjectCounts();
                 } else {
-                    // أول تشغيل: ابنِ مستند العداد تلقائياً من بيانات الأسئلة الحالية
                     rebuildMetadataCounts();
                 }
             }).catch(() => renderSubjects());
@@ -1265,11 +1295,12 @@ html, body {
                     const sub = doc.data().subject;
                     if (counts[sub] !== undefined) { counts[sub]++; totalQ++; }
                 });
+                // ✅ merge: false يضمن هيكل صحيح { counts: { math: 50 } }
                 db.collection("questions").doc("--metadata--").set(
-                    { counts, totalQuestions: totalQ },
-                    { merge: true }
+                    { counts, totalQuestions: totalQ }
                 );
                 subjectCounts = counts;
+                try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
                 _applySubjectCounts();
             }).catch(() => renderSubjects());
         }
@@ -1277,18 +1308,19 @@ html, body {
         // ✅ [OPT-7] تحديث عداد المادة بـ delta (+1 أو -1) بدون قراءة أي شيء
         function updateSubjectCounterBy(subject, delta) {
             if (!subject || !fixedSubjects[subject]) return;
-            const update = {};
-            update[`counts.${subject}`] = firebase.firestore.FieldValue.increment(delta);
-            update['totalQuestions'] = firebase.firestore.FieldValue.increment(delta);
-            db.collection("questions").doc("--metadata--").set(update, { merge: true })
-              .catch(err => console.warn("updateSubjectCounterBy error:", err));
-            // تحديث المتغير المحلي فوراً
-            if (subjectCounts[subject] !== undefined) {
-                subjectCounts[subject] = Math.max(0, (subjectCounts[subject] || 0) + delta);
-            } else {
-                subjectCounts[subject] = Math.max(0, delta);
-            }
-            // ✅ تحديث localStorage حتى يعرض الكاش الأرقام الصحيحة في المرة القادمة فوراً
+            // ✅ استخدام update() بدلاً من set(merge) — يكتب داخل الـ Map الصحيح
+            db.collection("questions").doc("--metadata--").update({
+                [`counts.${subject}`]: firebase.firestore.FieldValue.increment(delta),
+                totalQuestions:        firebase.firestore.FieldValue.increment(delta)
+            }).catch(() => {
+                // إذا لم يوجد المستند بعد — أنشئه أولاً
+                const initial = { counts: {}, totalQuestions: 0 };
+                Object.keys(fixedSubjects).forEach(k => initial.counts[k] = 0);
+                initial.counts[subject] = Math.max(0, delta);
+                initial.totalQuestions  = Math.max(0, delta);
+                db.collection("questions").doc("--metadata--").set(initial);
+            });
+            subjectCounts[subject] = Math.max(0, (subjectCounts[subject] || 0) + delta);
             try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
             _applySubjectCounts();
         }
