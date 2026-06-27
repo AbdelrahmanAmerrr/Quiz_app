@@ -1209,7 +1209,15 @@ html, body {
         const MAX_XP_ATTEMPTS_PER_SUB = 3;   // أقصى محاولات تمنح XP في المادة
 
         window.onload = function() {
-            fetchSubjectQuestionCounts();
+            // ✅ تحميل عدادات المواد من الكاش فوراً — يمنع رؤية الأصفار عند التحميل
+            const cachedCounts = localStorage.getItem('aq_subject_counts');
+            if (cachedCounts) {
+                try {
+                    subjectCounts = JSON.parse(cachedCounts);
+                    renderSubjects(); // عرض فوري بالأرقام المخزّنة
+                } catch(e) {}
+            }
+            fetchSubjectQuestionCounts(); // ثم تحديث من Firestore
             checkAuthenticationState();
         };
 
@@ -1229,6 +1237,8 @@ html, body {
                         { math: 0, english: 0, economics: 0, management: 0, office: 0 },
                         doc.data().counts
                     );
+                    // ✅ حفظ في localStorage للعرض الفوري في المرة القادمة
+                    try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
                     _applySubjectCounts();
                 } else {
                     // أول تشغيل: ابنِ مستند العداد تلقائياً من بيانات الأسئلة الحالية
@@ -1718,8 +1728,24 @@ html, body {
                 }
             }
 
-            if (subjectAttemptCache[activeCategory] !== undefined || isBlocked) {
-                _applyAlert(subjectAttemptCache[activeCategory] || isBlocked);
+            // ── المنطق المُصلَح: بيانات currentUser دائماً أولى من الكاش ──
+            // إذا كان usedAttempts = 0 من بيانات المستخدم → ليس وضع تدريبي بغض النظر عن الكاش
+            if (isBlocked) {
+                // استنفد المحاولات أو الـ XP
+                _applyAlert(true);
+                return;
+            }
+
+            if (usedAttempts === 0 && usedSubjectXP === 0) {
+                // مستخدم جديد أو بعد تصفير → دائماً محاولة رسمية
+                subjectAttemptCache[activeCategory] = false;
+                _applyAlert(false);
+                return;
+            }
+
+            // للحالات المتوسطة: استخدم الكاش إن وُجد وإلا اقرأ من Firestore
+            if (subjectAttemptCache[activeCategory] !== undefined) {
+                _applyAlert(subjectAttemptCache[activeCategory]);
                 return;
             }
 
