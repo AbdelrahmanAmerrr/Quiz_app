@@ -1285,8 +1285,12 @@ html, body {
             // تحديث المتغير المحلي فوراً
             if (subjectCounts[subject] !== undefined) {
                 subjectCounts[subject] = Math.max(0, (subjectCounts[subject] || 0) + delta);
-                _applySubjectCounts();
+            } else {
+                subjectCounts[subject] = Math.max(0, delta);
             }
+            // ✅ تحديث localStorage حتى يعرض الكاش الأرقام الصحيحة في المرة القادمة فوراً
+            try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
+            _applySubjectCounts();
         }
 
         function checkAuthenticationState() {
@@ -1728,29 +1732,12 @@ html, body {
                 }
             }
 
-            // ── المنطق المُصلَح: بيانات currentUser دائماً أولى من الكاش ──
-            // إذا كان usedAttempts = 0 من بيانات المستخدم → ليس وضع تدريبي بغض النظر عن الكاش
-            if (isBlocked) {
-                // استنفد المحاولات أو الـ XP
-                _applyAlert(true);
-                return;
-            }
-
-            if (usedAttempts === 0 && usedSubjectXP === 0) {
-                // مستخدم جديد أو بعد تصفير → دائماً محاولة رسمية
-                subjectAttemptCache[activeCategory] = false;
-                _applyAlert(false);
-                return;
-            }
-
-            // للحالات المتوسطة: استخدم الكاش إن وُجد وإلا اقرأ من Firestore
-            if (subjectAttemptCache[activeCategory] !== undefined) {
-                _applyAlert(subjectAttemptCache[activeCategory]);
-                return;
-            }
-
-            db.collection("users").doc(currentUser.uid).collection("attempts")
-              .doc(activeCategory).get().then(docSnap => { _applyAlert(docSnap.exists); });
+            // ══════════════════════════════════════════════════════════
+            // المنطق النهائي: يعتمد فقط على currentUser.subjectAttemptsCount
+            // لا كاش قديم، لا قراءة Firestore — القرار فوري وصحيح دائماً
+            // ══════════════════════════════════════════════════════════
+            // وضع تدريبي فقط إذا استنفد المحاولات الرسمية الثلاث أو XP المادة
+            _applyAlert(isBlocked);
         }
 
         let pendingQuestions = [];
