@@ -1332,67 +1332,80 @@ html, body {
                 clearTimeout(timeoutId);
 
                 if (docSnap.exists) {
-                    currentUser = docSnap.data();
+                    currentUser     = docSnap.data();
                     currentUser.uid = uid;
-                    
+
+                    // حفظ فوري في localStorage
+                    try { localStorage.setItem('aq_user_' + uid, JSON.stringify(currentUser)); } catch(e) {}
+
+                    // تحقق الحظر
                     if (currentUser.isBanned === true) {
-                        document.body.innerHTML = '<div style="text-align:center;padding:50px;font-family:Arial,sans-serif;direction:rtl;background:#0f172a;color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;"><h2 style="color:#ef4444;font-size:28px;">🚫 تم حظر حسابك من قبل الإدارة!</h2><p style="color:#94a3b8;font-size:16px;">برجاء التواصل مع الأستاذ عامر لتسوية الحساب.</p></div>';
+                        document.body.innerHTML = '<div style="text-align:center;padding:50px;direction:rtl;background:#0f172a;color:#fff;min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;"><h2 style="color:#ef4444">🚫 تم حظر حسابك!</h2><p style="color:#94a3b8">برجاء التواصل مع الإدارة.</p></div>';
                         return;
                     }
 
-                    document.getElementById('dash-student-name').innerText = currentUser.name;
-                    
-                    if (currentUser.previousRank && currentUser.currentRank) {
-                        const diff = currentUser.previousRank - currentUser.currentRank;
-                        const deltaSpan = document.getElementById('dash-rank-delta');
-                        if (diff > 0)       deltaSpan.innerHTML = `<span style="color:var(--success)"><i class="fa-solid fa-circle-arrow-up"></i> صعدت ${diff} مراكز!</span>`;
-                        else if (diff < 0)  deltaSpan.innerHTML = `<span style="color:var(--danger)"><i class="fa-solid fa-circle-arrow-down"></i> تراجعت ${Math.abs(diff)} مراكز</span>`;
-                        else                deltaSpan.innerHTML = `<span style="color:var(--text-muted)"><i class="fa-solid fa-arrows-left-right"></i> مستقر في مركزك</span>`;
-                    }
+                    // ── تحديث الـ UI (مُغلَّف في try-catch لمنع أي خطأ من إيقاف الانتقال) ──
+                    try {
+                        document.getElementById('dash-student-name').innerText = currentUser.name;
 
-                    if (currentUser.photoURL) {
+                        if (currentUser.previousRank && currentUser.currentRank) {
+                            const diff = currentUser.previousRank - currentUser.currentRank;
+                            const deltaSpan = document.getElementById('dash-rank-delta');
+                            if (deltaSpan) {
+                                if (diff > 0)      deltaSpan.innerHTML = `<span style="color:var(--success)"><i class="fa-solid fa-circle-arrow-up"></i> صعدت ${diff} مراكز!</span>`;
+                                else if (diff < 0) deltaSpan.innerHTML = `<span style="color:var(--danger)"><i class="fa-solid fa-circle-arrow-down"></i> تراجعت ${Math.abs(diff)} مراكز</span>`;
+                                else               deltaSpan.innerHTML = `<span style="color:var(--text-muted)"><i class="fa-solid fa-arrows-left-right"></i> مستقر في مركزك</span>`;
+                            }
+                        }
+
                         const avatarDash = document.getElementById('dash-student-avatar');
-                        avatarDash.src = currentUser.photoURL;
-                        avatarDash.style.display = "block";
-                        document.getElementById('profile-big-avatar').src = currentUser.photoURL;
-                    } else {
-                        document.getElementById('profile-big-avatar').src = "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
+                        const bigAvatar  = document.getElementById('profile-big-avatar');
+                        if (currentUser.photoURL) {
+                            if (avatarDash) { avatarDash.src = currentUser.photoURL; avatarDash.style.display = "block"; }
+                            if (bigAvatar)  bigAvatar.src = currentUser.photoURL;
+                        } else {
+                            if (bigAvatar)  bigAvatar.src = "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
+                        }
+
+                        const nameEl = document.getElementById('profile-student-name');
+                        if (nameEl) nameEl.innerText = currentUser.name;
+
+                        const xp    = currentUser.xp || 0;
+                        const level = Math.floor(Math.sqrt(xp / 100)) + 1;
+                        const lvlEl = document.getElementById('stat-level');   if (lvlEl) lvlEl.innerText = level;
+                        const xpEl  = document.getElementById('stat-xp');      if (xpEl)  xpEl.innerText  = xp;
+                        const cntEl = document.getElementById('stat-completed');if (cntEl) cntEl.innerText = currentUser.completedCount || 0;
+
+                        const levelStart = Math.pow(level - 1, 2) * 100;
+                        const levelEnd   = Math.pow(level, 2) * 100;
+                        const xpInLevel  = xp - levelStart;
+                        const xpNeeded   = levelEnd - levelStart;
+                        const xpTxt = document.getElementById('progress-xp-text');
+                        const xpFil = document.getElementById('progress-xp-fill');
+                        if (xpTxt) xpTxt.innerText   = xpInLevel + ' / ' + xpNeeded + ' XP';
+                        if (xpFil) xpFil.style.width = Math.min(100, xpNeeded > 0 ? (xpInLevel / xpNeeded) * 100 : 0) + '%';
+
+                        _computeRankFromCache(uid, xp);
+                        checkDailyRewardStatus();
+
+                        const achFirst = document.getElementById('ach-first');   if (achFirst && currentUser.completedCount >= 1) achFirst.classList.add('unlocked');
+                        const ach100   = document.getElementById('ach-100xp');   if (ach100   && xp >= 100)  ach100.classList.add('unlocked');
+                        const ach500   = document.getElementById('ach-500xp');   if (ach500   && xp >= 500)  ach500.classList.add('unlocked');
+                        const achFull  = document.getElementById('ach-full');    if (achFull  && currentUser.hasFullScore) achFull.classList.add('unlocked');
+                        const achSub   = document.getElementById('ach-subject'); if (achSub   && currentUser.completedSubjects && currentUser.completedSubjects.length >= 5) achSub.classList.add('unlocked');
+
+                        if (currentUser.lastActivity) {
+                            const act = currentUser.lastActivity;
+                            const actEl = document.getElementById('last-activity-text');
+                            if (actEl) actEl.innerHTML = 'اختبار بمادة <strong>(' + act.subjectName + ')</strong> بنتيجة <strong>' + act.score + ' من ' + act.total + '</strong> بتاريخ: ' + act.date;
+                        }
+                    } catch(domErr) {
+                        console.warn("fetchUserRecord DOM error (non-fatal):", domErr);
                     }
 
-                    document.getElementById('profile-student-name').innerText = currentUser.name;
-                    
-                    const xp    = currentUser.xp || 0;
-                    const level = Math.floor(Math.sqrt(xp / 100)) + 1;
-
-                    document.getElementById('stat-level').innerText     = level;
-                    document.getElementById('stat-xp').innerText        = xp;
-                    document.getElementById('stat-completed').innerText = currentUser.completedCount || 0;
-
-                    const levelStart = Math.pow(level - 1, 2) * 100;
-                    const levelEnd   = Math.pow(level, 2) * 100;
-                    const xpInLevel  = xp - levelStart;
-                    const xpNeeded   = levelEnd - levelStart;
-                    document.getElementById('progress-xp-text').innerText   = xpInLevel + ' / ' + xpNeeded + ' XP';
-                    document.getElementById('progress-xp-fill').style.width = Math.min(100, (xpInLevel / xpNeeded) * 100) + '%';
-
-                    _computeRankFromCache(uid, xp);
-                    checkDailyRewardStatus();
-
-                    if (currentUser.completedCount >= 1)                                  document.getElementById('ach-first').classList.add('unlocked');
-                    if (xp >= 100)                                                         document.getElementById('ach-100xp').classList.add('unlocked');
-                    if (xp >= 500)                                                         document.getElementById('ach-500xp').classList.add('unlocked');
-                    if (currentUser.hasFullScore === true)                                 document.getElementById('ach-full').classList.add('unlocked');
-                    if (currentUser.completedSubjects && currentUser.completedSubjects.length >= 5) document.getElementById('ach-subject').classList.add('unlocked');
-
-                    if (currentUser.lastActivity) {
-                        const act = currentUser.lastActivity;
-                        document.getElementById('last-activity-text').innerHTML = 'اختبار بمادة <strong>(' + act.subjectName + ')</strong> 📝 بنتيجة <strong>' + act.score + ' من ' + act.total + '</strong> بتاريخ: ' + act.date;
-                    }
-
-                    checkSubjectAttemptStatus();
-                    checkSavedQuizSession();
-                    // حفظ دائم في localStorage — يضمن عمل الكاش في المرات القادمة
-                    try { localStorage.setItem('aq_user_' + uid, JSON.stringify(currentUser)); } catch(e) {}
+                    // ── الانتقال للوحة (يعمل دائماً حتى لو فشل تحديث الـ UI) ──
+                    try { checkSubjectAttemptStatus(); } catch(e) {}
+                    try { checkSavedQuizSession();     } catch(e) {}
                     showView('view-dashboard');
                     fetchSubjectQuestionCounts();
 
@@ -1404,22 +1417,21 @@ html, body {
                 if (settled) return;
                 settled = true;
                 clearTimeout(timeoutId);
-                console.warn("fetchUserRecord catch:", err);
                 const cached = localStorage.getItem('aq_user_' + uid);
                 if (cached) {
                     try {
                         currentUser = JSON.parse(cached);
                         currentUser.uid = uid;
-                        checkSubjectAttemptStatus();
-                        checkSavedQuizSession();
+                        try { checkSubjectAttemptStatus(); } catch(e) {}
+                        try { checkSavedQuizSession(); }     catch(e) {}
                         showView('view-dashboard');
                         fetchSubjectQuestionCounts();
-                        showToast("⚠️ يعمل التطبيق من الكاش المحلي مؤقتاً.", "error");
+                        showToast("⚠️ يعمل التطبيق من الكاش المحلي.", "error");
                         return;
                     } catch(e) {}
                 }
                 showView('view-register');
-                showToast("⚠️ فشل الاتصال. تحقق من الإنترنت.", "error");
+                showToast("⚠️ فشل الاتصال. أعد المحاولة.", "error");
             });
         }
 
