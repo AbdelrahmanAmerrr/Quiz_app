@@ -610,6 +610,49 @@ html, body {
         .tool-card p { margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
         @media (max-width: 480px) { .tools-grid { grid-template-columns: 1fr; } }
 
+        /* ✅ [PROFILE] صورة شخصية + تغيير الاسم */
+        .avatar-upload-wrap {
+            position: relative; display: inline-block;
+            cursor: pointer; margin-bottom: 10px;
+        }
+        .avatar-upload-wrap:hover .avatar-cam-badge { background: var(--success); transform: scale(1.15); }
+        .avatar-cam-badge {
+            position: absolute; bottom: 2px; left: 2px;
+            background: var(--primary); border-radius: 50%;
+            width: 28px; height: 28px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2.5px solid var(--card-bg);
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+        }
+        .name-change-box {
+            background: var(--bg-gradient);
+            border: 1.5px solid var(--border);
+            border-radius: 14px;
+            padding: 14px 16px;
+            margin: 18px 0;
+        }
+        .name-change-box h4 { margin: 0 0 5px 0; font-size: 14px; }
+        .name-change-box p  { margin: 0 0 10px 0; font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+        .name-change-row { display: flex; gap: 8px; }
+        .name-change-row input {
+            flex: 1; padding: 10px 12px;
+            border-radius: 9px; border: 1.5px solid var(--border);
+            background: var(--card-bg); color: var(--text-main);
+            font-size: 14px; font-family: 'Tajawal', sans-serif;
+        }
+        .name-change-row input:focus { outline: none; border-color: var(--primary); }
+        .name-change-row .btn-save-name {
+            flex-shrink: 0; padding: 10px 16px;
+            background: var(--primary); color: white;
+            border: none; border-radius: 9px;
+            font-size: 13px; font-weight: 700;
+            cursor: pointer; font-family: 'Tajawal', sans-serif;
+            transition: opacity 0.2s;
+        }
+        .name-change-row .btn-save-name:hover { opacity: 0.85; }
+        .name-change-row .btn-save-name:disabled { opacity: 0.5; cursor: not-allowed; }
+
         body.dark-mode .explanation-box { background: #1e3a8a;
             border-right-color: #3b82f6; }
         
@@ -801,10 +844,38 @@ html, body {
                 </div>
 
                 <div id="profile-subtab-container" class="hidden-tab">
+                    <!-- ─── رأس الملف الشخصي ─── -->
                     <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid var(--border);">
-                        <img id="profile-big-avatar" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 4px solid var(--primary); box-shadow: var(--shadow); margin-bottom: 15px;">
+
+                        <!-- الصورة الشخصية القابلة للنقر -->
+                        <div class="avatar-upload-wrap" onclick="document.getElementById('avatar-file-input').click()" title="اضغط لتغيير الصورة">
+                            <img id="profile-big-avatar" src="https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png"
+                                 style="width:100px; height:100px; border-radius:50%; object-fit:cover; border:4px solid var(--primary); box-shadow:var(--shadow); display:block;">
+                            <div class="avatar-cam-badge">
+                                <i class="fa-solid fa-camera" style="color:white; font-size:11px;"></i>
+                            </div>
+                        </div>
+                        <!-- حقل الملف المخفي — قبول الصور فقط -->
+                        <input type="file" id="avatar-file-input" accept="image/*" style="display:none;" onchange="handleAvatarUpload(event)">
+                        <p style="font-size:11px; color:var(--text-muted); margin:4px 0 12px 0;">اضغط الصورة لتغييرها · الحد الأقصى 5MB</p>
+
                         <h2 id="profile-student-name" style="margin: 0 0 5px 0;"></h2>
-                        <span id="profile-student-title" class="q-stat-tag q-stat-rate" style="font-size: 13px; padding: 6px 12px; border-radius: 20px;">طالب جامعي محارب</span>
+                        <span id="profile-student-title" class="q-stat-tag q-stat-rate" style="font-size:13px; padding:6px 12px; border-radius:20px;">طالب جامعي محارب</span>
+                    </div>
+
+                    <!-- ─── قسم تغيير الاسم ─── -->
+                    <div class="name-change-box">
+                        <h4><i class="fa-solid fa-pen-to-square" style="color:var(--primary);"></i> تغيير الاسم</h4>
+                        <p>
+                            مسموح بتغيير اسمك <strong>مرتين فقط كل شهر.</strong><br>
+                            المتبقي هذا الشهر: <span id="name-change-remaining" style="color:var(--primary); font-weight:800;">جاري التحميل...</span>
+                        </p>
+                        <div class="name-change-row">
+                            <input type="text" id="name-change-input" placeholder="اكتب الاسم الجديد..." maxlength="30">
+                            <button class="btn-save-name" id="btn-save-name" onclick="changeStudentName()">
+                                <i class="fa-solid fa-check"></i> حفظ
+                            </button>
+                        </div>
                     </div>
                     
                     <h3 style="margin-top:25px;"><i class="fa-solid fa-medal" style="color: var(--warning);"></i> سجل الأوسمة والإنجازات المحققة بالمنصة</h3>
@@ -1562,12 +1633,14 @@ html, body {
 
                         const avatarDash = document.getElementById('dash-student-avatar');
                         const bigAvatar  = document.getElementById('profile-big-avatar');
-                        if (currentUser.photoURL) {
-                            if (avatarDash) { avatarDash.src = currentUser.photoURL; avatarDash.style.display = "block"; }
-                            if (bigAvatar)  bigAvatar.src = currentUser.photoURL;
-                        } else {
-                            if (bigAvatar)  bigAvatar.src = "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
-                        }
+                        // ✅ [PROFILE] أولوية: avatarBase64 (مرفوع) ← photoURL (Google) ← افتراضي
+                        const avatarSrc  = currentUser.avatarBase64
+                            || currentUser.photoURL
+                            || "https://www.gstatic.com/images/branding/product/2x/avatar_square_blue_120dp.png";
+                        if (avatarDash) { avatarDash.src = avatarSrc; avatarDash.style.display = "block"; }
+                        if (bigAvatar)  bigAvatar.src = avatarSrc;
+                        // ✅ [PROFILE] تحديث عرض باقي تغييرات الاسم
+                        updateNameChangeRemainingDisplay();
 
                         const nameEl = document.getElementById('profile-student-name');
                         if (nameEl) nameEl.innerText = currentUser.name;
@@ -2752,6 +2825,8 @@ html, body {
                         name: u.name || "طالب مجهول",
                         xp: u.xp || 0,
                         level: u.level || 1,
+                        // ✅ [PROFILE] لا نحفظ avatarBase64 هنا — قد يتجاوز حد 1MB لمستند Firestore
+                        // يُستخدم photoURL فقط (صور Google) — المرفوعات تظهر بصورة افتراضية في الأوائل
                         avatar: u.photoURL || null,
                         createdAt: u.createdAt || null
                     });
@@ -3410,6 +3485,170 @@ html, body {
                 });
             }
         }
+
+        // ══════════════════════════════════════════════════════
+        // ✅ [PROFILE] تغيير الاسم — محدود بمرتين شهرياً
+        // ══════════════════════════════════════════════════════
+
+        function updateNameChangeRemainingDisplay() {
+            const el = document.getElementById('name-change-remaining');
+            if (!el || !currentUser) return;
+            const now          = new Date();
+            const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            const savedMonth   = currentUser.nameChangeMonth || "";
+            const usedCount    = (savedMonth === currentMonth) ? (currentUser.nameChangeCount || 0) : 0;
+            const remaining    = 2 - usedCount;
+            if (remaining > 0) {
+                el.innerText    = remaining + " من 2 تغيير";
+                el.style.color  = "var(--primary)";
+            } else {
+                el.innerText    = "0 — انتظر الشهر القادم";
+                el.style.color  = "var(--danger)";
+                const btn = document.getElementById('btn-save-name');
+                if (btn) { btn.disabled = true; btn.title = "استنفدت حصتك لهذا الشهر"; }
+            }
+        }
+
+        async function changeStudentName() {
+            const input   = document.getElementById('name-change-input');
+            const btn     = document.getElementById('btn-save-name');
+            const newName = (input ? input.value : '').trim();
+
+            if (!newName || newName.length < 2) {
+                showToast("⚠️ يرجى كتابة اسم صالح (حرفان على الأقل).", "error"); return;
+            }
+            if (newName.length > 30) {
+                showToast("⚠️ الاسم طويل جداً (30 حرفاً كحد أقصى).", "error"); return;
+            }
+            if (!currentUser || !currentUser.uid) {
+                showToast("⚠️ خطأ في الحساب، أعد تسجيل الدخول.", "error"); return;
+            }
+
+            // التحقق من الحد الشهري
+            const now          = new Date();
+            const currentMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+            const savedMonth   = currentUser.nameChangeMonth || "";
+            const usedCount    = (savedMonth === currentMonth) ? (currentUser.nameChangeCount || 0) : 0;
+
+            if (usedCount >= 2) {
+                showToast("⚠️ استنفدت حصة التغيير لهذا الشهر (مرتان فقط).", "error"); return;
+            }
+
+            const newCount = usedCount + 1;
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>'; }
+
+            try {
+                // update() فقط — لا يمس أي حقل آخر في المستند
+                await db.collection("users").doc(currentUser.uid).update({
+                    name:             newName,
+                    nameChangeCount:  newCount,
+                    nameChangeMonth:  currentMonth
+                });
+
+                // تحديث الذاكرة والكاش
+                currentUser.name            = newName;
+                currentUser.nameChangeCount = newCount;
+                currentUser.nameChangeMonth = currentMonth;
+                try { localStorage.setItem('aq_user_' + currentUser.uid, JSON.stringify(currentUser)); } catch(e) {}
+
+                // تحديث عناصر الـ UI
+                const n1 = document.getElementById('profile-student-name');
+                const n2 = document.getElementById('dash-student-name');
+                if (n1) n1.innerText = newName;
+                if (n2) n2.innerText = newName;
+                if (input) input.value = "";
+                updateNameChangeRemainingDisplay();
+
+                showToast(`✅ تم تغيير اسمك إلى "${newName}" · تبقّى ${2 - newCount} تغيير هذا الشهر`, "success");
+            } catch(err) {
+                showToast("⚠️ فشل تغيير الاسم: " + err.message, "error");
+            } finally {
+                if (btn) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check"></i> حفظ'; }
+                updateNameChangeRemainingDisplay(); // يُعيد تعطيل الزر إن انتهت الحصة
+            }
+        }
+
+        // ══════════════════════════════════════════════════════
+        // ✅ [PROFILE] الصورة الشخصية — ضغط Canvas + حفظ Base64
+        // ══════════════════════════════════════════════════════
+
+        function compressImageToBase64(file, maxPx, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error("فشل قراءة الملف"));
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onerror = () => reject(new Error("فشل تحميل الصورة"));
+                    img.onload = () => {
+                        // اقتصاص مربع من المنتصف ثم تصغير لـ maxPx × maxPx
+                        const srcSize = Math.min(img.width, img.height);
+                        const srcX    = (img.width  - srcSize) / 2;
+                        const srcY    = (img.height - srcSize) / 2;
+                        const canvas  = document.createElement('canvas');
+                        canvas.width  = maxPx;
+                        canvas.height = maxPx;
+                        const ctx = canvas.getContext('2d');
+                        // رسم دائري (clip) لأيقونة البروفايل
+                        ctx.beginPath();
+                        ctx.arc(maxPx / 2, maxPx / 2, maxPx / 2, 0, Math.PI * 2);
+                        ctx.clip();
+                        ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, maxPx, maxPx);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function handleAvatarUpload(event) {
+            const file = event.target.files[0];
+            event.target.value = ""; // تصفير الحقل فوراً للسماح بإعادة الرفع
+            if (!file) return;
+
+            // ── حماية 1: يجب أن يكون الملف صورة ──
+            if (!file.type.startsWith('image/')) {
+                showToast("⚠️ الملف ليس صورة! يُقبل JPG أو PNG أو GIF فقط.", "error"); return;
+            }
+            // ── حماية 2: الحجم الأصلي قبل الضغط ──
+            if (file.size > 5 * 1024 * 1024) {
+                showToast("⚠️ حجم الصورة يتجاوز 5MB. اختر صورة أصغر.", "error"); return;
+            }
+            if (!currentUser || !currentUser.uid) {
+                showToast("⚠️ خطأ في الحساب، أعد تسجيل الدخول.", "error"); return;
+            }
+
+            const bigAvatar  = document.getElementById('profile-big-avatar');
+            const dashAvatar = document.getElementById('dash-student-avatar');
+            const oldSrc     = bigAvatar ? bigAvatar.src : "";
+            if (bigAvatar) bigAvatar.style.opacity = "0.45";
+            showToast("⏳ جاري معالجة وضغط الصورة...", "success");
+
+            try {
+                // ضغط: 150×150 بكسل، JPEG جودة 60% — يُنتج بضعة KB فقط
+                const base64 = await compressImageToBase64(file, 150, 0.6);
+
+                // حفظ في Firestore بـ update() فقط — لا يمس أي حقل آخر
+                await db.collection("users").doc(currentUser.uid).update({
+                    avatarBase64: base64
+                });
+
+                // تحديث الذاكرة والكاش المحلي
+                currentUser.avatarBase64 = base64;
+                try { localStorage.setItem('aq_user_' + currentUser.uid, JSON.stringify(currentUser)); } catch(e) {}
+
+                // تحديث كل عناصر الصورة في الـ UI
+                if (bigAvatar)  { bigAvatar.src  = base64; bigAvatar.style.opacity  = "1"; }
+                if (dashAvatar) { dashAvatar.src = base64; dashAvatar.style.display = "block"; }
+
+                showToast("✅ تم تحديث صورتك الشخصية بنجاح!", "success");
+            } catch(err) {
+                if (bigAvatar) { bigAvatar.src = oldSrc; bigAvatar.style.opacity = "1"; }
+                showToast("⚠️ فشل رفع الصورة: " + err.message, "error");
+            }
+        }
+
+        // ══ نهاية دوال الملف الشخصي ══
 
         function loadAdminLogsList() {
             const container = document.getElementById('admin-logs-list');
