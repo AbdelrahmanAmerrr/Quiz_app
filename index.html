@@ -2810,45 +2810,78 @@ html, body {
 
         // ✅ تعديل 2: دالة إعادة بناء كاش الأوائل - مخصصة للأدمن فقط
         // تقرأ أعلى 100 طالب حياً وتضغطهم في مستند system/leaderboard
-        function rebuildLeaderboardCacheByAdmin(btn) {
+        // ✅ [PROFILE] ضغط مصغر للكاش — 40×40 بكسل JPEG 30% ≈ 1-2KB للصورة الواحدة
+        function recompressAvatarMini(base64) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onerror = () => resolve(null); // فشل بصمت — لا يوقف البناء
+                img.onload  = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        canvas.width  = 40;
+                        canvas.height = 40;
+                        const ctx     = canvas.getContext('2d');
+                        const srcSize = Math.min(img.width, img.height);
+                        const srcX    = (img.width  - srcSize) / 2;
+                        const srcY    = (img.height - srcSize) / 2;
+                        ctx.beginPath();
+                        ctx.arc(20, 20, 20, 0, Math.PI * 2);
+                        ctx.clip();
+                        ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, 40, 40);
+                        resolve(canvas.toDataURL('image/jpeg', 0.3));
+                    } catch(e) { resolve(null); }
+                };
+                img.src = base64;
+            });
+        }
+
+        async function rebuildLeaderboardCacheByAdmin(btn) {
             const originalText = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري بناء الكاش...`;
+            btn.disabled  = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري جلب الطلاب...`;
 
-            db.collection("users").orderBy("xp", "desc").limit(100).get().then(snapshot => {
-                const compressedUsers = [];
+            try {
+                const snapshot = await db.collection("users").orderBy("xp", "desc").limit(100).get();
 
-                snapshot.forEach(doc => {
-                    const u = doc.data();
-                    // ضغط البيانات الجوهرية فقط: الاسم، XP، المستوى، الصورة، تاريخ التسجيل
-                    compressedUsers.push({
-                        name: u.name || "طالب مجهول",
-                        xp: u.xp || 0,
-                        level: u.level || 1,
-                        // ✅ [PROFILE] لا نحفظ avatarBase64 هنا — قد يتجاوز حد 1MB لمستند Firestore
-                        // يُستخدم photoURL فقط (صور Google) — المرفوعات تظهر بصورة افتراضية في الأوائل
-                        avatar: u.photoURL || null,
+                // جمع بيانات الطلاب الخام أولاً
+                const rawUsers = [];
+                snapshot.forEach(doc => rawUsers.push(doc.data()));
+
+                // ضغط صور avatarBase64 بالتوازي — كل صورة تصبح 40×40 JPEG 30% ≈ 1-2KB
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري ضغط الصور (${rawUsers.length})...`;
+                const compressedUsers = await Promise.all(rawUsers.map(async (u) => {
+                    let avatar = u.photoURL || null;
+                    if (u.avatarBase64) {
+                        // إعادة ضغط: من 150×150 (10KB) إلى 40×40 (1-2KB) — آمن من حد 1MB
+                        const mini = await recompressAvatarMini(u.avatarBase64);
+                        if (mini) avatar = mini;
+                    }
+                    return {
+                        name:      u.name      || "طالب مجهول",
+                        xp:        u.xp        || 0,
+                        level:     u.level     || 1,
+                        avatar:    avatar,
                         createdAt: u.createdAt || null
-                    });
-                });
+                    };
+                }));
 
-                // حفظ الكاش في مجموعة questions بمعرّف ثابت لا يتعارض مع الأسئلة العادية
-                return db.collection("questions").doc("leaderboard-cache").set({
-                    users: compressedUsers,
+                // حفظ الكاش في Firestore
+                await db.collection("questions").doc("leaderboard-cache").set({
+                    users:       compressedUsers,
                     lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    showToast(`✅ تم تحديث كاش الأوائل بنجاح! (${compressedUsers.length} طالب مُجمَّع)`);
-                    logAdminAction("تحديث كاش اللوحة", `تجميع وضغط بيانات ${compressedUsers.length} طالب في questions/leaderboard-cache`);
                 });
 
-            }).catch(err => {
-                btn.disabled = false;
+                btn.disabled  = false;
+                btn.innerHTML = originalText;
+                showToast(`✅ تم تحديث كاش الأوائل! (${compressedUsers.length} طالب — الصور مضغوطة 40×40)`);
+                logAdminAction("تحديث كاش اللوحة", `تجميع ${compressedUsers.length} طالب مع ضغط الصور في questions/leaderboard-cache`);
+
+            } catch(err) {
+                btn.disabled  = false;
                 btn.innerHTML = originalText;
                 showToast("❌ فشل بناء الكاش: " + err.message, "error");
                 console.error("خطأ في rebuildLeaderboardCacheByAdmin:", err);
-            });
+            }
         }
 
         function showDashboardTab(tabName) {
