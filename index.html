@@ -561,6 +561,55 @@ html, body {
 
         .explanation-box { background: var(--primary-light); border-right: 5px solid var(--primary); padding: 15px; border-radius: var(--radius-sm);
             margin-top: 20px; display: none; line-height: 1.6; word-break: break-word; }
+        /* ✅ إصلاح أزرار "العودة للوحة التحكم" في الوضع الليلي */
+        .btn-back-to-dash {
+            background: #1e293b !important;
+            color: #f1f5f9 !important;
+        }
+        body.dark-mode .btn-back-to-dash {
+            background: #334155 !important;
+            color: #f8fafc !important;
+        }
+
+        /* ✅ تبويبات الأدمن الأفقية الجديدة */
+        .admin-tabs-top {
+            display: flex;
+            overflow-x: auto;
+            gap: 6px;
+            padding: 4px 2px 12px 2px;
+            margin-bottom: 18px;
+            border-bottom: 2px solid var(--border);
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .admin-tabs-top::-webkit-scrollbar { display: none; }
+        .admin-tab-top-btn {
+            flex-shrink: 0;
+            padding: 9px 15px;
+            border-radius: 10px;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg);
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s ease;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .admin-tab-top-btn:hover { border-color: var(--primary); color: var(--primary); }
+        .admin-tab-top-btn.atab-active { background: var(--primary); color: white; border-color: var(--primary); box-shadow: 0 3px 10px rgba(59,130,246,0.3); }
+        .admin-tab-top-btn.atab-active-red { background: var(--danger); color: white; border-color: var(--danger); box-shadow: 0 3px 10px rgba(239,68,68,0.3); }
+        .admin-tab-top-btn.atab-active-green { background: var(--success); color: white; border-color: var(--success); }
+        .admin-tab-top-btn.atab-active-purple { background: #7c3aed; color: white; border-color: #7c3aed; }
+        .admin-tab-top-btn.atab-active-orange { background: #ea580c; color: white; border-color: #ea580c; }
+        /* بطاقات قسم الأدوات */
+        .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+        .tool-card { background: var(--bg-gradient); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+        .tool-card h4 { margin: 0; font-size: 14px; }
+        .tool-card p { margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+        @media (max-width: 480px) { .tools-grid { grid-template-columns: 1fr; } }
+
         body.dark-mode .explanation-box { background: #1e3a8a;
             border-right-color: #3b82f6; }
         
@@ -918,76 +967,35 @@ html, body {
                 <button class="btn-launch" style="background: var(--success); margin-bottom: 12px;" onclick="toggleAnswersReviewZone()"><i class="fa-solid fa-magnifying-glass"></i> مراجعة كافة الأسئلة وإجاباتها</button>
                 <div id="review-answers-zone" style="display:none; max-height: 400px; overflow-y:auto; border:2px solid var(--border); padding:15px; border-radius:10px; margin-bottom:20px; background:var(--bg-gradient);"></div>
 
-                <button class="btn-launch" style="background: var(--text-main);" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
+                <button class="btn-launch btn-back-to-dash" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
             </div>
 
             <div class="card" id="view-admin-panel" style="display: none;">
-                <div class="admin-header-box">
+                <!-- ─── رأس لوحة الأدمن المنظّم ─── -->
+                <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
                     <div>
-                        <h2 class="admin-title"><i class="fa-solid fa-sliders"></i> لوحة تحكم الـ SuperAdmin المطورة</h2>
-                        <p style="color: var(--text-muted); font-size: 14px; margin: 5px 0 0 0;">أهلاً بك يا قائد، تحكّم في بنك أسئلتك والرقابة على الطلاب بشكل حيوي ومباشر.</p>
+                        <h2 class="admin-title" style="margin:0 0 4px 0;"><i class="fa-solid fa-sliders"></i> لوحة تحكم الأدمن</h2>
+                        <p style="color:var(--text-muted); font-size:13px; margin:0;">تحكّم في الأسئلة والطلاب والمحتوى بشكل مباشر</p>
                     </div>
-
-                    <!-- شريط الإجراءات السريعة -->
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:18px;">
-                        <button onclick="exportFullBackup()" class="ban-btn ban-inactive" style="background:#e0f2fe; color:#0369a1;">
-                            <i class="fa-solid fa-download"></i> Backup
-                        </button>
-                        <button onclick="document.getElementById('importBackupFile').click()" class="ban-btn ban-inactive" style="background:#fef3c7; color:#b45309;">
-                            <i class="fa-solid fa-upload"></i> Restore
-                        </button>
-                        <input type="file" id="importBackupFile" accept=".json" style="display:none;" onchange="importFullBackup(event)">
-                        <button id="btn-rebuild-leaderboard-cache" onclick="rebuildLeaderboardCacheByAdmin(this)" class="ban-btn ban-inactive" style="background:#f0fdf4; color:#16a34a; border:1px solid #86efac;">
-                            <i class="fa-solid fa-ranking-star"></i> تحديث لوحة الأوائل
-                        </button>
-                        <button onclick="backToDashboard()" class="ban-btn ban-inactive">
-                            ⬅️ العودة للرئيسية
-                        </button>
-                    </div>
+                    <button onclick="backToDashboard()" class="ban-btn btn-back-to-dash" style="font-size:13px; padding:8px 14px; border-radius:10px; font-weight:700; border:none; flex-shrink:0;">
+                        <i class="fa-solid fa-arrow-right-from-bracket"></i> الرئيسية
+                    </button>
                 </div>
 
-                <!-- الإحصائيات -->
-                <div class="stats-grid" style="margin-bottom: 20px;">
-                    <div class="stat-box" style="background: var(--primary-light);"><i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">—</div><span>إجمالي الطلاب</span></div>
-                    <div class="stat-box" style="background: #fef3c7;"><i class="fa-solid fa-file-invoice" style="color:#b45309"></i><div id="admin-total-questions">—</div><span>إجمالي الأسئلة</span></div>
-                    <div class="stat-box" style="background: #d1fae5;"><i class="fa-solid fa-calendar-day" style="color:var(--success)"></i><div id="admin-daily-attempts">—</div><span>محاولات كلية</span></div>
-                    <div class="stat-box" style="background: #e0f2fe;"><i class="fa-solid fa-chart-bar" style="color:#0284c7"></i><div id="admin-avg-score">—</div><span>متوسط الدرجات</span></div>
-                    <div class="stat-box" style="background: #f3e8ff;"><i class="fa-solid fa-user-clock" style="color:#7c3aed"></i><div id="admin-active-students">—</div><span>نشطين (7 أيام)</span></div>
+                <!-- ─── التبويبات الأفقية ─── -->
+                <div class="admin-tabs-top">
+                    <button onclick="switchAdminTab('tab-upload')"   id="btn-tab-upload"   class="admin-tab-top-btn atab-active">📥 الأسئلة</button>
+                    <button onclick="switchAdminTab('tab-students')" id="btn-tab-students" class="admin-tab-top-btn">👥 الطلاب</button>
+                    <button onclick="switchAdminTab('tab-stats')"    id="btn-tab-stats"    class="admin-tab-top-btn">📊 الإحصائيات</button>
+                    <button onclick="switchAdminTab('tab-reports'); loadAdminReports();" id="btn-tab-reports" class="admin-tab-top-btn">🚩 البلاغات <span id="reports-badge" style="display:none; background:#ef4444; color:#fff; border-radius:99px; padding:1px 6px; font-size:11px; margin-right:3px;">0</span></button>
+                    <button onclick="switchAdminTab('tab-tools')"    id="btn-tab-tools"    class="admin-tab-top-btn">⚙️ الأدوات</button>
+                    <button onclick="switchAdminTab('tab-logs')"     id="btn-tab-logs"     class="admin-tab-top-btn">📜 السجل</button>
                 </div>
 
-                <!-- توزيع أسئلة المواد -->
-                <div style="margin-bottom:16px; font-size:12px; display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-gradient); padding:10px; border-radius:8px; border:1px solid var(--border);">
-                    <strong>📚 توزيع الأسئلة:</strong>
-                    <span id="subject-count-math">الرياضة: 0</span> | 
-                    <span id="subject-count-english">مصطلحات: 0</span> | 
-                    <span id="subject-count-economics">اقتصاد: 0</span> | 
-                    <span id="subject-count-management">إدارة: 0</span> | 
-                    <span id="subject-count-office">حزم: 0</span>
-                </div>
-
-                <!-- أسهل / أصعب -->
-                <div style="background:var(--card-bg); padding:12px; border-radius:10px; border:1px solid var(--border); margin-bottom:16px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                    <div style="background:rgba(16,185,129,0.1); padding:8px; border-radius:8px;">
-                        <h5 style="margin:0 0 4px 0; color:#065f46; font-size:12px;"><i class="fa-solid fa-circle-check"></i> أسهل الأسئلة</h5>
-                        <p id="admin-analytics-easiest" style="font-size:11px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
-                    </div>
-                    <div style="background:rgba(239,68,68,0.1); padding:8px; border-radius:8px;">
-                        <h5 style="margin:0 0 4px 0; color:#991b1b; font-size:12px;"><i class="fa-solid fa-circle-xmark"></i> أصعب الأسئلة</h5>
-                        <p id="admin-analytics-hardest" style="font-size:11px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
-                    </div>
-                </div>
-
-                <!-- التبويبات -->
-                <div class="tabs-nav">
-                    <button onclick="switchAdminTab('tab-upload')" id="btn-tab-upload" class="tab-btn active-upload">📥 الأسئلة</button>
-                    <button onclick="switchAdminTab('tab-students')" id="btn-tab-students" class="tab-btn">👥 الطلاب</button>
-                    <button onclick="switchAdminTab('tab-logs')" id="btn-tab-logs" class="tab-btn">📜 السجل</button>
-                    <button onclick="switchAdminTab('tab-reports'); loadAdminReports();" id="btn-tab-reports" class="tab-btn">🚩 البلاغات <span id="reports-badge" style="display:none; background:#ef4444; color:#fff; border-radius:99px; padding:1px 7px; font-size:11px; margin-right:4px;">0</span></button>
-                </div>
-
+                <!-- ══════════ تبويب: الأسئلة ══════════ -->
                 <div id="tab-upload" class="admin-tab-content">
 
-                    <!-- ── قسم الرفع الجماعي ── -->
+                    <!-- ── رفع CSV ── -->
                     <div class="bulk-upload-card">
                         <h4 style="margin:0 0 12px 0; color:var(--primary);"><i class="fa-solid fa-cloud-arrow-up"></i> رفع أسئلة CSV</h4>
                         <input type="file" id="csvFileInput" accept=".csv" onchange="updateFileNameDisplay()" style="display:none;" />
@@ -1011,7 +1019,7 @@ html, body {
                         </button>
                     </div>
 
-                    <!-- ── قسم الحذف ── -->
+                    <!-- ── حذف الأسئلة ── -->
                     <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:12px; padding:14px; margin:16px 0;">
                         <h4 style="margin:0 0 12px 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> حذف الأسئلة</h4>
                         <div style="margin-bottom:10px;">
@@ -1030,15 +1038,6 @@ html, body {
                         </button>
                         <button class="ban-btn" style="background:#7f1d1d; color:#fff; width:100%;" onclick="deleteAllQuestions()">
                             <i class="fa-solid fa-skull"></i> مسح جميع الأسئلة (الكل)
-                        </button>
-                    </div>
-
-                    <!-- ── قسم تصفير المحاولات ── -->
-                    <div style="background:rgba(124,58,237,0.06); border:1px solid #c4b5fd; border-radius:12px; padding:14px; margin-bottom:16px;">
-                        <h4 style="margin:0 0 8px 0; color:#7c3aed;"><i class="fa-solid fa-rotate-left"></i> تصفير المحاولات والـ XP</h4>
-                        <p style="font-size:12px; color:var(--text-muted); margin:0 0 10px 0;">يُصفِّر عداد المحاولات وXP المواد لجميع الطلاب — يعيد منحهم 3 محاولات رسمية جديدة لكل مادة.</p>
-                        <button class="ban-btn" style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; width:100%;" onclick="resetAllStudentsAttempts()">
-                            <i class="fa-solid fa-arrows-rotate"></i> تصفير محاولات جميع الطلاب
                         </button>
                     </div>
 
@@ -1068,9 +1067,8 @@ html, body {
                     </div>
 
                     <h3>🗂️ بنك الأسئلة المتاحة حالياً بالسيرفر</h3>
-                    
                     <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
-                        <input type="text" id="admin-search-input" class="search-box" style="margin-bottom:0;" placeholder="🔍 ابحث بكلمات مفتاحية داخل السؤال، الإجابات، التوضيح الشارح..." oninput="filterQuestionsBank()">
+                        <input type="text" id="admin-search-input" class="search-box" style="margin-bottom:0;" placeholder="🔍 ابحث بكلمات مفتاحية..." oninput="filterQuestionsBank()">
                         <select id="filter-admin-subject" class="search-box" style="margin-bottom:0; height:45px;" onchange="filterQuestionsBank()">
                             <option value="">جميع المواد</option>
                             <option value="math">الرياضة والتأمين</option>
@@ -1086,18 +1084,17 @@ html, body {
                             <option value="hard">صعب (نسبة نجاح < 35%)</option>
                         </select>
                     </div>
-
                     <div style="margin-bottom: 10px; text-align: right;">
                         <button id="btn-bulk-delete-questions" class="ban-btn ban-active" style="display:none;" onclick="deleteSelectedQuestionsGroup()"><i class="fa-solid fa-trash"></i> حذف الأسئلة المحددة دفعة واحدة</button>
                     </div>
-
                     <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px;" id="admin-questions-list">
                         جاري تحميل بنك الأسئلة...
                     </div>
                 </div>
 
+                <!-- ══════════ تبويب: الطلاب ══════════ -->
                 <div id="tab-students" class="admin-tab-content hidden-tab">
-                    <h3>👥 إدارة ورقابة مجتمع الطلاب المسجلين والتحكم بالمستويات</h3>
+                    <h3>👥 إدارة ورقابة الطلاب المسجلين</h3>
                     <div class="student-table-container">
                         <table class="student-table">
                             <thead>
@@ -1106,26 +1103,55 @@ html, body {
                                     <th>نقاط الـ XP</th>
                                     <th>المستوى</th>
                                     <th>آخر دخول / آخر امتحان</th>
-                                    <th style="text-align: center;">إجراءات الرقابة الأدمن</th>
+                                    <th style="text-align: center;">إجراءات الرقابة</th>
                                 </tr>
                             </thead>
                             <tbody id="admin-students-table-body">
                                 <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب بيانات ومزامنة الطلاب...</td>
+                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب بيانات الطلاب...</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div id="tab-logs" class="admin-tab-content hidden-tab">
-                    <h3>📜 سجل نشاط الإدارة العملياتي الفوري</h3>
-                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg-gradient);" id="admin-logs-list">
-                        لا توجد عمليات مسجلة بالسجل حالياً.
+                <!-- ══════════ تبويب: الإحصائيات ══════════ -->
+                <div id="tab-stats" class="admin-tab-content hidden-tab">
+                    <h3>📊 إحصائيات المنصة الشاملة</h3>
+
+                    <!-- بطاقات الإحصائيات -->
+                    <div class="stats-grid" style="margin-bottom:20px;">
+                        <div class="stat-box" style="background:var(--primary-light);"><i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">—</div><span>إجمالي الطلاب</span></div>
+                        <div class="stat-box" style="background:#fef3c7;"><i class="fa-solid fa-file-invoice" style="color:#b45309"></i><div id="admin-total-questions">—</div><span>إجمالي الأسئلة</span></div>
+                        <div class="stat-box" style="background:#d1fae5;"><i class="fa-solid fa-calendar-day" style="color:var(--success)"></i><div id="admin-daily-attempts">—</div><span>محاولات كلية</span></div>
+                        <div class="stat-box" style="background:#e0f2fe;"><i class="fa-solid fa-chart-bar" style="color:#0284c7"></i><div id="admin-avg-score">—</div><span>متوسط الدرجات</span></div>
+                        <div class="stat-box" style="background:#f3e8ff;"><i class="fa-solid fa-user-clock" style="color:#7c3aed"></i><div id="admin-active-students">—</div><span>نشطين (7 أيام)</span></div>
+                    </div>
+
+                    <!-- توزيع أسئلة المواد -->
+                    <div style="margin-bottom:16px; font-size:13px; display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-gradient); padding:12px; border-radius:10px; border:1px solid var(--border);">
+                        <strong style="width:100%; margin-bottom:4px;">📚 توزيع الأسئلة على المواد:</strong>
+                        <span id="subject-count-math">الرياضة: 0</span> |
+                        <span id="subject-count-english">مصطلحات: 0</span> |
+                        <span id="subject-count-economics">اقتصاد: 0</span> |
+                        <span id="subject-count-management">إدارة: 0</span> |
+                        <span id="subject-count-office">حزم: 0</span>
+                    </div>
+
+                    <!-- أسهل / أصعب -->
+                    <div style="background:var(--card-bg); padding:14px; border-radius:12px; border:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div style="background:rgba(16,185,129,0.1); padding:10px; border-radius:10px;">
+                            <h5 style="margin:0 0 6px 0; color:#065f46; font-size:13px;"><i class="fa-solid fa-circle-check"></i> أسهل الأسئلة</h5>
+                            <p id="admin-analytics-easiest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
+                        </div>
+                        <div style="background:rgba(239,68,68,0.1); padding:10px; border-radius:10px;">
+                            <h5 style="margin:0 0 6px 0; color:#991b1b; font-size:13px;"><i class="fa-solid fa-circle-xmark"></i> أصعب الأسئلة</h5>
+                            <p id="admin-analytics-hardest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
+                        </div>
                     </div>
                 </div>
 
-                <!-- 🚩 تبويب البلاغات -->
+                <!-- ══════════ تبويب: البلاغات ══════════ -->
                 <div id="tab-reports" class="admin-tab-content hidden-tab">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                         <h3 style="margin:0;">🚩 بلاغات الطلاب عن الأسئلة</h3>
@@ -1139,8 +1165,59 @@ html, body {
                         </p>
                     </div>
                 </div>
-                
-                <button class="btn-launch" style="background: var(--text-main); margin-top:25px;" onclick="backToDashboard()"><i class="fa-solid fa-arrow-right-from-bracket"></i> الخروج من لوحة الإدارة</button>
+
+                <!-- ══════════ تبويب: الأدوات ══════════ -->
+                <div id="tab-tools" class="admin-tab-content hidden-tab">
+                    <h3>⚙️ أدوات الإدارة والصيانة</h3>
+
+                    <div class="tools-grid">
+                        <!-- Backup -->
+                        <div class="tool-card">
+                            <h4 style="color:#0369a1;"><i class="fa-solid fa-download"></i> نسخ احتياطي</h4>
+                            <p>تصدير كامل بيانات المنصة (الأسئلة + الطلاب) كملف JSON.</p>
+                            <button onclick="exportFullBackup()" class="ban-btn ban-inactive" style="background:#e0f2fe; color:#0369a1; margin-top:auto;">
+                                <i class="fa-solid fa-download"></i> تحميل Backup
+                            </button>
+                        </div>
+
+                        <!-- Restore -->
+                        <div class="tool-card">
+                            <h4 style="color:#b45309;"><i class="fa-solid fa-upload"></i> استعادة بيانات</h4>
+                            <p>استيراد ملف JSON لاستعادة بيانات المنصة كاملاً. تحذير: يستبدل البيانات الحالية.</p>
+                            <button onclick="document.getElementById('importBackupFile').click()" class="ban-btn ban-inactive" style="background:#fef3c7; color:#b45309; margin-top:auto;">
+                                <i class="fa-solid fa-upload"></i> استيراد Backup
+                            </button>
+                            <input type="file" id="importBackupFile" accept=".json" style="display:none;" onchange="importFullBackup(event)">
+                        </div>
+
+                        <!-- Rebuild Leaderboard -->
+                        <div class="tool-card">
+                            <h4 style="color:#16a34a;"><i class="fa-solid fa-ranking-star"></i> لوحة الأوائل</h4>
+                            <p>إعادة بناء كاش لوحة الأوائل من بيانات الطلاب الحالية.</p>
+                            <button id="btn-rebuild-leaderboard-cache" onclick="rebuildLeaderboardCacheByAdmin(this)" class="ban-btn ban-inactive" style="background:#f0fdf4; color:#16a34a; border:1px solid #86efac; margin-top:auto;">
+                                <i class="fa-solid fa-arrows-rotate"></i> تحديث الكاش
+                            </button>
+                        </div>
+
+                        <!-- Reset Attempts -->
+                        <div class="tool-card">
+                            <h4 style="color:#7c3aed;"><i class="fa-solid fa-rotate-left"></i> تصفير المحاولات</h4>
+                            <p>يُصفِّر عداد المحاولات وXP المواد لجميع الطلاب — يمنح 3 محاولات جديدة لكل مادة.</p>
+                            <button onclick="resetAllStudentsAttempts()" class="ban-btn ban-inactive" style="background:#ede9fe; color:#7c3aed; border:1px solid #c4b5fd; margin-top:auto;">
+                                <i class="fa-solid fa-arrows-rotate"></i> تصفير المحاولات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ══════════ تبويب: السجل ══════════ -->
+                <div id="tab-logs" class="admin-tab-content hidden-tab">
+                    <h3>📜 سجل نشاط الإدارة</h3>
+                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg-gradient);" id="admin-logs-list">
+                        لا توجد عمليات مسجلة بالسجل حالياً.
+                    </div>
+                </div>
+
             </div>
         </div>
 
@@ -3069,18 +3146,40 @@ html, body {
         }
 
         function switchAdminTab(tabId) {
+            // إخفاء كل المحتويات
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden-tab'));
-            document.getElementById(tabId).classList.remove('hidden-tab');
+            const target = document.getElementById(tabId);
+            if (target) target.classList.remove('hidden-tab');
 
-            ['btn-tab-upload','btn-tab-students','btn-tab-logs','btn-tab-reports'].forEach(id => {
+            // إزالة الكلاس النشط من كل أزرار التبويبات
+            ['btn-tab-upload','btn-tab-students','btn-tab-stats','btn-tab-reports','btn-tab-tools','btn-tab-logs'].forEach(id => {
                 const el = document.getElementById(id);
-                if (el) el.className = "tab-btn";
+                if (el) el.className = 'admin-tab-top-btn';
             });
 
-            if      (tabId === 'tab-upload')   document.getElementById('btn-tab-upload').className   = "tab-btn active-upload";
-            else if (tabId === 'tab-students') { document.getElementById('btn-tab-students').className = "tab-btn active-students"; loadAdminStudentsList(); }
-            else if (tabId === 'tab-logs')     { document.getElementById('btn-tab-logs').className     = "tab-btn active-logs";     loadAdminLogsList(); }
-            else if (tabId === 'tab-reports')  { document.getElementById('btn-tab-reports').className  = "tab-btn active-logs"; }
+            // تفعيل الزر المختار مع لون مناسب
+            const colorMap = {
+                'tab-upload':   'atab-active',
+                'tab-students': 'atab-active-green',
+                'tab-stats':    'atab-active-purple',
+                'tab-reports':  'atab-active-red',
+                'tab-tools':    'atab-active-orange',
+                'tab-logs':     'atab-active',
+            };
+            const btnMap = {
+                'tab-upload':   'btn-tab-upload',
+                'tab-students': 'btn-tab-students',
+                'tab-stats':    'btn-tab-stats',
+                'tab-reports':  'btn-tab-reports',
+                'tab-tools':    'btn-tab-tools',
+                'tab-logs':     'btn-tab-logs',
+            };
+            const activeBtn = document.getElementById(btnMap[tabId]);
+            if (activeBtn) activeBtn.className = `admin-tab-top-btn ${colorMap[tabId] || 'atab-active'}`;
+
+            // تحميل البيانات عند الطلب
+            if (tabId === 'tab-students') loadAdminStudentsList();
+            if (tabId === 'tab-logs')     loadAdminLogsList();
         }
 
         function loadAdminReports() {
