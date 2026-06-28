@@ -843,6 +843,8 @@ html, body {
                 <!-- رأس الامتحان: عداد + مؤقت -->
                 <div class="arena-header">
                     <div class="arena-counter-pill" id="arena-counter">السؤال 1 من 1</div>
+                    <!-- ✅ [UX-2] شارة الـ Streak — تظهر من إجابتين صحيحتين متتاليتين -->
+                    <div id="streak-badge" style="display:none; background:linear-gradient(135deg,#f59e0b,#ef4444); color:white; border-radius:99px; padding:4px 14px; font-size:13px; font-weight:800; letter-spacing:0.5px; box-shadow:0 2px 8px rgba(239,68,68,0.35); animation: fadeInUp 0.3s ease;">🔥 <span id="streak-count">2</span> متتالية</div>
                     <div class="circular-timer">
                         <svg viewBox="0 0 48 48">
                             <circle class="bg-circle" cx="24" cy="24" r="20"/>
@@ -1204,6 +1206,9 @@ html, body {
         // ✅ [OPT-5] ترتيب المستخدم المحسوب من كاش اللوحة — بدون قراءة كل المستخدمين
         let cachedLeaderboardUsers = null;
 
+        // ✅ [UX-2] عداد الـ Streak — بصري فقط، لا يمس XP ولا أي دالة موجودة
+        let streakCount = 0;
+
         // ═══ إعدادات نظام XP المضاد للغش ═══
         const XP_CAP_PER_SUBJECT      = 500; // الحد الأقصى لـ XP من مادة واحدة
         const MAX_XP_ATTEMPTS_PER_SUB = 3;   // أقصى محاولات تمنح XP في المادة
@@ -1227,6 +1232,34 @@ html, body {
             toast.className = `toast-msg ${type === 'success' ? 'toast-success' : 'toast-error'}`;
             toast.style.display = "block";
             setTimeout(() => { toast.style.display = "none"; }, 3500);
+        }
+
+        // ✅ [UX-1] صوت تغذية راجعة — يعمل بدون ملفات خارجية (Web Audio API)
+        function playSound(type) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(520, ctx.currentTime);
+                    osc.frequency.setValueAtTime(680, ctx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.22, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } else {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, ctx.currentTime);
+                    osc.frequency.setValueAtTime(150, ctx.currentTime + 0.18);
+                    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.4);
+                }
+            } catch(e) {}
         }
 
         // ✅ [OPT-6] قراءة واحدة (1 Read) من مستند العداد بدلاً من قراءة جميع الأسئلة
@@ -1965,6 +1998,10 @@ html, body {
             qIndex = 0;
             score = 0;
             timeRemaining = 30;
+            // ✅ [UX-2] تصفير الـ Streak عند بدء اختبار جديد
+            streakCount = 0;
+            const sb = document.getElementById('streak-badge');
+            if (sb) sb.style.display = 'none';
             buildQuestionsNavigationDots();
             loadArenaQuestion();
         }
@@ -2051,12 +2088,18 @@ html, body {
             const resumeWrap = document.getElementById('resume-btn-wrap');
             if (resumeWrap) resumeWrap.style.display = "none";
             checkSubjectAttemptStatus();
+            // ✅ [UX-2] تصفير الـ Streak عند استئناف جلسة محفوظة
+            streakCount = 0;
+            const sbR = document.getElementById('streak-badge');
+            if (sbR) sbR.style.display = 'none';
             showView('view-arena');
             buildQuestionsNavigationDots();
             loadArenaQuestion(true); 
         }
 
         function saveAndExitQuizArena() {
+            // ✅ [UX-8] تأكيد قبل الخروج — يمنع الضغط العرضي
+            if (!confirm("⚠️ هل تريد الخروج فعلاً؟\nسيتم حفظ تقدمك ويمكنك الاستكمال لاحقاً من لوحة التحكم.")) return;
             clearInterval(timerInterval);
             // حفظ الحالة قبل أي شيء
             try {
@@ -2193,11 +2236,31 @@ html, body {
             if (isCorrect) {
                 score++;
                 if(selectedNode) selectedNode.className = "option-node correct";
+                // ✅ [UX-1] صوت إجابة صحيحة
+                playSound('correct');
+                // ✅ [UX-2] زيادة الـ Streak
+                streakCount++;
             } else {
                 if(selectedNode) selectedNode.className = "option-node wrong";
                 document.querySelectorAll('.option-node').forEach(b => {
                     if (b.innerText.toString().trim() === cleanAnswer) b.classList.add('correct');
                 });
+                // ✅ [UX-1] صوت إجابة خاطئة
+                playSound('wrong');
+                // ✅ [UX-2] تصفير الـ Streak
+                streakCount = 0;
+            }
+
+            // ✅ [UX-2] تحديث عرض شارة الـ Streak (بصري فقط — لا يمس XP)
+            const streakBadge = document.getElementById('streak-badge');
+            const streakCountEl = document.getElementById('streak-count');
+            if (streakBadge && streakCountEl) {
+                if (streakCount >= 2) {
+                    streakCountEl.innerText = streakCount;
+                    streakBadge.style.display = 'block';
+                } else {
+                    streakBadge.style.display = 'none';
+                }
             }
 
             document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل لهذا السؤال من قبل المشرف.";
@@ -2296,6 +2359,10 @@ html, body {
 
         function finishQuizSession() {
             flushQuestionStats(); // ✅ إرسال إحصائيات الاختبار الآن (كتابة batch واحدة)
+            // ✅ [UX-2] تصفير الـ Streak عند انتهاء الاختبار
+            streakCount = 0;
+            const sbF = document.getElementById('streak-badge');
+            if (sbF) sbF.style.display = 'none';
             showView('view-result');
             localStorage.removeItem(`saved_quiz_${currentUser.uid}`);
             document.getElementById('review-answers-zone').style.display = "none";
@@ -2333,20 +2400,23 @@ html, body {
             document.getElementById('result-percent').innerText = `${percentage}%`;
 
             const motivationalContainer = document.getElementById('result-motivational-msg');
-            const msgsExcellent = ["أنت بطل حقيقي أذهل الجميع! الأستاذ عامر فخور بك جداً 🏆", "كالعادة تكتسح قمة AmerQuiz بجدارة أسطورية! 🌟", "مستوى عبقري لا غبار عليه، استمر للنهائي 🚀"];
-            const msgsGood = ["أداء رائع ومحاولة ممتازة، بضع خطوات وتصل للدرجة الكاملة! 💪", "مستوى قوي جداً يا محارب، القادم أفضل وأسلس بالتأكيد ✏️"];
-            const msgsFair = ["محاولة مقبولة، لكن عامر يعلم أنك تمتلك قدرات أكبر بكثير! وعُد للتحدي 📚", "لا بأس، كل خطأ هو خطوة نحو التعلم والامتياز. راجع إجاباتك وعاود الكرة 🔥"];
-            
-            if (percentage >= 90) {
-                motivationalContainer.innerText = msgsExcellent[Math.floor(Math.random() * msgsExcellent.length)];
-                motivationalContainer.style.color = "var(--success)";
-            } else if (percentage >= 60) {
-                motivationalContainer.innerText = msgsGood[Math.floor(Math.random() * msgsGood.length)];
-                motivationalContainer.style.color = "var(--warning)";
+            // ✅ [UX-4] رسائل تحفيزية مخصصة حسب النسبة المئوية
+            let motivationalText, motivationalColor;
+            if (percentage >= 85) {
+                motivationalText = "عاش يا هندسة 🏆";
+                motivationalColor = "var(--success)";
+            } else if (percentage >= 70) {
+                motivationalText = "يجي منك احسن من كده يا هندسة";
+                motivationalColor = "var(--warning)";
+            } else if (percentage >= 50) {
+                motivationalText = "ذاكر وتعالي تاني 📚";
+                motivationalColor = "#f97316";
             } else {
-                motivationalContainer.innerText = msgsFair[Math.floor(Math.random() * msgsFair.length)];
-                motivationalContainer.style.color = "var(--danger)";
+                motivationalText = "يا فاشل 😅";
+                motivationalColor = "var(--danger)";
             }
+            motivationalContainer.innerText = motivationalText;
+            motivationalContainer.style.color = motivationalColor;
 
             const statusText = document.getElementById('result-xp-status');
 
@@ -3468,20 +3538,29 @@ html, body {
             Object.keys(fixedSubjects).forEach(key => {
                 const iconClass = subjectIcons[key] || "fa-book-open";
                 const qCount = subjectCounts[key] || 0;
+                // ✅ [UX-3] تمييز المواد الفارغة بشكل واضح
+                const isEmpty = qCount === 0;
                 const card = document.createElement('div');
-                card.className = `subject-card ${key === activeCategory ? 'selected' : ''}`;
+                card.className = `subject-card ${key === activeCategory && !isEmpty ? 'selected' : ''}`;
+                if (isEmpty) {
+                    card.style.cssText = 'opacity:0.45; cursor:not-allowed; filter:grayscale(1); pointer-events:none;';
+                }
                 card.innerHTML = `
-                    <i class="fa-solid ${iconClass}"></i>
+                    <i class="fa-solid ${isEmpty ? 'fa-lock' : iconClass}" style="${isEmpty ? 'color:var(--text-muted);' : ''}"></i>
                     <h4 style="margin:5px 0 0 0; font-size:15px;">${fixedSubjects[key]}</h4>
-                    <span class="q-count-badge" id="subject-count-${key}">${qCount} سؤال متاح</span>
+                    <span class="q-count-badge" id="subject-count-${key}" style="${isEmpty ? 'background:var(--border);color:var(--text-muted);' : ''}">
+                        ${isEmpty ? 'لا توجد أسئلة بعد' : qCount + ' سؤال متاح'}
+                    </span>
                 `;
-                card.onclick = () => {
-                    activeCategory = key;
-                    document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
-                    card.classList.add('selected');
-                    checkSubjectAttemptStatus();
-                    updateQuestionCountOptions(key);
-                };
+                if (!isEmpty) {
+                    card.onclick = () => {
+                        activeCategory = key;
+                        document.querySelectorAll('.subject-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
+                        checkSubjectAttemptStatus();
+                        updateQuestionCountOptions(key);
+                    };
+                }
                 grid.appendChild(card);
             });
             updateQuestionCountOptions(activeCategory);
