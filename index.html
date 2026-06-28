@@ -154,67 +154,105 @@ html, body {
         .btn-launch:disabled { opacity: 0.6; cursor: not-allowed; transform: none;
             }
         
-        /* === شاشة اختيار عدد الأسئلة === */
+        /* === شاشة اختيار عدد الأسئلة — تصميم جديد === */
         #view-count-picker {
-            /* تعطيل hover الذي يحرّك الكارد */
+            background: transparent !important;
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0 !important;
             transform: none !important;
-            min-height: calc(100vh - 140px);
-            display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            padding: 32px 28px; gap: 0;
         }
-        #view-count-picker:hover { transform: none !important; box-shadow: var(--shadow) !important; }
+        #view-count-picker:hover { transform: none !important; box-shadow: none !important; }
 
-        .picker-subject-label {
-            font-size: 12px; color: var(--text-muted); font-weight: 600;
-            letter-spacing: 0.08em; margin-bottom: 6px; text-align: center;
+        .picker-top-area { padding: 4px 2px 18px 2px; text-align: right; }
+
+        .picker-lib-back {
+            font-size: 13px; color: var(--text-muted); cursor: pointer;
+            margin-bottom: 18px; display: flex; align-items: center;
+            gap: 6px; justify-content: flex-end; transition: color 0.15s;
+            font-weight: 600;
         }
-        .picker-subject-name {
-            font-size: 24px; font-weight: 900; color: var(--text-main);
-            margin-bottom: 4px; text-align: center; line-height: 1.2;
+        .picker-lib-back:hover { color: var(--primary); }
+
+        .picker-bank-title {
+            font-size: 22px; font-weight: 800; color: var(--text-main);
+            line-height: 1.3; margin-bottom: 6px;
         }
-        .picker-subject-sub {
-            font-size: 13px; color: var(--text-muted); margin-bottom: 40px;
-            text-align: center;
+        .picker-bank-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 14px; }
+
+        /* شارة المحاولات / الوضع التدريبي */
+        .picker-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 7px 15px; border-radius: 99px;
+            font-size: 13px; font-weight: 700; margin-bottom: 16px;
         }
-        /* سؤال كم عدد */
-        .picker-question-label {
-            font-size: 16px; font-weight: 700; color: var(--text-main);
-            margin-bottom: 4px; text-align: center;
+        .picker-badge.has-attempts { background: #dbeafe; color: #1d4ed8; }
+        .picker-badge.practice-mode { background: #fef3c7; color: #b45309; }
+        body.dark-mode .picker-badge.has-attempts  { background: #1e3a8a; color: #93c5fd; }
+        body.dark-mode .picker-badge.practice-mode { background: #451a03; color: #fcd34d; }
+
+        /* نقاط التنقل الديكورية */
+        .picker-dots-row { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
+        .picker-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); transition: all 0.25s; }
+        .picker-dot.active { width: 24px; border-radius: 99px; background: var(--primary); }
+
+        /* البطاقة البيضاء */
+        .picker-white-card {
+            background: var(--card-bg); border-radius: 22px;
+            padding: 24px 22px 22px 22px;
+            box-shadow: 0 6px 30px rgba(0,0,0,0.10);
+            border: 1px solid var(--border);
         }
-        .picker-max-label {
-            font-size: 13px; color: var(--text-muted); margin-bottom: 20px;
-            text-align: center;
-        }
-        /* الرقم الكبير */
+        .picker-card-header { text-align: right; margin-bottom: 16px; }
+        .picker-question-label { font-size: 17px; font-weight: 800; color: var(--text-main); margin-bottom: 2px; }
+        .picker-max-label { font-size: 13px; color: var(--text-muted); }
+
+        /* منطقة الرقم المتحرك */
         .picker-number-wrap {
-            width: 200px; height: 130px;
-            display: flex; align-items: center; justify-content: center;
-            margin-bottom: 4px; user-select: none; cursor: ns-resize;
+            display: flex; justify-content: center; align-items: center;
+            height: 118px; margin-bottom: 10px;
+            cursor: ns-resize; user-select: none; overflow: hidden;
         }
-        .picker-number {
-            font-size: 96px; font-weight: 900; color: var(--primary);
+        .picker-digits-row {
+            display: flex; align-items: center;
+            justify-content: center; gap: 1px;
+        }
+        .picker-digit-slot {
+            display: inline-flex; overflow: hidden;
+            height: 110px; align-items: center; justify-content: center;
+        }
+        .picker-digit-inner {
+            font-size: 96px; font-weight: 900; color: var(--text-main);
             line-height: 1; font-variant-numeric: tabular-nums;
-            letter-spacing: -4px;
-            transition: transform 0.08s ease;
+            letter-spacing: -3px; display: block;
         }
-        .picker-number.bump { transform: scale(1.08); }
-        .picker-swipe-hint {
-            font-size: 11px; color: var(--text-muted);
-            margin-bottom: 28px; opacity: 0.6; text-align: center;
+
+        /* أنيميشن الـ Slot Machine */
+        @keyframes digitSlideUp {
+            from { transform: translateY(65%); opacity: 0; }
+            to   { transform: translateY(0);   opacity: 1; }
         }
+        @keyframes digitSlideDown {
+            from { transform: translateY(-65%); opacity: 0; }
+            to   { transform: translateY(0);    opacity: 1; }
+        }
+        .picker-digit-inner.anim-up   { animation: digitSlideUp   0.22s cubic-bezier(0.22,1,0.36,1) both; }
+        .picker-digit-inner.anim-down { animation: digitSlideDown 0.22s cubic-bezier(0.22,1,0.36,1) both; }
+        .picker-digit-inner.anim-none { animation: none; }
+
         /* شريط السحب */
         .picker-slider-wrap {
             width: 100%; display: flex; align-items: center; gap: 14px;
-            margin-bottom: 40px;
+            margin-bottom: 28px;
         }
         .picker-btn {
-            width: 40px; height: 40px; border-radius: 50%; border: none;
-            background: var(--primary); color: white; font-size: 22px;
-            font-weight: 300; cursor: pointer; flex-shrink: 0;
+            width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border);
+            background: var(--card-bg); color: var(--text-main); font-size: 20px;
+            font-weight: 400; cursor: pointer; flex-shrink: 0;
             display: flex; align-items: center; justify-content: center;
-            transition: transform 0.1s; line-height: 1;
+            transition: all 0.15s; line-height: 1;
         }
+        .picker-btn:hover  { border-color: var(--primary); color: var(--primary); }
         .picker-btn:active { transform: scale(0.85); }
         input[type="range"].picker-slider {
             flex: 1; -webkit-appearance: none; appearance: none;
@@ -222,35 +260,32 @@ html, body {
             background: var(--border); cursor: pointer;
         }
         input[type="range"].picker-slider::-webkit-slider-thumb {
-            -webkit-appearance: none; width: 24px; height: 24px;
+            -webkit-appearance: none; width: 22px; height: 22px;
             border-radius: 50%; background: var(--primary);
             border: 3px solid var(--card-bg);
             box-shadow: 0 0 0 2px var(--primary);
             cursor: grab; transition: transform 0.1s;
         }
-        input[type="range"].picker-slider:active::-webkit-slider-thumb {
-            transform: scale(1.25); cursor: grabbing;
-        }
+        input[type="range"].picker-slider:active::-webkit-slider-thumb { transform: scale(1.2); cursor: grabbing; }
         input[type="range"].picker-slider::-moz-range-thumb {
-            width: 24px; height: 24px; border-radius: 50%;
-            background: var(--primary); border: 3px solid var(--card-bg);
-            cursor: grab;
+            width: 22px; height: 22px; border-radius: 50%;
+            background: var(--primary); border: 3px solid var(--card-bg); cursor: grab;
         }
-        /* الأزرار السفلية */
-        .picker-nav {
-            display: flex; justify-content: space-between; align-items: center;
-            width: 100%;
-        }
+
+        /* التنقل */
+        .picker-nav { display: flex; justify-content: space-between; align-items: center; width: 100%; }
         .picker-back-link {
             color: var(--text-muted); font-size: 14px; cursor: pointer;
-            font-weight: 500; padding: 10px 4px; transition: color 0.15s;
+            font-weight: 600; padding: 10px 4px; transition: color 0.15s;
+            display: flex; align-items: center; gap: 5px;
         }
         .picker-back-link:hover { color: var(--primary); }
         .picker-next-btn {
             background: var(--primary); color: white; border: none;
-            padding: 14px 36px; border-radius: var(--radius-sm);
-            font-size: 16px; font-weight: 700; cursor: pointer;
+            padding: 13px 32px; border-radius: 12px;
+            font-size: 15px; font-weight: 700; cursor: pointer;
             display: flex; align-items: center; gap: 8px;
+            font-family: 'Tajawal', sans-serif;
             transition: transform 0.1s, opacity 0.15s;
         }
         .picker-next-btn:active { transform: scale(0.97); }
@@ -916,40 +951,69 @@ html, body {
             </div><!-- /view-dashboard -->
 
             <!-- شاشة اختيار عدد الأسئلة -->
-            <div class="card" id="view-count-picker" style="display:none;">
-                <!-- اسم المادة في الأعلى -->
-                <div class="picker-subject-label">بنك أسئلة</div>
-                <div class="picker-subject-name" id="picker-subject-name">—</div>
-                <div class="picker-subject-sub">
-                    <span id="picker-total-text">0</span> سؤال متاح في هذه المادة
+            <div id="view-count-picker" style="display:none;">
+
+                <!-- ─── معلومات المادة في الأعلى ─── -->
+                <div class="picker-top-area">
+                    <div class="picker-lib-back" onclick="showView('view-dashboard')">
+                        المكتبة <i class="fa-solid fa-arrow-left"></i>
+                    </div>
+                    <div class="picker-bank-title">
+                        بنك أسئلة <span id="picker-subject-name" style="color:var(--primary); font-weight:900;">—</span>
+                    </div>
+                    <div class="picker-bank-sub">
+                        <span id="picker-total-text">0</span> سؤال مع شرح لكل إجابة
+                    </div>
+                    <!-- شارة المحاولات أو الوضع التدريبي -->
+                    <div id="picker-attempts-badge" class="picker-badge has-attempts">
+                        <i class="fa-solid fa-arrow-left"></i> جاري التحميل...
+                    </div>
+                    <!-- نقاط ديكورية تُحاكي التصميم -->
+                    <div class="picker-dots-row">
+                        <span class="picker-dot"></span>
+                        <span class="picker-dot"></span>
+                        <span class="picker-dot active"></span>
+                        <span class="picker-dot"></span>
+                        <span class="picker-dot"></span>
+                    </div>
                 </div>
 
-                <!-- السؤال -->
-                <div class="picker-question-label">كم عدد الأسئلة؟</div>
-                <div class="picker-max-label">المتاح <span id="picker-max-label-num">0</span> سؤال</div>
+                <!-- ─── البطاقة المركزية ─── -->
+                <div class="picker-white-card">
+                    <div class="picker-card-header">
+                        <div class="picker-question-label">كم عدد الأسئلة؟</div>
+                        <div class="picker-max-label">المتاح <span id="picker-max-label-num">0</span> سؤال</div>
+                    </div>
 
-                <!-- الرقم الكبير — قابل للسحب -->
-                <div class="picker-number-wrap" id="picker-drag-zone">
-                    <div class="picker-number" id="picker-number-display">10</div>
-                </div>
-                <div class="picker-swipe-hint">↕ اسحب للتغيير</div>
+                    <!-- الرقم المتحرك — slot machine لكل خانة -->
+                    <div class="picker-number-wrap" id="picker-drag-zone">
+                        <div class="picker-digits-row" id="picker-digit-display">
+                            <!-- تُبنى ديناميكياً بـ _renderPickerDigits() -->
+                        </div>
+                        <!-- مخفي — المنطق الداخلي يقرأ منه القيمة -->
+                        <div id="picker-number-display" style="display:none;">10</div>
+                    </div>
 
-                <!-- شريط + أزرار -->
-                <div class="picker-slider-wrap">
-                    <button class="picker-btn" onclick="adjustPickerCount(-1)">−</button>
-                    <input type="range" class="picker-slider" id="picker-slider"
-                           min="5" max="10" step="1" value="10"
-                           oninput="updatePickerDisplay(this.value)">
-                    <button class="picker-btn" onclick="adjustPickerCount(1)">+</button>
+                    <!-- شريط + أزرار -->
+                    <div class="picker-slider-wrap">
+                        <button class="picker-btn" onclick="adjustPickerCount(-1)">−</button>
+                        <input type="range" class="picker-slider" id="picker-slider"
+                               min="5" max="10" step="1" value="10"
+                               oninput="updatePickerDisplay(this.value)">
+                        <button class="picker-btn" onclick="adjustPickerCount(1)">+</button>
+                    </div>
+
+                    <!-- التنقل -->
+                    <div class="picker-nav">
+                        <span class="picker-back-link" onclick="showView('view-dashboard')">
+                            السابق <i class="fa-solid fa-arrow-right"></i>
+                        </span>
+                        <button class="picker-next-btn" onclick="launchArenaWithCount()">
+                            <i class="fa-solid fa-chevron-left"></i> التالي
+                        </button>
+                    </div>
                 </div>
 
-                <!-- التنقل -->
-                <div class="picker-nav">
-                    <span class="picker-back-link" onclick="showView('view-dashboard')">→ السابق</span>
-                    <button class="picker-next-btn" onclick="launchArenaWithCount()">
-                        التالي <i class="fa-solid fa-chevron-left"></i>
-                    </button>
-                </div>
             </div>
 
             <!-- صفحة الامتحان -->
@@ -1996,10 +2060,13 @@ html, body {
                 slider.step  = 1;
                 slider.value = Math.min(20, total);
                 document.getElementById('picker-number-display').textContent = slider.value;
+                _pickerLastVal = parseInt(slider.value);
+                _renderPickerDigits(parseInt(slider.value), 'none'); // عرض أولي بدون أنيميشن
                 _updateSliderFill(slider);
+                updatePickerAttemptsBadge(); // ✅ شارة المحاولات — شكلي فقط
 
                 showView('view-count-picker');
-                _initPickerDrag(); // تفعيل السحب باللمس/الماوس
+                _initPickerDrag();
             }
 
             if (isFresh) {
@@ -2042,16 +2109,51 @@ html, body {
             });
         }
 
+        let _pickerLastVal = 10; // لتحديد اتجاه الأنيميشن
+
         function updatePickerDisplay(val) {
-            document.getElementById('picker-number-display').textContent = val;
+            const newVal    = parseInt(val);
+            const direction = newVal > _pickerLastVal ? 'up' : (newVal < _pickerLastVal ? 'down' : 'none');
+            _pickerLastVal  = newVal;
+
+            // تحديث القيمة الخفية (يقرأها launchArenaWithCount عبر الـ slider)
+            const hidden = document.getElementById('picker-number-display');
+            if (hidden) hidden.textContent = newVal;
+
+            // تحديث تدرج الشريط
             const slider = document.getElementById('picker-slider');
-            _updateSliderFill(slider);
-            // تأثير الـ bump على الرقم
-            const numEl = document.getElementById('picker-number-display');
-            numEl.classList.remove('bump');
-            void numEl.offsetWidth;
-            numEl.classList.add('bump');
-            setTimeout(() => numEl.classList.remove('bump'), 150);
+            if (slider) _updateSliderFill(slider);
+
+            // رسم الأرقام بأنيميشن Slot Machine
+            _renderPickerDigits(newVal, direction);
+        }
+
+        // رسم كل خانة رقم منفصلة مع أنيميشن انسيابي
+        function _renderPickerDigits(num, direction) {
+            const container = document.getElementById('picker-digit-display');
+            if (!container) return;
+            const digits = String(num).split('');
+            container.innerHTML = digits.map((d, i) => `
+                <div class="picker-digit-slot">
+                    <span class="picker-digit-inner anim-${direction}"
+                          style="animation-delay:${i * 0.03}s">${d}</span>
+                </div>
+            `).join('');
+        }
+
+        // شارة المحاولات المتبقية أو الوضع التدريبي — شكلي فقط، لا يمس منطق XP
+        function updatePickerAttemptsBadge() {
+            const badge = document.getElementById('picker-attempts-badge');
+            if (!badge || !currentUser) return;
+            const used      = (currentUser.subjectAttemptsCount?.[activeCategory]) || 0;
+            const remaining = Math.max(0, MAX_XP_ATTEMPTS_PER_SUB - used);
+            if (remaining > 0) {
+                badge.className = 'picker-badge has-attempts';
+                badge.innerHTML = `<i class="fa-solid fa-arrow-left"></i> تبقّى لك ${remaining} محاولة في هذا الاختبار`;
+            } else {
+                badge.className = 'picker-badge practice-mode';
+                badge.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> وضع تدريبي — لا تُحتسب XP`;
+            }
         }
 
         function adjustPickerCount(delta) {
