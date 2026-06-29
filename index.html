@@ -438,37 +438,6 @@ html, body {
         body.dark-mode [style*="color:#16a34a"]       { color: #86efac !important; }
         body.dark-mode [style*="color:#b45309"]       { color: #fbbf24 !important; }
 
-        /* ══════ مودال مخصص ══════ */
-        .modal-overlay {
-            position: fixed; inset: 0; z-index: 9999;
-            background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
-            display: flex; align-items: center; justify-content: center; padding: 20px;
-        }
-        .modal-box {
-            background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 20px; padding: 28px 24px 22px 24px;
-            max-width: 360px; width: 100%; text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            transform: scale(0.88) translateY(20px); opacity: 0;
-            transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), opacity 0.2s ease;
-        }
-        .modal-box.modal-show { transform: scale(1) translateY(0); opacity: 1; }
-        .modal-icon-wrap { font-size: 42px; margin-bottom: 12px; line-height: 1; }
-        .modal-title { font-size: 17px; font-weight: 800; color: var(--text-main); margin: 0 0 10px 0; }
-        .modal-message { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin: 0 0 22px 0; }
-        .modal-actions { display: flex; flex-direction: column; gap: 10px; }
-        .modal-btn {
-            width: 100%; padding: 13px; border-radius: 12px;
-            font-size: 15px; font-weight: 700; border: none; cursor: pointer;
-            font-family: 'Tajawal', sans-serif; transition: opacity 0.15s, transform 0.1s;
-        }
-        .modal-btn:active { transform: scale(0.97); }
-        .modal-btn-confirm         { background: var(--danger);  color: white; }
-        .modal-btn-confirm.safe    { background: var(--primary); color: white; }
-        .modal-btn-confirm.warning { background: var(--warning); color: white; }
-        .modal-btn-confirm.success { background: var(--success); color: white; }
-        .modal-btn-cancel { background: var(--bg-gradient); color: var(--text-muted); border: 1.5px solid var(--border); }
-
         /* نص المعلومات والشرح */
         body.dark-mode .explanation-box { background: #1e3a8a; color: #bfdbfe; }
 
@@ -1356,15 +1325,7 @@ html, body {
 
                 <!-- ══════════ تبويب: الطلاب ══════════ -->
                 <div id="tab-students" class="admin-tab-content hidden-tab">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:10px;">
-                        <h3 style="margin:0;">👥 إدارة ورقابة الطلاب المسجلين</h3>
-                        <input type="text" id="admin-student-search"
-                               placeholder="🔍 ابحث بالاسم..."
-                               oninput="filterAdminStudentsByName()"
-                               style="padding:9px 14px; border-radius:10px; border:1.5px solid var(--border);
-                                      background:var(--card-bg); color:var(--text-main);
-                                      font-size:13px; font-family:'Tajawal',sans-serif; width:200px;">
-                    </div>
+                    <h3>👥 إدارة ورقابة الطلاب المسجلين</h3>
                     <div class="student-table-container">
                         <table class="student-table">
                             <thead>
@@ -1423,21 +1384,11 @@ html, body {
 
                 <!-- ══════════ تبويب: البلاغات ══════════ -->
                 <div id="tab-reports" class="admin-tab-content hidden-tab">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
                         <h3 style="margin:0;">🚩 بلاغات الطلاب عن الأسئلة</h3>
-                        <div style="display:flex; gap:6px;">
-                            <button onclick="loadAdminReports('date')" id="sort-reports-date"
-                                    class="ban-btn ban-active" style="font-size:12px; padding:6px 12px;">
-                                <i class="fa-solid fa-clock"></i> الأحدث
-                            </button>
-                            <button onclick="loadAdminReports('count')" id="sort-reports-count"
-                                    class="ban-btn ban-inactive" style="font-size:12px; padding:6px 12px;">
-                                <i class="fa-solid fa-fire"></i> الأكثر بلاغاً
-                            </button>
-                            <button onclick="loadAdminReports()" class="ban-btn ban-inactive" style="font-size:12px; padding:6px 12px;">
-                                <i class="fa-solid fa-rotate"></i> تحديث
-                            </button>
-                        </div>
+                        <button onclick="loadAdminReports()" class="ban-btn ban-inactive" style="font-size:12px;">
+                            <i class="fa-solid fa-rotate"></i> تحديث
+                        </button>
                     </div>
                     <div id="admin-reports-list" style="display:flex; flex-direction:column; gap:10px;">
                         <p style="color:var(--text-muted); text-align:center; padding:20px;">
@@ -2449,11 +2400,7 @@ html, body {
         function reportQuestionProblem() {
             if (!currentQuestions[qIndex] || !currentUser) return;
             const activeQ = currentQuestions[qIndex];
-            showModal({
-                icon: '🚩', title: 'إبلاغ عن خطأ',
-                message: 'هل تؤكد الإبلاغ عن خطأ في هذا السؤال لمراجعته من قِبَل الإدارة؟',
-                confirmText: 'نعم، أبلغ', cancelText: 'إلغاء', type: 'warning',
-                onConfirm: () => {
+            if (confirm("🚩 هل تؤكد الإبلاغ عن خطأ في هذا السؤال لمراجعته من قِبَل الإدارة؟")) {
                 db.collection("admin_reports").add({
                     questionId:     activeQ.id   || "unknown",
                     questionText:   activeQ.question,
@@ -2465,11 +2412,11 @@ html, body {
                     timestamp:      firebase.firestore.FieldValue.serverTimestamp()
                 }).then(() => {
                     showToast("✅ تم إرسال البلاغ للإدارة. شكراً لمساعدتك!");
+                    // تغيير لون الزر مؤقتاً للتأكيد
                     const btn = document.querySelector('.arena-action-btn[onclick="reportQuestionProblem()"]');
                     if (btn) { btn.style.color = 'var(--success)'; btn.innerHTML = '<i class="fa-solid fa-check"></i> أُرسل'; }
                 }).catch(() => showToast("⚠️ فشل الإرسال، تحقق من الاتصال.", "error"));
-                }
-            });
+            }
         }
 
         function resumeSavedQuizArena() {
@@ -2500,11 +2447,7 @@ html, body {
 
         function saveAndExitQuizArena() {
             // ✅ [UX-8] تأكيد قبل الخروج — يمنع الضغط العرضي
-            showModal({
-                icon: '💾', title: 'حفظ وخروج',
-                message: 'سيتم حفظ تقدمك ويمكنك الاستكمال لاحقاً من الصفحة الرئيسية.',
-                confirmText: 'نعم، احفظ وأخرج', cancelText: 'تراجع', type: 'warning',
-                onConfirm: () => {
+            if (!confirm("⚠️ هل تريد الخروج فعلاً؟\nسيتم حفظ تقدمك ويمكنك الاستكمال لاحقاً من لوحة التحكم.")) return;
             clearInterval(timerInterval);
             // حفظ الحالة قبل أي شيء
             try {
@@ -2518,16 +2461,16 @@ html, body {
                     userQuizAnswersLog: userQuizAnswersLog
                 };
                 localStorage.setItem(`saved_quiz_${currentUser.uid}`, JSON.stringify(stateToSave));
-                showToast("✅ تم حفظ تقدمك. يمكنك الاستكمال لاحقاً من الصفحة الرئيسية.");
+                showToast("✅ تم حفظ تقدمك. يمكنك الاستكمال لاحقاً من لوحة التحكم.");
             } catch(e) {
                 showToast("⚠️ تعذّر الحفظ، المساحة الكافية غير متوفرة.", "error");
             }
+            // تصفير حالة الاختبار لمنع أي استدعاء لـ finishQuizSession عند الانتقال
             currentQuestions = [];
             qIndex = 0;
             hasAnsweredCurrent = false;
+            // انتقال مباشر — بدون أي دالة quiz
             showView('view-dashboard');
-                } // end onConfirm
-            }); // end showModal
         }
 
         function loadArenaQuestion(isResumedFirstLoad = false) {
@@ -3333,11 +3276,7 @@ html, body {
         }
 
         function deleteSelectedQuestionsGroup() {
-            showModal({
-                icon: '🗑️', title: 'حذف جماعي',
-                message: `سيتم حذف <strong>${selectedAdminQuestionsGroup.length}</strong> سؤال نهائياً. لا يمكن التراجع.`,
-                confirmText: 'نعم، احذف', cancelText: 'إلغاء',
-                onConfirm: () => {
+            if(confirm(`⚠️ هل أنت متأكد من حذف عدد (${selectedAdminQuestionsGroup.length}) سؤال دفعة واحدة نهائياً؟`)) {
                 // ✅ [OPT-32] احسب عدد المحذوفات لكل مادة من الكاش قبل الحذف
                 const subjectDeltas = {};
                 selectedAdminQuestionsGroup.forEach(id => {
@@ -3363,13 +3302,13 @@ html, body {
                     });
                     db.collection("questions").doc("--metadata--").set(counterUpdate, { merge: true });
                     _applySubjectCounts();
+                    // مسح كاش localStorage للمواد المتأثرة
                     Object.keys(subjectDeltas).forEach(sub => _invalidateQuestionCache(sub));
                     cachedAdminQuestions = cachedAdminQuestions.filter(q => !deletedIds.includes(q.uid));
                     selectedAdminQuestionsGroup = [];
                     openAdminPanel();
                 });
-                } // end onConfirm
-            }); // end showModal
+            }
         }
 
         function filterQuestionsBank() {
@@ -3411,11 +3350,8 @@ html, body {
             const subjectKey = document.getElementById('deleteSubjectSelect').value;
             if (!subjectKey) { showToast("⚠️ اختر المادة أولاً.", "error"); return; }
             const subjectName = fixedSubjects[subjectKey] || subjectKey;
-            showModal({
-                icon: '🗑️', title: 'حذف أسئلة المادة',
-                message: `سيتم حذف جميع أسئلة مادة "<strong>${subjectName}</strong>" نهائياً.`,
-                confirmText: 'نعم، احذف', cancelText: 'إلغاء',
-                onConfirm: () => {
+            if (!confirm(`⚠️ هل أنت متأكد من حذف جميع أسئلة مادة "${subjectName}" نهائياً؟`)) return;
+
             db.collection("questions").where("subject", "==", subjectKey).get().then(snap => {
                 if (snap.empty) { showToast("لا توجد أسئلة لهذه المادة.", "error"); return; }
                 const batch = db.batch();
@@ -3425,87 +3361,97 @@ html, body {
                 });
                 const count = snap.size;
                 batch.commit().then(() => {
+                    // تصفير عداد المادة في المستند
                     const update = {};
                     update[`counts.${subjectKey}`] = 0;
                     update['totalQuestions'] = firebase.firestore.FieldValue.increment(-count);
                     db.collection("questions").doc("--metadata--").set(update, { merge: true });
+
                     subjectCounts[subjectKey] = 0;
                     _applySubjectCounts();
                     _invalidateQuestionCache(subjectKey);
                     cachedAdminQuestions = cachedAdminQuestions.filter(q => q.subject !== subjectKey);
+
                     showToast(`✅ تم حذف ${count} سؤال من مادة "${subjectName}"`);
                     logAdminAction("حذف أسئلة مادة", `حذف ${count} سؤال من ${subjectName}`);
                     document.getElementById('deleteSubjectSelect').value = '';
                     openAdminPanel();
                 }).catch(err => showToast("❌ فشل الحذف: " + err.message, "error"));
             });
-                }
-            });
         }
 
         function resetAllStudentsAttempts() {
-            showModal({
-                icon: '🔄', title: 'تصفير المحاولات',
-                message: 'سيتم تصفير XP المواد ومحاولاتها لجميع الطلاب. سيحصل كل طالب على 3 محاولات جديدة.',
-                confirmText: 'نعم، صفّر الكل', cancelText: 'إلغاء',
-                onConfirm: () => {
+            if (!confirm("⚠️ هل أنت متأكد من تصفير جميع محاولات وXP المواد لجميع الطلاب؟\nسيحصل كل طالب على 3 محاولات جديدة لكل مادة.")) return;
+
             db.collection("users").get().then(snap => {
                 if (snap.empty) { showToast("لا يوجد طلاب.", "error"); return; }
+
+                // batch يستوعب 500 عملية — نقسّم إذا لزم
                 const chunks = [];
                 let batch = db.batch();
                 let count = 0;
+
                 snap.forEach(doc => {
                     if (doc.id === '--metadata--') return;
-                    batch.update(doc.ref, { subjectXP: {}, subjectAttemptsCount: {}, completedSubjects: [] });
+                    batch.update(doc.ref, {
+                        subjectXP:            {},
+                        subjectAttemptsCount: {},
+                        completedSubjects:    []
+                    });
                     count++;
-                    if (count % 400 === 0) { chunks.push(batch); batch = db.batch(); }
+                    if (count % 400 === 0) {
+                        chunks.push(batch);
+                        batch = db.batch();
+                    }
                 });
                 if (count % 400 !== 0) chunks.push(batch);
+
                 Promise.all(chunks.map(b => b.commit())).then(() => {
+                    // تحديث المستخدم الحالي محلياً
                     if (currentUser) {
                         currentUser.subjectXP = {};
                         currentUser.subjectAttemptsCount = {};
                         currentUser.completedSubjects = [];
                         subjectAttemptCache = {};
-                        try { localStorage.setItem('aq_user_' + currentUser.uid, JSON.stringify(currentUser)); } catch(e) {}
+                        try {
+                            localStorage.setItem('aq_user_' + currentUser.uid, JSON.stringify(currentUser));
+                        } catch(e) {}
                     }
                     showToast(`✅ تم تصفير محاولات ${count} طالب بنجاح!`);
                     logAdminAction("تصفير شامل للمحاولات", `تصفير ${count} طالب`);
-                    db.collection("questions").doc("--metadata--").set({ totalAttempts: 0 }, { merge: true });
+                    // تحديث metadata
+                    db.collection("questions").doc("--metadata--")
+                      .set({ totalAttempts: 0 }, { merge: true });
                 }).catch(err => showToast("❌ فشل التصفير: " + err.message, "error"));
+
             }).catch(err => showToast("❌ خطأ في جلب الطلاب: " + err.message, "error"));
-                }
-            });
         }
 
         function deleteAllQuestions() {
-            showModal({
-                icon: '🚨', title: 'مسح جميع الأسئلة',
-                message: 'سيتم حذف كامل بنك الأسئلة من السيرفر نهائياً. <strong>لا يمكن التراجع.</strong>',
-                confirmText: 'نعم، امسح الكل', cancelText: 'إلغاء',
-                onConfirm: () => {
+            if (confirm("🚨 هل تود مسح جميع الأسئلة نهائياً وبشكل كامل من السيرفر؟")) {
                 db.collection("questions").get().then(snap => {
                     let batch = db.batch();
                     snap.forEach(doc => {
+                        // حماية مستندات الكاش والعداد من الحذف العشوائي
                         if (doc.id === "leaderboard-cache" || doc.id === "--metadata--") return;
                         batch.delete(doc.ref);
                     });
                     batch.commit().then(() => {
+                        // ✅ [OPT-23] إعادة ضبط مستند العداد بدلاً من re-fetch كل الأسئلة
                         db.collection("questions").doc("--metadata--").set({
-                            counts: { math:0, english:0, economics:0, management:0, office:0 },
+                            counts: { math: 0, english: 0, economics: 0, management: 0, office: 0 },
                             totalQuestions: 0
                         }, { merge: true });
-                        subjectCounts = { math:0, english:0, economics:0, management:0, office:0 };
+                        subjectCounts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
                         cachedAdminQuestions = [];
                         _invalidateQuestionCache(null);
                         _applySubjectCounts();
                         showToast("🎯 تم مسح بنك الأسئلة بالكامل بنجاح!");
                         logAdminAction("تصفير الشامل", "مسح جميع أسئلة المنصة");
                         openAdminPanel();
-                    }).catch(err => showToast("فشلت عملية الحذف: " + err.message, "error"));
+                    }).catch(err => alert("فشلت عملية الحذف الشامل: " + err.message));
                 });
-                }
-            });
+            }
         }
 
         function switchAdminTab(tabId) {
@@ -3545,81 +3491,55 @@ html, body {
             if (tabId === 'tab-logs')     loadAdminLogsList();
         }
 
-        // ✅ بحث الطلاب بالاسم في لوحة الأدمن
-        function filterAdminStudentsByName() {
-            const query = (document.getElementById('admin-student-search')?.value || '').trim().toLowerCase();
-            document.querySelectorAll('#admin-students-table-body tr').forEach(row => {
-                const name = (row.dataset.studentName || '').toLowerCase();
-                row.style.display = (!query || name.includes(query)) ? '' : 'none';
-            });
-        }
-
-        function loadAdminReports(sortMode = 'date') {
+        function loadAdminReports() {
             const listEl = document.getElementById('admin-reports-list');
             if (!listEl) return;
             listEl.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</p>`;
 
-            // تحديث أزرار الفرز
-            const dateBtn  = document.getElementById('sort-reports-date');
-            const countBtn = document.getElementById('sort-reports-count');
-            if (dateBtn)  dateBtn.className  = `ban-btn ${sortMode === 'date'  ? 'ban-active' : 'ban-inactive'}` + ' ' + dateBtn.style.cssText;
-            if (countBtn) countBtn.className = `ban-btn ${sortMode === 'count' ? 'ban-active' : 'ban-inactive'}` + ' ' + countBtn.style.cssText;
-
-            db.collection("admin_reports").orderBy("timestamp", "desc").limit(100).get()
+            db.collection("admin_reports").orderBy("timestamp", "desc").limit(50).get()
               .then(snap => {
                 if (snap.empty) {
                     listEl.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:30px;"><i class="fa-solid fa-check-circle" style="color:var(--success)"></i> لا توجد بلاغات معلقة.</p>`;
                     return;
                 }
+                // تحديث الـ badge
                 const badge = document.getElementById('reports-badge');
                 if (badge) { badge.style.display = 'inline'; badge.textContent = snap.size; }
 
-                // جمع كل البلاغات مع عد تكرار كل سؤال
-                const reportsArr = [];
-                const countByQ   = {};
-                snap.forEach(doc => {
-                    const r = { ...doc.data(), _id: doc.id };
-                    reportsArr.push(r);
-                    const key = r.questionId || r.questionText || r._id;
-                    countByQ[key] = (countByQ[key] || 0) + 1;
-                });
-
-                // فرز حسب الوضع المختار
-                if (sortMode === 'count') {
-                    reportsArr.sort((a, b) => {
-                        const ka = a.questionId || a.questionText || a._id;
-                        const kb = b.questionId || b.questionText || b._id;
-                        return (countByQ[kb] || 0) - (countByQ[ka] || 0);
-                    });
-                }
-
                 listEl.innerHTML = '';
-                reportsArr.forEach(r => {
-                    const ts        = r.timestamp ? new Date(r.timestamp.toDate()).toLocaleDateString('ar-SA') : '—';
+                snap.forEach(doc => {
+                    const r = doc.data();
+                    const ts = r.timestamp ? new Date(r.timestamp.toDate()).toLocaleDateString('ar-SA') : '—';
                     const isPending = r.status === 'pending';
-                    const qKey      = r.questionId || r.questionText || r._id;
-                    const repCount  = countByQ[qKey] || 1;
                     const card = document.createElement('div');
-                    card.style.cssText = `background:var(--bg-gradient); border:1px solid ${isPending ? '#fca5a5' : 'var(--border)'}; border-radius:10px; padding:14px; direction:rtl;`;
+                    card.style.cssText = `
+                        background:var(--bg-gradient); border:1px solid ${isPending ? '#fca5a5' : 'var(--border)'};
+                        border-radius:10px; padding:14px; direction:rtl;
+                    `;
                     card.innerHTML = `
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                             <div style="flex:1;">
                                 <p style="margin:0 0 6px 0;font-weight:700;font-size:14px;color:var(--text-main);">
                                     📌 ${r.questionText || 'نص غير متاح'}
-                                    ${repCount > 1 ? `<span style="margin-right:6px;background:#fee2e2;color:#991b1b;border-radius:99px;padding:2px 8px;font-size:11px;">🔥 ${repCount} بلاغ</span>` : ''}
                                 </p>
                                 <p style="margin:0;font-size:12px;color:var(--text-muted);">
-                                    الإجابة: <strong>${r.correctAnswer||'—'}</strong> &nbsp;|&nbsp;
-                                    المادة: <strong>${r.subject||'—'}</strong> &nbsp;|&nbsp;
-                                    من: <strong>${r.reportedBy||'—'}</strong> &nbsp;|&nbsp;
-                                    ${ts}
+                                    الإجابة الصحيحة: <strong>${r.correctAnswer || '—'}</strong> &nbsp;|&nbsp;
+                                    المادة: <strong>${r.subject || '—'}</strong> &nbsp;|&nbsp;
+                                    البلاغ من: <strong>${r.reportedBy || '—'}</strong> &nbsp;|&nbsp;
+                                    التاريخ: ${ts}
                                 </p>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
-                                <span style="font-size:11px;padding:3px 8px;border-radius:99px;background:${isPending?'#fee2e2':'#d1fae5'};color:${isPending?'#991b1b':'#065f46'};">
+                                <span style="font-size:11px;padding:3px 8px;border-radius:99px;
+                                    background:${isPending ? '#fee2e2' : '#d1fae5'};
+                                    color:${isPending ? '#991b1b' : '#065f46'};">
                                     ${isPending ? '⏳ معلق' : '✅ تمت المراجعة'}
                                 </span>
-                                ${isPending ? `<button onclick="resolveReport('${r._id}', this)" style="font-size:11px;padding:4px 8px;border:1px solid var(--success);background:none;color:var(--success);border-radius:6px;cursor:pointer;">✔ تم الحل</button>` : ''}
+                                ${isPending ? `<button onclick="resolveReport('${doc.id}', this)"
+                                    style="font-size:11px;padding:4px 8px;border:1px solid var(--success);
+                                    background:none;color:var(--success);border-radius:6px;cursor:pointer;">
+                                    ✔ تم الحل
+                                </button>` : ''}
                             </div>
                         </div>`;
                     listEl.appendChild(card);
@@ -3727,7 +3647,6 @@ html, body {
                     let lastQuizStr = student.lastActivity ? `${student.lastActivity.subjectName} (${student.lastActivity.score}/${student.lastActivity.total})` : "لا يوجد";
                     
                     const tr = document.createElement('tr');
-                    tr.dataset.studentName = (student.name || '').toLowerCase(); // ✅ للبحث بالاسم
                     tr.innerHTML = `
                         <td style="padding: 12px; font-weight: bold; ${isBanned ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${student.name || 'طالب مجهول'}</td>
                         <td style="padding: 12px;">
@@ -3773,44 +3692,32 @@ html, body {
         }
 
         function toggleBanStudent(uid, currentStatus, studentName) {
-            showModal({
-                icon: currentStatus ? '🔓' : '🚫',
-                title: currentStatus ? 'فك الحظر' : 'حظر الطالب',
-                message: currentStatus
-                    ? `هل تريد إلغاء الحظر عن الطالب <strong>${studentName}</strong>؟`
-                    : `هل أنت متأكد من حظر <strong>${studentName}</strong>؟ لن يتمكن من دخول المنصة.`,
-                confirmText: currentStatus ? 'نعم، فك الحظر' : 'نعم، احظر',
-                cancelText: 'إلغاء',
-                type: currentStatus ? 'success' : 'danger',
-                onConfirm: () => {
-                    db.collection("users").doc(uid).update({ isBanned: !currentStatus }).then(() => {
-                        showToast("تم تحديث حالة الحظر بنجاح!");
-                        logAdminAction(currentStatus ? "فك حظر" : "حظر طالب", `الحالة المعدلة للطالب: ${studentName}`);
-                        loadAdminStudentsList();
-                    }).catch(err => showToast("فشلت عملية الرقابة: " + err.message, "error"));
-                }
-            });
+            const msg = currentStatus ? `هل تود إلغاء الحظر عن الطالب ${studentName}؟` : `هل أنت متأكد من حظر الطالب ${studentName}؟ لن يتمكن من دخول المنصة.`;
+            if (confirm(msg)) {
+                db.collection("users").doc(uid).update({ isBanned: !currentStatus }).then(() => {
+                    showToast("تم تحديث حالة الحظر بنجاح!");
+                    logAdminAction(currentStatus ? "فك حظر" : "حظر طالب", `الحالة المعدلة للطالب: ${studentName}`);
+                    loadAdminStudentsList();
+                }).catch(err => alert("فشلت عملية الرقابة: " + err.message));
+            }
         }
 
         function resetStudentAttemptsSpecific(uid, studentName) {
             const subKey = prompt(`الرجاء كتابة رمز المادة المراد تصفير محاولاتها للطالب ${studentName}:\n (math / english / economics / management / office)`);
             if(!subKey) return;
-            if(!fixedSubjects[subKey]) { showToast("⚠️ رمز المادة غير صحيح!", "error"); return; }
-            showModal({
-                icon: '🔄', title: 'تصفير مادة',
-                message: `سيتم تصفير محاولات مادة <strong>${fixedSubjects[subKey]}</strong> للطالب <strong>${studentName}</strong>.`,
-                confirmText: 'تصفير', cancelText: 'إلغاء', type: 'warning',
-                onConfirm: () => {
-                    db.collection("users").doc(uid).collection("attempts").doc(subKey).delete().then(() => {
-                        db.collection("users").doc(uid).update({
-                            completedSubjects: firebase.firestore.FieldValue.arrayRemove(subKey)
-                        }).then(() => {
-                            showToast(`🎯 تم تصفير محاولات مادة ${fixedSubjects[subKey]} للطالب بنجاح!`);
-                            logAdminAction("تصفير مادة لطالب", `تصفير مادة ${fixedSubjects[subKey]} للطالب ${studentName}`);
-                        });
+            if(!fixedSubjects[subKey]) { alert("رمز المادة غير صحيح!"); return; }
+            
+            if(confirm(`هل أنت متأكد من مسح وتصفير سجل محاولات مادة (${fixedSubjects[subKey]}) للطالب ${studentName}؟`)) {
+                db.collection("users").doc(uid).collection("attempts").doc(subKey).delete().then(() => {
+                    // إزالة المادة من مصفوفة المواد المكتملة ليتثنى له ربح نقاطها مجدداً
+                    db.collection("users").doc(uid).update({
+                        completedSubjects: firebase.firestore.FieldValue.arrayRemove(subKey)
+                    }).then(() => {
+                        showToast(`🎯 تم تصفير محاولات مادة ${fixedSubjects[subKey]} للطالب بنجاح!`);
+                        logAdminAction("تصفير مادة لطالب", `تصفير مادة ${fixedSubjects[subKey]} للطالب ${studentName}`);
                     });
-                }
-            });
+                });
+            }
         }
 
         // ══════════════════════════════════════════════════════
@@ -3841,11 +3748,11 @@ html, body {
             const btn     = document.getElementById('btn-save-name');
             const newName = (input ? input.value : '').trim();
 
-            if (!newName || newName.length < 3) {
-                showToast("⚠️ الاسم قصير جداً (3 أحرف على الأقل).", "error"); return;
+            if (!newName || newName.length < 2) {
+                showToast("⚠️ يرجى كتابة اسم صالح (حرفان على الأقل).", "error"); return;
             }
-            if (newName.length > 50) {
-                showToast("⚠️ الاسم طويل جداً (50 حرفاً كحد أقصى).", "error"); return;
+            if (newName.length > 30) {
+                showToast("⚠️ الاسم طويل جداً (30 حرفاً كحد أقصى).", "error"); return;
             }
             if (!currentUser || !currentUser.uid) {
                 showToast("⚠️ خطأ في الحساب، أعد تسجيل الدخول.", "error"); return;
@@ -3907,20 +3814,19 @@ html, body {
                     const img = new Image();
                     img.onerror = () => reject(new Error("فشل تحميل الصورة"));
                     img.onload = () => {
-                        // ✅ دعم شاشات Retina — نرسم بضعف الدقة للحصول على صورة حادة
-                        const DPR     = Math.min(window.devicePixelRatio || 1, 2);
-                        const SIZE    = maxPx * DPR; // 300×2 = 600px داخلياً على Retina
+                        // اقتصاص مربع من المنتصف ثم تصغير لـ maxPx × maxPx
                         const srcSize = Math.min(img.width, img.height);
                         const srcX    = (img.width  - srcSize) / 2;
                         const srcY    = (img.height - srcSize) / 2;
                         const canvas  = document.createElement('canvas');
-                        canvas.width  = SIZE;
-                        canvas.height = SIZE;
+                        canvas.width  = maxPx;
+                        canvas.height = maxPx;
                         const ctx = canvas.getContext('2d');
+                        // رسم دائري (clip) لأيقونة البروفايل
                         ctx.beginPath();
-                        ctx.arc(SIZE/2, SIZE/2, SIZE/2, 0, Math.PI * 2);
+                        ctx.arc(maxPx / 2, maxPx / 2, maxPx / 2, 0, Math.PI * 2);
                         ctx.clip();
-                        ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
+                        ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, maxPx, maxPx);
                         resolve(canvas.toDataURL('image/jpeg', quality));
                     };
                     img.src = e.target.result;
@@ -3954,7 +3860,7 @@ html, body {
 
             try {
                 // ضغط: 150×150 بكسل، JPEG جودة 60% — يُنتج بضعة KB فقط
-                const base64 = await compressImageToBase64(file, 300, 0.75); // 300px + Retina DPR + 75% جودة
+                const base64 = await compressImageToBase64(file, 150, 0.6);
 
                 // حفظ في Firestore بـ update() فقط — لا يمس أي حقل آخر
                 await db.collection("users").doc(currentUser.uid).update({
@@ -3977,34 +3883,6 @@ html, body {
         }
 
         // ══ نهاية دوال الملف الشخصي ══
-
-        // ══════════════════════════════════════════════════
-        // ✅ نظام المودال المخصص — يحل محل confirm() تماماً
-        // ══════════════════════════════════════════════════
-        function showModal({ icon='⚠️', title='تأكيد', message='', confirmText='تأكيد', cancelText='إلغاء', type='danger', onConfirm, onCancel }) {
-            const overlay    = document.getElementById('custom-modal-overlay');
-            const box        = document.getElementById('modal-box');
-            document.getElementById('modal-icon-wrap').textContent  = icon;
-            document.getElementById('modal-title').textContent      = title;
-            document.getElementById('modal-message').innerHTML      = message;
-            const confirmBtn = document.getElementById('modal-confirm-btn');
-            const cancelBtn  = document.getElementById('modal-cancel-btn');
-            confirmBtn.textContent = confirmText;
-            cancelBtn.textContent  = cancelText;
-            confirmBtn.className   = `modal-btn modal-btn-confirm ${type}`;
-            confirmBtn.onclick = () => { closeModal(); if (onConfirm) onConfirm(); };
-            cancelBtn.onclick  = () => { closeModal(); if (onCancel)  onCancel();  };
-            overlay.style.display = 'flex';
-            requestAnimationFrame(() => requestAnimationFrame(() => box.classList.add('modal-show')));
-        }
-        function closeModal() {
-            const box = document.getElementById('modal-box');
-            box.classList.remove('modal-show');
-            setTimeout(() => { document.getElementById('custom-modal-overlay').style.display = 'none'; }, 220);
-        }
-        function handleModalOverlayClick(e) {
-            if (e.target === document.getElementById('custom-modal-overlay')) closeModal();
-        }
 
         function loadAdminLogsList() {
             const container = document.getElementById('admin-logs-list');
@@ -4065,13 +3943,9 @@ html, body {
             reader.onload = function(e) {
                 try {
                     const imported = JSON.parse(e.target.result);
-                    if(!Array.isArray(imported)) { showToast("⚠️ هيكل ملف النسخة الاحتياطية غير صحيح!", "error"); return; }
-
-                    showModal({
-                        icon: '📥', title: 'استعادة نسخة احتياطية',
-                        message: `سيتم استيراد ودمج <strong>${imported.length}</strong> سؤال في السيرفر.`,
-                        confirmText: 'نعم، استورد', cancelText: 'إلغاء', type: 'warning',
-                        onConfirm: () => {
+                    if(!Array.isArray(imported)) { alert("هيكل ملف النسخة الاحتياطية غير صحيح!"); return; }
+                    
+                    if(confirm(`⚠️ أنت على وشك استيراد ودمج عدد (${imported.length}) سؤال في السيرفر. هل ترغب بالاستمرار؟`)) {
                         let batch = db.batch();
                         imported.forEach(q => {
                             let ref = db.collection("questions").doc();
@@ -4087,6 +3961,7 @@ html, body {
                             });
                         });
                         batch.commit().then(() => {
+                            // ✅ [OPT-25] تحديث العدادات من البيانات المستوردة — بدون re-fetch
                             const deltaMap = {};
                             imported.forEach(q => {
                                 if (q.subject && fixedSubjects[q.subject]) {
@@ -4106,8 +3981,7 @@ html, body {
                             logAdminAction("استعادة نسخة احتياطية", `استيراد دمج عدد ${imported.length} سؤال عبر ملف JSON`);
                             openAdminPanel();
                         });
-                        } // end onConfirm
-                    });
+                    }
                 } catch(err) {
                     alert("فشل قراءة وفك تشفير الملف البديل!");
                 }
@@ -4201,14 +4075,12 @@ html, body {
         }
 
         function deleteQuestionInline(id) {
-            showModal({
-                icon: '🗑️', title: 'حذف السؤال',
-                message: 'سيتم حذف هذا السؤال نهائياً من بنك الأسئلة.',
-                confirmText: 'نعم، احذف', cancelText: 'إلغاء',
-                onConfirm: () => {
+            if(confirm("هل أنت متأكد من رغبتك في حذف هذا السؤال نهائياً؟")) {
+                // ✅ [OPT-22] استخدم الكاش المحلي بدلاً من قراءة الوثيقة من الـ server
                 const cachedQ = cachedAdminQuestions.find(q => q.uid === id);
                 const subjectKey = cachedQ ? cachedQ.subject : null;
                 const qText = cachedQ ? cachedQ.question : "سؤال";
+
                 db.collection("questions").doc(id).delete().then(() => {
                     showToast("تم حذف السؤال!");
                     logAdminAction("حذف سؤال", qText.substring(0, 40) + "...");
@@ -4216,8 +4088,7 @@ html, body {
                     cachedAdminQuestions = cachedAdminQuestions.filter(q => q.uid !== id);
                     openAdminPanel();
                 });
-                }
-            });
+            }
         }
 
         function resetQuestionForm() {
@@ -4306,18 +4177,6 @@ html, body {
                 localStorage.setItem('amer_quiz_theme', 'light');
             }
         }
-        <!-- ══════ مودال مخصص يحل محل confirm() ══════ -->
-        <div id="custom-modal-overlay" class="modal-overlay" style="display:none;" onclick="handleModalOverlayClick(event)">
-            <div class="modal-box" id="modal-box">
-                <div class="modal-icon-wrap" id="modal-icon-wrap">⚠️</div>
-                <h3 class="modal-title" id="modal-title">تأكيد</h3>
-                <p class="modal-message" id="modal-message"></p>
-                <div class="modal-actions">
-                    <button class="modal-btn modal-btn-confirm" id="modal-confirm-btn">تأكيد</button>
-                    <button class="modal-btn modal-btn-cancel" id="modal-cancel-btn">إلغاء</button>
-                </div>
-            </div>
-        </div>
     </script>
 </body>
 </html>
