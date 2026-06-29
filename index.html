@@ -455,18 +455,38 @@ html, body {
             margin: 8px 0; text-align: right; width: 100%; cursor: pointer;
             font-size: 15px; display: flex; justify-content: space-between;
             align-items: center; transition: all 0.15s; box-sizing: border-box;
-            word-break: break-word;
+            word-break: break-word; color: var(--text-main);
         }
         .option-node:hover:not(:disabled) {
-            border-color: var(--primary); background: var(--bg-gradient);
+            border-color: var(--primary); background: var(--primary-light);
+            color: var(--text-main);
         }
         .option-node.correct {
             background: #d1fae5 !important; border-color: #10b981 !important;
-            color: #065f46; font-weight: 700;
+            color: #065f46 !important; font-weight: 700;
         }
         .option-node.wrong {
             background: #fee2e2 !important; border-color: #ef4444 !important;
-            color: #991b1b; font-weight: 700;
+            color: #991b1b !important; font-weight: 700;
+        }
+        /* ✅ إصلاح الوضع الليلي — الخيارات واضحة بتباين كافٍ */
+        body.dark-mode .option-node {
+            background: #1e2d45;
+            border-color: #3a4f6a;
+            color: #e2e8f0;
+        }
+        body.dark-mode .option-node:hover:not(:disabled) {
+            background: #1a3a5c;
+            border-color: var(--primary);
+            color: #f0f6ff;
+        }
+        body.dark-mode .option-node.correct {
+            background: #064e3b !important; border-color: #10b981 !important;
+            color: #a7f3d0 !important;
+        }
+        body.dark-mode .option-node.wrong {
+            background: #450a0a !important; border-color: #ef4444 !important;
+            color: #fca5a5 !important;
         }
 
         /* الشرح */
@@ -767,12 +787,36 @@ html, body {
         .q-stat-rate { background: var(--primary-light); color: var(--primary);
             }
 
-        .nav-tabs { display: flex; gap: 5px; border-bottom: 2px solid var(--border); margin-bottom: 20px; flex-wrap: wrap;
-            }
-        .nav-tab-link { padding: 9px 14px; font-weight: bold; cursor: pointer; color: var(--text-muted); font-size: 13px;
-            border-bottom: 3px solid transparent; transition: var(--transition); white-space: nowrap; }
-        .nav-tab-link.active { color: var(--primary); border-bottom-color: var(--primary);
-            }
+        /* تبويبات لوحة التحكم — أفقية دائماً على كل الأجهزة */
+        .nav-tabs {
+            display: flex;
+            flex-wrap: nowrap;          /* منع الالتفاف في كل الأحوال */
+            overflow-x: auto;           /* سكرول أفقي لو ضاقت الشاشة */
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            border-bottom: 2px solid var(--border);
+            margin-bottom: 20px;
+            gap: 0;
+        }
+        .nav-tabs::-webkit-scrollbar { display: none; }
+        .nav-tab-link {
+            flex-shrink: 0;             /* لا يتقلص أبداً */
+            padding: 10px 16px;
+            font-weight: 700;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-size: 13px;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-family: 'Tajawal', sans-serif;
+        }
+        .nav-tab-link.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: var(--primary-light);
+            border-radius: 8px 8px 0 0;
+        }
 
         .q-nav-dot { width: 35px; height: 35px; border-radius: 50%; border: 2px solid var(--border);
             background: var(--card-bg); color: var(--text-main); font-weight: bold; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: var(--transition); font-size: 13px;
@@ -813,10 +857,7 @@ html, body {
                 margin: 8px 0 !important; font-size: 15px; padding: 12px;
                 flex-direction: column; align-items: flex-start; gap: 8px; text-align: right; }
             .option-node i { align-self: flex-end; }
-            .nav-tabs { flex-wrap: wrap; gap: 4px; overflow-x: auto;
-                }
-            .nav-tab-link { padding: 8px 10px; font-size: 12px;
-                }
+            .nav-tab-link { padding: 9px 12px; font-size: 12px; }
             .admin-header-box { flex-direction: column; align-items: flex-start; gap: 10px;
                 }
             .tabs-nav { flex-direction: column; width: 100%;
@@ -889,7 +930,7 @@ html, body {
                 </div>
 
                 <div class="nav-tabs">
-                    <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')">🏠 لوحة التحكم</div>
+                    <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')">🏠 الصفحة الرئيسية</div>
                     <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')">👤 ملف الطالب</div>
                     <div id="tab-link-leaders" class="nav-tab-link" onclick="showDashboardTab('leaders')">🏆 لوحة الأوائل</div>
                 </div>
@@ -1017,9 +1058,6 @@ html, body {
 
                 <!-- ─── معلومات المادة في الأعلى ─── -->
                 <div class="picker-top-area">
-                    <div class="picker-lib-back" onclick="showView('view-dashboard')">
-                        المكتبة <i class="fa-solid fa-arrow-left"></i>
-                    </div>
                     <div class="picker-bank-title">
                         بنك أسئلة <span id="picker-subject-name" style="color:var(--primary); font-weight:900;">—</span>
                     </div>
@@ -1029,14 +1067,6 @@ html, body {
                     <!-- شارة المحاولات أو الوضع التدريبي -->
                     <div id="picker-attempts-badge" class="picker-badge has-attempts">
                         <i class="fa-solid fa-arrow-left"></i> جاري التحميل...
-                    </div>
-                    <!-- نقاط ديكورية تُحاكي التصميم -->
-                    <div class="picker-dots-row">
-                        <span class="picker-dot"></span>
-                        <span class="picker-dot"></span>
-                        <span class="picker-dot active"></span>
-                        <span class="picker-dot"></span>
-                        <span class="picker-dot"></span>
                     </div>
                 </div>
 
@@ -1063,11 +1093,11 @@ html, body {
 
                     <!-- شريط + أزرار -->
                     <div class="picker-slider-wrap">
-                        <button class="picker-btn" onclick="adjustPickerCount(1)">+</button>
+                        <button class="picker-btn" onclick="adjustPickerCount(-1)">−</button>
                         <input type="range" class="picker-slider" id="picker-slider"
                                min="5" max="10" step="1" value="10"
                                oninput="updatePickerDisplay(this.value)">
-                        <button class="picker-btn" onclick="adjustPickerCount(-1)">−</button>
+                        <button class="picker-btn" onclick="adjustPickerCount(1)">+</button>
                     </div>
 
                     <!-- التنقل -->
