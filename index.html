@@ -216,6 +216,7 @@ html, body {
         .picker-digits-row {
             display: flex; align-items: center;
             justify-content: center; gap: 1px;
+            direction: ltr; /* ✅ إصلاح عكس الأرقام في صفحات RTL العربية */
         }
         .picker-digit-slot {
             display: inline-flex; overflow: hidden;
@@ -240,8 +241,69 @@ html, body {
         .picker-digit-inner.anim-down { animation: digitSlideDown 0.22s cubic-bezier(0.22,1,0.36,1) both; }
         .picker-digit-inner.anim-none { animation: none; }
 
-        /* شريط السحب */
-        .picker-slider-wrap {
+        /* لمسات تصميمية مميزة — تمييز العداد */
+        .picker-top-area {
+            padding: 4px 2px 18px 2px; text-align: right;
+            position: relative;
+        }
+        /* خط تدرج زخرفي في الخلفية */
+        .picker-top-area::before {
+            content: '';
+            position: absolute;
+            top: -8px; left: -16px; right: -16px; height: 200px;
+            background: radial-gradient(ellipse at 70% 40%, rgba(59,130,246,0.08) 0%, transparent 70%);
+            pointer-events: none;
+            border-radius: 0 0 50% 50%;
+        }
+        /* منطقة الرقم — خلفية خفيفة */
+        .picker-number-wrap {
+            display: flex; justify-content: center; align-items: center;
+            height: 118px; margin-bottom: 6px;
+            cursor: ns-resize; user-select: none; overflow: hidden;
+            background: var(--bg-gradient);
+            border-radius: 16px;
+            border: 1.5px solid var(--border);
+            position: relative;
+        }
+        /* نسبة المختار / المتاح */
+        .picker-count-ratio {
+            text-align: center;
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-bottom: 14px;
+            letter-spacing: 0.05em;
+        }
+        .picker-count-ratio span { color: var(--primary); font-weight: 700; }
+        /* خط أعلى البطاقة البيضاء */
+        .picker-white-card {
+            background: var(--card-bg); border-radius: 22px;
+            padding: 0 22px 22px 22px;
+            box-shadow: 0 6px 30px rgba(0,0,0,0.10);
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+        .picker-card-accent {
+            height: 5px;
+            background: linear-gradient(90deg, var(--primary), #7c3aed, #ec4899);
+            margin: 0 -22px 20px -22px;
+            border-radius: 0;
+        }
+        /* أزرار + و - مميزة */
+        .picker-btn {
+            width: 38px; height: 38px; border-radius: 10px;
+            border: 1.5px solid var(--border);
+            background: var(--card-bg); color: var(--primary);
+            font-size: 20px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.15s; line-height: 1; font-family: monospace;
+        }
+        .picker-btn:hover  { background: var(--primary); color: white; border-color: var(--primary); }
+        .picker-btn:active { transform: scale(0.88); }
+        /* منع تمدد الصفحة عند رفع الإصبع (iOS bounce) */
+        #view-count-picker, #view-arena {
+            overscroll-behavior: none;
+            -webkit-overflow-scrolling: auto;
+        }
             width: 100%; display: flex; align-items: center; gap: 14px;
             margin-bottom: 28px;
         }
@@ -980,6 +1042,9 @@ html, body {
 
                 <!-- ─── البطاقة المركزية ─── -->
                 <div class="picker-white-card">
+                    <!-- خط تدرج أعلى البطاقة -->
+                    <div class="picker-card-accent"></div>
+
                     <div class="picker-card-header">
                         <div class="picker-question-label">كم عدد الأسئلة؟</div>
                         <div class="picker-max-label">المتاح <span id="picker-max-label-num">0</span> سؤال</div>
@@ -987,26 +1052,28 @@ html, body {
 
                     <!-- الرقم المتحرك — slot machine لكل خانة -->
                     <div class="picker-number-wrap" id="picker-drag-zone">
-                        <div class="picker-digits-row" id="picker-digit-display">
-                            <!-- تُبنى ديناميكياً بـ _renderPickerDigits() -->
-                        </div>
-                        <!-- مخفي — المنطق الداخلي يقرأ منه القيمة -->
+                        <div class="picker-digits-row" id="picker-digit-display"></div>
                         <div id="picker-number-display" style="display:none;">10</div>
+                    </div>
+
+                    <!-- نسبة المختار من المتاح -->
+                    <div class="picker-count-ratio">
+                        <span id="picker-selected-count">10</span> سؤال من أصل <span id="picker-total-ratio">0</span>
                     </div>
 
                     <!-- شريط + أزرار -->
                     <div class="picker-slider-wrap">
-                        <button class="picker-btn" onclick="adjustPickerCount(-1)">−</button>
+                        <button class="picker-btn" onclick="adjustPickerCount(1)">+</button>
                         <input type="range" class="picker-slider" id="picker-slider"
                                min="5" max="10" step="1" value="10"
                                oninput="updatePickerDisplay(this.value)">
-                        <button class="picker-btn" onclick="adjustPickerCount(1)">+</button>
+                        <button class="picker-btn" onclick="adjustPickerCount(-1)">−</button>
                     </div>
 
                     <!-- التنقل -->
                     <div class="picker-nav">
                         <span class="picker-back-link" onclick="showView('view-dashboard')">
-                            السابق <i class="fa-solid fa-arrow-right"></i>
+                            الصفحة الرئيسية <i class="fa-solid fa-arrow-right"></i>
                         </span>
                         <button class="picker-next-btn" onclick="launchArenaWithCount()">
                             <i class="fa-solid fa-chevron-left"></i> التالي
@@ -1038,13 +1105,17 @@ html, body {
                     </div>
                 </div>
 
-                <!-- شريط الإجراءات — أيقونتان فقط -->
+                <!-- شريط الإجراءات العلوي: تمييز + إبلاغ + حفظ وخروج -->
                 <div class="arena-actions">
                     <button class="arena-action-btn" id="btn-flag-action" onclick="toggleFlagQuestion()">
-                        <i class="fa-solid fa-thumbtack"></i> تمييز للمراجعة
+                        <i class="fa-solid fa-thumbtack"></i> تمييز
                     </button>
                     <button class="arena-action-btn" onclick="reportQuestionProblem()">
-                        <i class="fa-solid fa-flag"></i> إبلاغ عن خطأ
+                        <i class="fa-solid fa-flag"></i> إبلاغ
+                    </button>
+                    <button class="arena-action-btn" onclick="saveAndExitQuizArena()"
+                            style="color:var(--warning); border-color:var(--warning);">
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ وخروج
                     </button>
                 </div>
 
@@ -1056,19 +1127,11 @@ html, body {
                 <!-- الخيارات -->
                 <div id="arena-options-box"></div>
 
-                <!-- الشرح -->
-                <div id="arena-explanation-box" class="explanation-box">
-                    <strong style="color:var(--primary); font-size:13px;">
-                        <i class="fa-solid fa-circle-info"></i> الشرح:
-                    </strong>
-                    <p id="arena-explanation-text" style="margin:6px 0 0 0; font-size:14px;"></p>
-                </div>
-
-                <!-- أزرار التنقل -->
+                <!-- أزرار التنقل — فوق الشرح مباشرة -->
                 <div class="arena-nav-row" id="arena-nav-buttons" style="display:none;">
                     <button class="arena-nav-prev" id="btn-prev-question"
                             onclick="goToPrevQuestion()">
-                        <i class="fa-solid fa-arrow-right"></i>
+                        <i class="fa-solid fa-arrow-right"></i> السابق
                     </button>
                     <button class="arena-nav-next" id="btn-next-question"
                             onclick="advanceArenaQuestion()">
@@ -1076,10 +1139,13 @@ html, body {
                     </button>
                 </div>
 
-                <!-- حفظ وخروج -->
-                <button class="arena-exit-btn" onclick="saveAndExitQuizArena()">
-                    <i class="fa-solid fa-floppy-disk"></i> حفظ وخروج مؤقت
-                </button>
+                <!-- الشرح — بعد التنقل -->
+                <div id="arena-explanation-box" class="explanation-box">
+                    <strong style="color:var(--primary); font-size:13px;">
+                        <i class="fa-solid fa-circle-info"></i> الشرح:
+                    </strong>
+                    <p id="arena-explanation-text" style="margin:6px 0 0 0; font-size:14px;"></p>
+                </div>
             </div>
 
             <div class="card" id="view-result" style="display: none;">
@@ -2053,6 +2119,9 @@ html, body {
                 document.getElementById('picker-total-text').textContent   = total;
                 document.getElementById('picker-max-label-num').textContent = total;
                 document.getElementById('picker-subject-name').textContent  = fixedSubjects[activeCategory] || activeCategory;
+                // ✅ نسبة المختار من المتاح
+                const totRatio = document.getElementById('picker-total-ratio');
+                if (totRatio) totRatio.textContent = total;
 
                 const slider = document.getElementById('picker-slider');
                 slider.min   = Math.min(5, total);
@@ -2115,16 +2184,13 @@ html, body {
             const newVal    = parseInt(val);
             const direction = newVal > _pickerLastVal ? 'up' : (newVal < _pickerLastVal ? 'down' : 'none');
             _pickerLastVal  = newVal;
-
-            // تحديث القيمة الخفية (يقرأها launchArenaWithCount عبر الـ slider)
             const hidden = document.getElementById('picker-number-display');
             if (hidden) hidden.textContent = newVal;
-
-            // تحديث تدرج الشريط
             const slider = document.getElementById('picker-slider');
             if (slider) _updateSliderFill(slider);
-
-            // رسم الأرقام بأنيميشن Slot Machine
+            // ✅ تحديث نسبة المختار من المتاح
+            const sel = document.getElementById('picker-selected-count');
+            if (sel) sel.textContent = newVal;
             _renderPickerDigits(newVal, direction);
         }
 
