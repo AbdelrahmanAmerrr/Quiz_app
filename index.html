@@ -438,6 +438,41 @@ html, body {
         body.dark-mode [style*="color:#16a34a"]       { color: #86efac !important; }
         body.dark-mode [style*="color:#b45309"]       { color: #fbbf24 !important; }
 
+        /* ══════ أنيميشن شعار التحميل — Fade-in & Scale ══════ */
+        #view-loading { display: flex; width: 100%; }
+        .loading-logo-wrap {
+            display: flex; align-items: center; gap: 12px;
+            opacity: 0; transform: scale(0.6);
+            animation: logoFadeScale 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .loading-logo-icon {
+            font-size: 38px;
+            background: linear-gradient(45deg, #2563eb, #ec4899);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: logoIconPulse 1.8s ease-in-out 0.65s infinite;
+        }
+        .loading-logo-text {
+            font-size: 36px; font-weight: 900;
+            background: linear-gradient(45deg, #2563eb, #ec4899);
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        @keyframes logoFadeScale {
+            0%   { opacity: 0; transform: scale(0.6); }
+            60%  { opacity: 1; transform: scale(1.08); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes logoIconPulse {
+            0%, 100% { transform: scale(1); }
+            50%      { transform: scale(1.12); }
+        }
+        .loading-sub-text {
+            color: var(--text-muted); font-size: 14px; margin: 18px 0 0 0;
+            opacity: 0; animation: fadeInUp 0.5s ease 0.5s forwards;
+        }
+
         /* ══════ مودال مخصص ══════ */
         .modal-overlay {
             position: fixed; inset: 0; z-index: 9999;
@@ -928,10 +963,13 @@ html, body {
         
         <div class="main-zone">
             
-            <!-- شاشة تحميل أثناء استعادة الجلسة -->
-            <div class="card" id="view-loading" style="display:none; text-align:center; padding:60px 20px;">
-                <i class="fa-solid fa-spinner fa-spin" style="font-size:40px; color:var(--primary); margin-bottom:16px; display:block;"></i>
-                <p style="color:var(--text-muted); font-size:16px; margin:0;">جاري التحقق من هويتك...</p>
+            <!-- شاشة تحميل أثناء استعادة الجلسة — أنيميشن شعار AmerQuiz -->
+            <div id="view-loading" style="display:none; min-height:70vh; align-items:center; justify-content:center; flex-direction:column;">
+                <div class="loading-logo-wrap">
+                    <i class="fa-solid fa-graduation-cap loading-logo-icon"></i>
+                    <span class="loading-logo-text">AmerQuiz</span>
+                </div>
+                <p class="loading-sub-text">جاري التحقق من هويتك...</p>
             </div>
 
             <div class="card" id="view-register" style="display: none;">
@@ -4302,7 +4340,7 @@ html, body {
                 if (el) el.style.display = "none";
             });
             const target = document.getElementById(viewId);
-            if (target) target.style.display = "block";
+            if (target) target.style.display = (viewId === 'view-loading') ? "flex" : "block";
         }
 
         function toggleTheme() { 
