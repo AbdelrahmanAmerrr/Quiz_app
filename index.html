@@ -6,6 +6,10 @@
     <title>AmerQuiz - النظام الأكاديمي المطور</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- خطوط الهوية البصرية الجديدة -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Playfair+Display:wght@600;700;900&family=DM+Sans:wght@400;500;600;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -37,36 +41,41 @@ html, body {
 }
 
         :root {
-            --bg-gradient: linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%);
-            --card-bg: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --primary: #2563eb;
-            --primary-light: #dbeafe;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --border: #e2e8f0;
-            --radius-sm: 12px;
-            --radius-md: 20px;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            /* ═══ الهوية البصرية الكلاسيكية الفاخرة ═══ */
+            --bg-main:        #FDFBF7;
+            --bg-gradient:    linear-gradient(135deg, #FDFBF7 0%, #F5F0E8 100%);
+            --card-bg:        #FFFFFF;
+            --text-main:      #0F1A2C;
+            --text-muted:     #6B7280;
+            --primary:        #C5A059;          /* ذهبي مطفأ */
+            --primary-dark:   #A8853D;
+            --primary-light:  rgba(197,160,89,0.09);
+            --success:        #2D6A4F;          /* أخضر كحلي هادئ */
+            --danger:         #8B2635;          /* أحمر داكن رصين */
+            --warning:        #B8860B;          /* ذهبي محروق */
+            --border:         #DDD5C5;          /* حدود بيجية دافئة */
+            --radius-sm:      8px;
+            --radius-md:      8px;
+            --shadow:         0 4px 20px rgba(15,26,44,0.07);
+            --transition:     all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
         }
         
         body.dark-mode {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            --card-bg: #1e293b;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --primary: #3b82f6;
-            --primary-light: #1e3a8a;
-            --border: #334155;
-            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+            --bg-main:        #0B111E;          /* أزرق نفطي عميق */
+            --bg-gradient:    linear-gradient(135deg, #0B111E 0%, #0F1828 100%);
+            --card-bg:        #162032;          /* أزرق أكسفورد */
+            --text-main:      #E2E8F0;          /* أبيض حليبي */
+            --text-muted:     #8899AA;
+            --primary:        #D4AF37;          /* ذهبي معتق */
+            --primary-dark:   #B8960D;
+            --primary-light:  rgba(212,175,55,0.10);
+            --border:         #1E3050;
+            --shadow:         0 4px 20px rgba(0,0,0,0.35);
         }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            background: var(--bg-gradient);
+            font-family: 'DM Sans', 'Tajawal', system-ui, sans-serif;
+            background: var(--bg-main);
             color: var(--text-main);
             margin: 0; padding: 0;
             min-height: 100vh;
@@ -96,63 +105,96 @@ html, body {
             flex-wrap: wrap;
         }
 
-        .brand { font-size: 28px; font-weight: 900; background: linear-gradient(45deg, #2563eb, #ec4899);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; cursor: pointer; }
+        /* ═══ الهيدر ═══ */
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 24px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            box-shadow: 0 1px 8px rgba(15,26,44,0.06);
+            position: sticky; top: 0; z-index: 100;
+            flex-wrap: wrap; gap: 12px;
+        }
+        .header-controls { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+
+        /* ═══ شعار المنصة — مونوغرام A ═══ */
+        .brand-wrap {
+            display: flex; align-items: center; gap: 10px;
+            cursor: pointer; text-decoration: none;
+        }
+        .logo-badge {
+            width: 36px; height: 36px; border-radius: 50%;
+            background: linear-gradient(135deg, #C5A059 0%, #A8853D 100%);
+            display: flex; align-items: center; justify-content: center;
+            font-family: 'Playfair Display', serif;
+            font-weight: 900; font-size: 18px; color: #FDFBF7;
+            box-shadow: 0 2px 8px rgba(197,160,89,0.45);
+            flex-shrink: 0; letter-spacing: -1px;
+        }
+        body.dark-mode .logo-badge {
+            background: linear-gradient(135deg, #D4AF37 0%, #B8960D 100%);
+            box-shadow: 0 2px 10px rgba(212,175,55,0.4);
+        }
+        .brand-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 21px; font-weight: 700;
+            color: var(--text-main); letter-spacing: 0.3px;
+            line-height: 1;
+        }
+        .brand-name span { color: var(--primary); }
         
         .app-layout { display: grid;
             grid-template-columns: 1fr; max-width: 900px; margin: 25px auto; gap: 25px; padding: 0 20px;
             }
-        .main-zone { display: flex; flex-direction: column; gap: 25px;
-            }
+        .main-zone { display: flex; flex-direction: column; gap: 25px; }
 
         .card { 
             background: var(--card-bg);
-            border-radius: var(--radius-md); padding: 25px; 
-            border: 2px solid var(--border); box-shadow: var(--shadow); position: relative; 
-            transition: var(--transition); animation: fadeInUp 0.4s ease-out;
+            border-radius: var(--radius-md); padding: 24px; 
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow); position: relative; 
+            transition: var(--transition); animation: fadeInUp 0.35s ease-out;
             box-sizing: border-box;
-            }
-        .card:hover { transform: translateY(-4px);
-            box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.08); }
-        body.dark-mode .card:hover { box-shadow: 0 15px 30px -5px rgba(0, 0, 0, 0.4);
-            }
-        
+        }
+        .card:hover { transform: translateY(-3px);
+            box-shadow: 0 8px 28px rgba(15,26,44,0.10); }
+        body.dark-mode .card:hover { box-shadow: 0 8px 28px rgba(0,0,0,0.4); }
+
         .stats-grid { display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 15px; }
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 14px; }
         .stat-box { background: var(--bg-gradient); padding: 15px;
-            border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border); transition: var(--transition);
-            }
-        .stat-box:hover { transform: scale(1.04);
-            }
-        .stat-box i { font-size: 24px; color: var(--primary); margin-bottom: 8px;
-            }
+            border-radius: var(--radius-sm); text-align: center; border: 1px solid var(--border); transition: var(--transition); }
+        .stat-box:hover { transform: scale(1.03); }
+        .stat-box i { font-size: 22px; color: var(--primary); margin-bottom: 8px; }
 
-        .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;
-            }
-        .subject-card { background: var(--card-bg); border: 2px solid var(--border); border-radius: var(--radius-md);
-            padding: 20px 15px; text-align: center; cursor: pointer; transition: var(--transition); display: flex; flex-direction: column; align-items: center; gap: 10px;
-            }
-        .subject-card i { font-size: 28px; color: var(--primary); transition: var(--transition);
-            }
-        .subject-card:hover { transform: translateY(-5px); border-color: var(--primary); box-shadow: var(--shadow);
-            }
-        .subject-card:hover i { transform: scale(1.15) rotate(5deg);
-            }
-        .subject-card.selected { border-color: var(--primary); background: var(--primary-light);
-            }
-        .subject-card .q-count-badge { font-size: 11px; background: var(--border); padding: 3px 8px; border-radius: 20px;
-            color: var(--text-muted); font-weight: bold; }
+        .subject-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; margin-top: 14px; }
+        .subject-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: var(--radius-sm);
+            padding: 18px 14px; text-align: center; cursor: pointer; transition: var(--transition);
+            display: flex; flex-direction: column; align-items: center; gap: 10px; }
+        .subject-card i { font-size: 26px; color: var(--primary); transition: var(--transition); }
+        .subject-card:hover { transform: translateY(-3px); border-color: var(--primary); box-shadow: var(--shadow); }
+        .subject-card:hover i { transform: scale(1.12); }
+        .subject-card.selected { border-color: var(--primary); background: var(--primary-light); }
+        .subject-card .q-count-badge { font-size: 11px; background: var(--border); padding: 3px 8px;
+            border-radius: 4px; color: var(--text-muted); font-weight: 600; }
 
-        .btn-launch { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white; border: none; padding: 14px; font-size: 16px; font-weight: bold; border-radius: var(--radius-sm); cursor: pointer; width: 100%; display: flex; align-items: center;
-            justify-content: center; gap: 10px; transition: var(--transition); box-sizing: border-box; }
-        .btn-launch:hover { opacity: 0.95;
-            transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-            }
-        .btn-launch:active { transform: translateY(0);
-            }
-        .btn-launch:disabled { opacity: 0.6; cursor: not-allowed; transform: none;
-            }
+        /* ═══ زر الإطلاق — ذهبي كلاسيكي ═══ */
+        .btn-launch { 
+            background: linear-gradient(135deg, #C5A059 0%, #A8853D 100%);
+            color: #FDFBF7; border: none; padding: 13px; font-size: 15px;
+            font-weight: 700; border-radius: var(--radius-sm); cursor: pointer; width: 100%;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: var(--transition); box-sizing: border-box;
+            letter-spacing: 0.3px; font-family: 'DM Sans', 'Tajawal', sans-serif;
+        }
+        .btn-launch:hover { opacity: 0.92; transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(197,160,89,0.35); }
+        .btn-launch:active { transform: translateY(0); }
+        .btn-launch:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+        body.dark-mode .btn-launch {
+            background: linear-gradient(135deg, #D4AF37 0%, #B8960D 100%);
+            color: #0F1A2C;
+        }
         
         /* === شاشة اختيار عدد الأسئلة — تصميم جديد === */
         #view-count-picker {
@@ -198,7 +240,7 @@ html, body {
 
         /* البطاقة البيضاء */
         .picker-white-card {
-            background: var(--card-bg); border-radius: 22px;
+            background: var(--card-bg); border-radius: 8px;
             padding: 24px 22px 22px 22px;
             box-shadow: 0 6px 30px rgba(0,0,0,0.10);
             border: 1px solid var(--border);
@@ -261,7 +303,7 @@ html, body {
             height: 118px; margin-bottom: 6px;
             cursor: ns-resize; user-select: none; overflow: hidden;
             background: var(--bg-gradient);
-            border-radius: 16px;
+            border-radius: 8px;
             border: 1.5px solid var(--border);
             position: relative;
         }
@@ -276,7 +318,7 @@ html, body {
         .picker-count-ratio span { color: var(--primary); font-weight: 700; }
         /* خط أعلى البطاقة البيضاء */
         .picker-white-card {
-            background: var(--card-bg); border-radius: 22px;
+            background: var(--card-bg); border-radius: 8px;
             padding: 0 22px 22px 22px;
             box-shadow: 0 6px 30px rgba(0,0,0,0.10);
             border: 1px solid var(--border);
@@ -290,7 +332,7 @@ html, body {
         }
         /* أزرار + و - مميزة */
         .picker-btn {
-            width: 38px; height: 38px; border-radius: 10px;
+            width: 38px; height: 38px; border-radius: 8px;
             border: 1.5px solid var(--border);
             background: var(--card-bg); color: var(--primary);
             font-size: 20px; font-weight: 600; cursor: pointer; flex-shrink: 0;
@@ -344,7 +386,7 @@ html, body {
         .picker-back-link:hover { color: var(--primary); }
         .picker-next-btn {
             background: var(--primary); color: white; border: none;
-            padding: 13px 32px; border-radius: 12px;
+            padding: 13px 32px; border-radius: 8px;
             font-size: 15px; font-weight: 700; cursor: pointer;
             display: flex; align-items: center; gap: 8px;
             font-family: 'Tajawal', sans-serif;
@@ -390,13 +432,14 @@ html, body {
         .circular-timer circle { fill: none; stroke-width: 4; }
         .circular-timer .bg-circle { stroke: var(--border); }
         .circular-timer .progress-circle {
-            stroke: #f59e0b; stroke-dasharray: 138; stroke-dashoffset: 0;
+            stroke: var(--primary); stroke-dasharray: 138; stroke-dashoffset: 0;
             transition: stroke-dashoffset 1s linear; stroke-linecap: round;
         }
         .circular-timer .timer-text {
             position: absolute; top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            font-weight: 800; font-size: 13px; font-family: monospace;
+            font-weight: 800; font-size: 13px;
+            font-family: 'DM Sans', monospace; color: var(--primary);
         }
 
         /* شريط الإجراءات — أيقونات صغيرة */
@@ -406,18 +449,19 @@ html, body {
         .arena-action-btn {
             flex: 1; display: flex; align-items: center; justify-content: center;
             gap: 5px; padding: 8px 6px; border: 1px solid var(--border);
-            border-radius: var(--radius-sm); background: var(--bg-gradient);
+            border-radius: 8px; background: var(--card-bg);
             font-size: 12px; font-weight: 600; color: var(--text-muted);
             cursor: pointer; transition: all 0.15s; white-space: nowrap;
+            font-family: 'DM Sans','Tajawal',sans-serif;
         }
         .arena-action-btn:hover { border-color: var(--primary); color: var(--primary); }
-        .arena-action-btn.starred { color: #b45309; border-color: #f59e0b;
-            background: #fff9db; }
-        .arena-action-btn.flagged  { color: #9333ea; border-color: #c084fc;
-            background: #faf5ff; }
-        /* ═══ إصلاح الوضع الليلي — جميع الأزرار والكروت ═══ */
-        body.dark-mode .ban-btn.ban-inactive { background: #1e3a5f !important; color: #93c5fd !important; }
-        body.dark-mode .ban-btn.ban-active   { background: #450a0a !important; color: #fca5a5 !important; }
+        .arena-action-btn.starred { color: var(--warning); border-color: var(--warning);
+            background: rgba(197,160,89,0.07); }
+        .arena-action-btn.flagged  { color: var(--primary); border-color: var(--primary);
+            background: var(--primary-light); }
+        /* ═══ إصلاح الوضع الليلي ═══ */
+        body.dark-mode .ban-btn.ban-inactive { background: rgba(255,255,255,0.04) !important; color: var(--text-muted) !important; border-color: var(--border) !important; }
+        body.dark-mode .ban-btn.ban-active   { background: rgba(212,175,55,0.14) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
 
         /* كروت نتيجة الاختبار */
         body.dark-mode .stat-box[style*="#d1fae5"] { background: #064e3b !important; }
@@ -447,17 +491,18 @@ html, body {
         }
         .loading-logo-icon {
             font-size: 38px;
-            background: linear-gradient(45deg, #2563eb, #ec4899);
+            background: linear-gradient(135deg, #C5A059, #A8853D);
             -webkit-background-clip: text; background-clip: text;
             -webkit-text-fill-color: transparent;
-            animation: logoIconPulse 1.8s ease-in-out 0.65s infinite;
+            animation: logoIconPulse 2s ease-in-out 0.65s infinite;
         }
         .loading-logo-text {
-            font-size: 36px; font-weight: 900;
-            background: linear-gradient(45deg, #2563eb, #ec4899);
+            font-size: 34px; font-weight: 700;
+            font-family: 'Playfair Display', serif;
+            background: linear-gradient(135deg, #C5A059, #A8853D);
             -webkit-background-clip: text; background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -0.5px;
+            letter-spacing: 0.5px;
         }
         @keyframes logoFadeScale {
             0%   { opacity: 0; transform: scale(0.6); }
@@ -481,7 +526,7 @@ html, body {
         }
         .modal-box {
             background: var(--card-bg); border: 1px solid var(--border);
-            border-radius: 20px; padding: 28px 24px 22px 24px;
+            border-radius: 8px; padding: 28px 24px 22px 24px;
             max-width: 360px; width: 100%; text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
             transform: scale(0.88) translateY(20px); opacity: 0;
@@ -493,7 +538,7 @@ html, body {
         .modal-message { font-size: 14px; color: var(--text-muted); line-height: 1.7; margin: 0 0 22px 0; }
         .modal-actions { display: flex; flex-direction: column; gap: 10px; }
         .modal-btn {
-            width: 100%; padding: 13px; border-radius: 12px;
+            width: 100%; padding: 13px; border-radius: 8px;
             font-size: 15px; font-weight: 700; border: none; cursor: pointer;
             font-family: 'Tajawal', sans-serif; transition: opacity 0.15s, transform 0.1s;
         }
@@ -625,7 +670,7 @@ html, body {
             }
         
         .practice-badge { background: var(--danger);
-            color: white; padding: 10px; border-radius: 10px; text-align: center; font-weight: bold; margin-bottom: 15px; display: none;
+            color: white; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; margin-bottom: 15px; display: none;
             }
         .resume-alert-box { background: linear-gradient(135deg, #fff9db 0%, #fff3bf 100%); border: 2px solid var(--warning);
             border-radius: var(--radius-sm); padding: 15px; margin-bottom: 20px; display: none; color: #856404;
@@ -647,7 +692,7 @@ html, body {
             top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 14px; font-family: monospace;
             }
 
-        .arena-progress-wrapper { width: 100%; background: var(--border); height: 8px; border-radius: 10px; overflow: hidden;
+        .arena-progress-wrapper { width: 100%; background: var(--border); height: 8px; border-radius: 8px; overflow: hidden;
             margin-bottom: 20px; }
         .arena-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--success));
             transition: width 0.3s ease; }
@@ -660,21 +705,22 @@ html, body {
             border-radius: 8px; border: 1px solid var(--border); box-sizing: border-box; background: var(--card-bg); color: var(--text-main);
             }
 
-        .admin-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--border);
+        .admin-header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border);
             padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 15px; }
-        .admin-title { font-size: 24px;
-            font-weight: 800; color: var(--warning); margin: 0; }
+        .admin-title {
+            font-family: 'Amiri','Tajawal',serif;
+            font-size: 20px; font-weight: 700; color: var(--text-main); margin: 0; }
         
         .tabs-nav { display: flex;
-            gap: 10px; background: var(--border); padding: 5px; border-radius: var(--radius-sm); margin-bottom: 25px; max-width: 600px; margin-right: auto; margin-left: auto; flex-wrap: wrap;
-            }
-        .tab-btn { flex: 1; padding: 10px; border: none; background: none; color: var(--text-muted);
-            font-weight: bold; border-radius: 8px; cursor: pointer; transition: var(--transition); font-size: 14px; min-width: 100px;
-            }
-        .tab-btn.active-upload { background: var(--success); color: white;
-            }
-        .tab-btn.active-students { background: var(--danger); color: white;
-            }
+            gap: 6px; background: var(--bg-gradient); padding: 4px; border-radius: 8px;
+            border: 1px solid var(--border); margin-bottom: 25px; max-width: 600px;
+            margin-right: auto; margin-left: auto; flex-wrap: wrap;
+        }
+        .tab-btn { flex: 1; padding: 9px; border: none; background: none; color: var(--text-muted);
+            font-weight: 600; border-radius: 6px; cursor: pointer; transition: var(--transition); font-size: 13px; min-width: 90px;
+        }
+        .tab-btn.active-upload   { background: var(--primary); color: #FDFBF7; }
+        .tab-btn.active-students { background: var(--success);  color: white; }
         .tab-btn.active-logs { background: var(--primary); color: white;
             }
         
@@ -713,21 +759,22 @@ html, body {
         .student-table td { padding: 12px;
             border-bottom: 1px solid var(--border); font-size: 14px; vertical-align: middle; }
         
-        .ban-btn { border: none;
-            padding: 6px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: var(--transition);
-            }
-        .ban-btn.ban-active { background: #fee2e2; color: #ef4444;
-            }
-        .ban-btn.ban-inactive { background: #d1fae5; color: #10b981;
-            }
-        
-        .hidden-tab { display: none !important;
-            }
+        .ban-btn { border: 1px solid var(--border);
+            padding: 6px 13px; border-radius: 8px; font-weight: 600; cursor: pointer;
+            transition: var(--transition); font-family: 'DM Sans','Tajawal',sans-serif;
+            display:inline-flex; align-items:center; gap:5px; font-size:13px;
+        }
+        .ban-btn.ban-active   { background: rgba(197,160,89,0.12); color: var(--primary); border-color: var(--primary); }
+        .ban-btn.ban-inactive { background: var(--bg-gradient); color: var(--text-muted); border-color: var(--border); }
+        body.dark-mode .ban-btn.ban-inactive { background: rgba(255,255,255,0.04) !important; color: var(--text-muted) !important; }
+        body.dark-mode .ban-btn.ban-active   { background: rgba(212,175,55,0.14) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
 
-        .xp-progress-container { background: var(--border); border-radius: 10px; height: 12px; width: 100%; margin-top: 8px;
+        .hidden-tab { display: none !important; }
+
+        .xp-progress-container { background: var(--border); border-radius: 8px; height: 10px; width: 100%; margin-top: 8px;
             overflow: hidden; position: relative; }
-        .xp-progress-bar { background: linear-gradient(90deg, #2563eb, #10b981); height: 100%;
-            width: 0%; transition: width 0.4s ease; }
+        .xp-progress-bar { background: linear-gradient(90deg, var(--primary), var(--primary-dark)); height: 100%;
+            width: 0%; transition: width 0.5s ease; }
         
         .achievements-grid { display: grid;
             grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px; margin-top: 15px; }
@@ -769,7 +816,7 @@ html, body {
         .admin-tab-top-btn {
             flex-shrink: 0;
             padding: 9px 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             border: 1.5px solid var(--border);
             background: var(--card-bg);
             color: var(--text-muted);
@@ -788,7 +835,7 @@ html, body {
         .admin-tab-top-btn.atab-active-orange { background: #ea580c; color: white; border-color: #ea580c; }
         /* بطاقات قسم الأدوات */
         .tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px; }
-        .tool-card { background: var(--bg-gradient); border: 1.5px solid var(--border); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+        .tool-card { background: var(--bg-gradient); border: 1.5px solid var(--border); border-radius: 8px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
         .tool-card h4 { margin: 0; font-size: 14px; }
         .tool-card p { margin: 0; font-size: 12px; color: var(--text-muted); line-height: 1.5; }
         @media (max-width: 480px) { .tools-grid { grid-template-columns: 1fr; } }
@@ -811,7 +858,7 @@ html, body {
         .name-change-box {
             background: var(--bg-gradient);
             border: 1.5px solid var(--border);
-            border-radius: 14px;
+            border-radius: 8px;
             padding: 14px 16px;
             margin: 18px 0;
         }
@@ -820,7 +867,7 @@ html, body {
         .name-change-row { display: flex; gap: 8px; }
         .name-change-row input {
             flex: 1; padding: 10px 12px;
-            border-radius: 9px; border: 1.5px solid var(--border);
+            border-radius: 8px; border: 1.5px solid var(--border);
             background: var(--card-bg); color: var(--text-main);
             font-size: 14px; font-family: 'Tajawal', sans-serif;
         }
@@ -828,7 +875,7 @@ html, body {
         .name-change-row .btn-save-name {
             flex-shrink: 0; padding: 10px 16px;
             background: var(--primary); color: white;
-            border: none; border-radius: 9px;
+            border: none; border-radius: 8px;
             font-size: 13px; font-weight: 700;
             cursor: pointer; font-family: 'Tajawal', sans-serif;
             transition: opacity 0.2s;
@@ -840,18 +887,21 @@ html, body {
             border-right-color: #3b82f6; }
         
         .search-box { width: 100%;
-            padding: 12px; border-radius: 10px; border: 2px solid var(--border); background: var(--card-bg); color: var(--text-main); margin-bottom: 15px; box-sizing: border-box; font-size: 14px;
-            }
+            padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
+            background: var(--card-bg); color: var(--text-main); margin-bottom: 15px;
+            box-sizing: border-box; font-size: 14px;
+            font-family: 'DM Sans','Tajawal',sans-serif;
+            transition: var(--transition);
+        }
+        .search-box:focus { outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(197,160,89,0.10); }
         
         .q-stat-tag { display: inline-block;
-            padding: 4px 8px; font-size: 11px; border-radius: 6px; font-weight: bold; margin-left: 5px; margin-top: 5px;
-            }
-        .q-stat-success { background: #d1fae5; color: #065f46;
-            }
-        .q-stat-wrong { background: #fee2e2; color: #991b1b;
-            }
-        .q-stat-rate { background: var(--primary-light); color: var(--primary);
-            }
+            padding: 3px 8px; font-size: 11px; border-radius: 4px; font-weight: 600;
+            margin-left: 5px; margin-top: 5px; }
+        .q-stat-success { background: rgba(45,106,79,0.10); color: var(--success); }
+        .q-stat-wrong   { background: rgba(139,38,53,0.10); color: var(--danger); }
+        .q-stat-rate    { background: var(--primary-light); color: var(--primary); }
 
         /* تبويبات لوحة التحكم — أفقية دائماً على كل الأجهزة */
         .nav-tabs {
@@ -952,7 +1002,7 @@ html, body {
     <div id="toast" class="toast-msg"></div>
 
     <header>
-        <div class="brand" onclick="showDashboardTab('dash')"><i class="fa-solid fa-graduation-cap"></i> AmerQuiz</div>
+        <div class="brand-wrap" onclick="showDashboardTab('dash')"><div class="logo-badge">A</div><span class="brand-name">Amer<span>Quiz</span></span></div>
         <div style="display: flex; align-items: center; gap: 15px;">
             <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
             <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
@@ -979,7 +1029,7 @@ html, body {
                 
                 <div style="text-align: center; margin: 15px 0; color: var(--text-muted); font-weight: bold;">─ أو التسجيل اليدوي التقليدي ─</div>
 
-                <input type="text" id="reg-student-name" placeholder="اكتب اسمك الثلاثي بدقة..." style="width:100%; padding:14px; border-radius:10px; border:2px solid var(--border); box-sizing:border-box; font-size:16px; background: var(--card-bg); color: var(--text-main);">
+                <input type="text" id="reg-student-name" placeholder="اكتب اسمك الثلاثي بدقة..." style="width:100%; padding:14px; border-radius:8px; border:2px solid var(--border); box-sizing:border-box; font-size:16px; background: var(--card-bg); color: var(--text-main);">
                 <button id="btn-manual-register" class="btn-launch" onclick="handleStudentRegistration()" style="margin-top: 20px;"><i class="fa-solid fa-rocket"></i> دخول سريع بالمنصة</button>
                 <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('admin')" style="color:var(--primary); text-decoration:none; font-weight:bold;">🔐 دخول إدارة المنصة</a></p>
             </div>
@@ -999,9 +1049,9 @@ html, body {
                 </div>
 
                 <div class="nav-tabs">
-                    <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')">🏠 الصفحة الرئيسية</div>
-                    <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')">👤 ملف الطالب</div>
-                    <div id="tab-link-leaders" class="nav-tab-link" onclick="showDashboardTab('leaders')">🏆 لوحة الأوائل</div>
+                    <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')"><i class="fa-solid fa-house-chimney fa-sm"></i> الرئيسية</div>
+                    <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')"><i class="fa-solid fa-circle-user fa-sm"></i> الملف الشخصي</div>
+                    <div id="tab-link-leaders" class="nav-tab-link" onclick="showDashboardTab('leaders')"><i class="fa-solid fa-ranking-star fa-sm"></i> لوحة الأوائل</div>
                 </div>
 
                 <div id="dash-subtab-container">
@@ -1067,7 +1117,7 @@ html, body {
                         <p style="font-size:11px; color:var(--text-muted); margin:4px 0 12px 0;">اضغط الصورة لتغييرها · الحد الأقصى 5MB</p>
 
                         <h2 id="profile-student-name" style="margin: 0 0 5px 0;"></h2>
-                        <span id="profile-student-title" class="q-stat-tag q-stat-rate" style="font-size:13px; padding:6px 12px; border-radius:20px;">طالب جامعي محارب</span>
+                        <span id="profile-student-title" class="q-stat-tag q-stat-rate" style="font-size:13px; padding:6px 12px; border-radius:8px;">طالب جامعي محارب</span>
                     </div>
 
                     <!-- ─── قسم تغيير الاسم ─── -->
@@ -1253,7 +1303,7 @@ html, body {
                 </div>
                 <h2 style="text-align: center; color: var(--success); font-weight: 900; font-size: 26px;">تم إنهاء جولة الامتحان بنجاح!</h2>
                 
-                <div id="result-motivational-msg" style="text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); margin: 10px 0; padding: 10px; background: var(--primary-light); border-radius: 10px;"></div>
+                <div id="result-motivational-msg" style="text-align: center; font-size: 18px; font-weight: bold; color: var(--primary); margin: 10px 0; padding: 10px; background: var(--primary-light); border-radius: 8px;"></div>
 
                 <div class="stats-grid" style="margin: 25px 0;">
                     <div class="stat-box" style="background: var(--primary-light);"><i class="fa-solid fa-bullseye"></i><div id="result-score" style="font-weight:900; font-size:20px;">0 / 0</div><span>الدرجة النهائية</span></div>
@@ -1265,7 +1315,7 @@ html, body {
                 <p id="result-xp-status" style="text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 25px;"></p>
                 
                 <button class="btn-launch" style="background: var(--success); margin-bottom: 12px;" onclick="toggleAnswersReviewZone()"><i class="fa-solid fa-magnifying-glass"></i> مراجعة كافة الأسئلة وإجاباتها</button>
-                <div id="review-answers-zone" style="display:none; max-height: 400px; overflow-y:auto; border:2px solid var(--border); padding:15px; border-radius:10px; margin-bottom:20px; background:var(--bg-gradient);"></div>
+                <div id="review-answers-zone" style="display:none; max-height: 400px; overflow-y:auto; border:2px solid var(--border); padding:15px; border-radius:8px; margin-bottom:20px; background:var(--bg-gradient);"></div>
 
                 <button class="btn-launch btn-back-to-dash" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
             </div>
@@ -1277,19 +1327,19 @@ html, body {
                         <h2 class="admin-title" style="margin:0 0 4px 0;"><i class="fa-solid fa-sliders"></i> لوحة تحكم الأدمن</h2>
                         <p style="color:var(--text-muted); font-size:13px; margin:0;">تحكّم في الأسئلة والطلاب والمحتوى بشكل مباشر</p>
                     </div>
-                    <button onclick="backToDashboard()" class="ban-btn btn-back-to-dash" style="font-size:13px; padding:8px 14px; border-radius:10px; font-weight:700; border:none; flex-shrink:0;">
+                    <button onclick="backToDashboard()" class="ban-btn btn-back-to-dash" style="font-size:13px; padding:8px 14px; border-radius:8px; font-weight:700; border:none; flex-shrink:0;">
                         <i class="fa-solid fa-arrow-right-from-bracket"></i> الرئيسية
                     </button>
                 </div>
 
                 <!-- ─── التبويبات الأفقية ─── -->
                 <div class="admin-tabs-top">
-                    <button onclick="switchAdminTab('tab-upload')"   id="btn-tab-upload"   class="admin-tab-top-btn atab-active">📥 الأسئلة</button>
-                    <button onclick="switchAdminTab('tab-students')" id="btn-tab-students" class="admin-tab-top-btn">👥 الطلاب</button>
-                    <button onclick="switchAdminTab('tab-stats')"    id="btn-tab-stats"    class="admin-tab-top-btn">📊 الإحصائيات</button>
-                    <button onclick="switchAdminTab('tab-reports'); loadAdminReports();" id="btn-tab-reports" class="admin-tab-top-btn">🚩 البلاغات <span id="reports-badge" style="display:none; background:#ef4444; color:#fff; border-radius:99px; padding:1px 6px; font-size:11px; margin-right:3px;">0</span></button>
-                    <button onclick="switchAdminTab('tab-tools')"    id="btn-tab-tools"    class="admin-tab-top-btn">⚙️ الأدوات</button>
-                    <button onclick="switchAdminTab('tab-logs')"     id="btn-tab-logs"     class="admin-tab-top-btn">📜 السجل</button>
+                    <button onclick="switchAdminTab('tab-upload')"   id="btn-tab-upload"   class="admin-tab-top-btn atab-active"><i class="fa-solid fa-file-lines fa-sm"></i> الأسئلة</button>
+                    <button onclick="switchAdminTab('tab-students')" id="btn-tab-students" class="admin-tab-top-btn"><i class="fa-solid fa-users fa-sm"></i> الطلاب</button>
+                    <button onclick="switchAdminTab('tab-stats')"    id="btn-tab-stats"    class="admin-tab-top-btn"><i class="fa-solid fa-chart-bar fa-sm"></i> الإحصائيات</button>
+                    <button onclick="switchAdminTab('tab-reports'); loadAdminReports();" id="btn-tab-reports" class="admin-tab-top-btn"><i class="fa-solid fa-flag fa-sm"></i> البلاغات <span id="reports-badge" style="display:none; background:#ef4444; color:#fff; border-radius:99px; padding:1px 6px; font-size:11px; margin-right:3px;">0</span></button>
+                    <button onclick="switchAdminTab('tab-tools')"    id="btn-tab-tools"    class="admin-tab-top-btn"><i class="fa-solid fa-sliders fa-sm"></i> الأدوات</button>
+                    <button onclick="switchAdminTab('tab-logs')"     id="btn-tab-logs"     class="admin-tab-top-btn"><i class="fa-solid fa-scroll fa-sm"></i> السجل</button>
                 </div>
 
                 <!-- ══════════ تبويب: الأسئلة ══════════ -->
@@ -1320,7 +1370,7 @@ html, body {
                     </div>
 
                     <!-- ── حذف الأسئلة ── -->
-                    <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:12px; padding:14px; margin:16px 0;">
+                    <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:8px; padding:14px; margin:16px 0;">
                         <h4 style="margin:0 0 12px 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> حذف الأسئلة</h4>
                         <div style="margin-bottom:10px;">
                             <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">حذف أسئلة مادة محددة:</label>
@@ -1387,7 +1437,7 @@ html, body {
                     <div style="margin-bottom: 10px; text-align: right;">
                         <button id="btn-bulk-delete-questions" class="ban-btn ban-active" style="display:none;" onclick="deleteSelectedQuestionsGroup()"><i class="fa-solid fa-trash"></i> حذف الأسئلة المحددة دفعة واحدة</button>
                     </div>
-                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px;" id="admin-questions-list">
+                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px;" id="admin-questions-list">
                         جاري تحميل بنك الأسئلة...
                     </div>
                 </div>
@@ -1399,7 +1449,7 @@ html, body {
                         <input type="text" id="admin-student-search"
                                placeholder="🔍 ابحث بالاسم..."
                                oninput="filterAdminStudentsByName()"
-                               style="padding:9px 14px; border-radius:10px; border:1.5px solid var(--border);
+                               style="padding:9px 14px; border-radius:8px; border:1.5px solid var(--border);
                                       background:var(--card-bg); color:var(--text-main);
                                       font-size:13px; font-family:'Tajawal',sans-serif; width:200px;">
                     </div>
@@ -1437,7 +1487,7 @@ html, body {
                     </div>
 
                     <!-- توزيع أسئلة المواد -->
-                    <div style="margin-bottom:16px; font-size:13px; display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-gradient); padding:12px; border-radius:10px; border:1px solid var(--border);">
+                    <div style="margin-bottom:16px; font-size:13px; display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-gradient); padding:12px; border-radius:8px; border:1px solid var(--border);">
                         <strong style="width:100%; margin-bottom:4px;">📚 توزيع الأسئلة على المواد:</strong>
                         <span id="subject-count-math">الرياضة: 0</span> |
                         <span id="subject-count-english">مصطلحات: 0</span> |
@@ -1447,12 +1497,12 @@ html, body {
                     </div>
 
                     <!-- أسهل / أصعب -->
-                    <div style="background:var(--card-bg); padding:14px; border-radius:12px; border:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr; gap:12px;">
-                        <div style="background:rgba(16,185,129,0.1); padding:10px; border-radius:10px;">
+                    <div style="background:var(--card-bg); padding:14px; border-radius:8px; border:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+                        <div style="background:rgba(16,185,129,0.1); padding:10px; border-radius:8px;">
                             <h5 style="margin:0 0 6px 0; color:#065f46; font-size:13px;"><i class="fa-solid fa-circle-check"></i> أسهل الأسئلة</h5>
                             <p id="admin-analytics-easiest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
                         </div>
-                        <div style="background:rgba(239,68,68,0.1); padding:10px; border-radius:10px;">
+                        <div style="background:rgba(239,68,68,0.1); padding:10px; border-radius:8px;">
                             <h5 style="margin:0 0 6px 0; color:#991b1b; font-size:13px;"><i class="fa-solid fa-circle-xmark"></i> أصعب الأسئلة</h5>
                             <p id="admin-analytics-hardest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
                         </div>
@@ -1531,7 +1581,7 @@ html, body {
                 <!-- ══════════ تبويب: السجل ══════════ -->
                 <div id="tab-logs" class="admin-tab-content hidden-tab">
                     <h3>📜 سجل نشاط الإدارة</h3>
-                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 12px; background: var(--bg-gradient);" id="admin-logs-list">
+                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-gradient);" id="admin-logs-list">
                         لا توجد عمليات مسجلة بالسجل حالياً.
                     </div>
                 </div>
@@ -2739,7 +2789,7 @@ html, body {
 
                 function buildCard(log, i, isFlag) {
                     return `
-                    <div style="padding:12px 14px; border-radius:10px; margin-bottom:10px;
+                    <div style="padding:12px 14px; border-radius:8px; margin-bottom:10px;
                         border: 1.5px solid ${isFlag ? '#f59e0b' : (log.isCorrect ? '#10b981' : '#ef4444')};
                         background: ${isFlag ? 'rgba(245,158,11,0.06)' : 'var(--bg-gradient)'};">
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
@@ -3645,7 +3695,7 @@ html, body {
                     const qKey      = r.questionId || r.questionText || r._id;
                     const repCount  = countByQ[qKey] || 1;
                     const card = document.createElement('div');
-                    card.style.cssText = `background:var(--bg-gradient); border:1px solid ${isPending ? '#fca5a5' : 'var(--border)'}; border-radius:10px; padding:14px; direction:rtl;`;
+                    card.style.cssText = `background:var(--bg-gradient); border:1px solid ${isPending ? '#fca5a5' : 'var(--border)'}; border-radius:8px; padding:14px; direction:rtl;`;
                     card.innerHTML = `
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                             <div style="flex:1;">
