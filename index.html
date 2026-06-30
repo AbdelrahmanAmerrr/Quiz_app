@@ -2776,23 +2776,30 @@ html, body {
             const percentage = currentQuestions.length > 0 ? Math.round((score / currentQuestions.length) * 100) : 0;
 
             // ══════════════════════════════════════════════
-            // [XP-NEW] نظام XP الديناميكي العادل
+            // [XP-NEW-V2] نظام XP الديناميكي العادل — فئات أدق
             // ══════════════════════════════════════════════
-            // أولاً: النقاط الأساسية حسب نسبة الدقة
+            // أولاً: النقاط الأساسية حسب نسبة الدقة (7 فئات)
             let baseXP;
-            if      (percentage >= 80) baseXP = 150;
-            else if (percentage >= 70) baseXP = 100;
-            else if (percentage >= 50) baseXP =  50;
-            else                       baseXP =  30;
+            if      (percentage >= 95) baseXP = 200;
+            else if (percentage >= 85) baseXP = 160;
+            else if (percentage >= 75) baseXP = 120;
+            else if (percentage >= 65) baseXP =  90;
+            else if (percentage >= 50) baseXP =  60;
+            else if (percentage >= 35) baseXP =  35;
+            else                       baseXP =  15;
 
-            // ثانياً: مُضاعِف حجم الاختبار
+            // ثانياً: مُضاعِف حجم الاختبار — مرتبط مباشرة بعدد الأسئلة الذي اختاره الطالب من العداد (9 فئات)
             const totalQ = currentQuestions.length;
             let sizeMultiplier;
-            if      (totalQ <= 15)  sizeMultiplier = 0.2;
-            else if (totalQ <= 49)  sizeMultiplier = 0.6;
-            else if (totalQ <= 89)  sizeMultiplier = 1.0;
-            else if (totalQ <= 179) sizeMultiplier = 1.8;
-            else                    sizeMultiplier = 3.0;
+            if      (totalQ <= 10)  sizeMultiplier = 0.15;
+            else if (totalQ <= 20)  sizeMultiplier = 0.25;
+            else if (totalQ <= 35)  sizeMultiplier = 0.45;
+            else if (totalQ <= 50)  sizeMultiplier = 0.65;
+            else if (totalQ <= 70)  sizeMultiplier = 0.9;
+            else if (totalQ <= 100) sizeMultiplier = 1.3;
+            else if (totalQ <= 150) sizeMultiplier = 1.8;
+            else if (totalQ <= 250) sizeMultiplier = 2.5;
+            else                    sizeMultiplier = 3.2;
 
             const xpGained = Math.round(baseXP * sizeMultiplier);
             
