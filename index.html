@@ -643,18 +643,25 @@ html, body {
             border: 1px solid var(--border); background: var(--bg-gradient); transition: var(--transition); }
         .user-row:hover { transform: scale(1.02);
             }
-        .user-row img { width: 32px; height: 32px; border-radius: 50%; object-fit: cover;
-            }
-
+        .user-row img {
+            width: 36px; height: 36px; border-radius: 50%; object-fit: cover;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
         .podium-container { display: flex; justify-content: center; align-items: flex-end; gap: 15px; margin-bottom: 25px;
-            padding-top: 10px; border-bottom: 2px solid var(--border); padding-bottom: 15px; }
+            padding-top: 10px; border-bottom: 1px solid var(--border); padding-bottom: 15px; }
         .podium-step { display: flex;
             flex-direction: column; align-items: center; flex: 1; text-align: center; }
-        .podium-avatar { width: 50px;
-            height: 50px; border-radius: 50%; border: 3px solid var(--border); object-fit: cover; background: #fff;
-            }
-        .podium-step.first .podium-avatar { width: 65px; height: 65px; border-color: var(--warning);
-            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4); }
+        .podium-avatar {
+            width: 56px; height: 56px;
+            border-radius: 50%; border: 2px solid var(--border);
+            object-fit: cover; background: var(--card-bg);
+            image-rendering: -webkit-optimize-contrast;
+        }
+        .podium-step.first .podium-avatar {
+            width: 70px; height: 70px; border-color: var(--primary);
+            box-shadow: 0 0 14px rgba(197,160,89,0.4);
+        }
         .podium-step.second .podium-avatar { border-color: #94a3b8;
             }
         .podium-step.third .podium-avatar { border-color: #b45309;
@@ -3160,20 +3167,24 @@ html, body {
 
         // ✅ تعديل 2: دالة إعادة بناء كاش الأوائل - مخصصة للأدمن فقط
         // تقرأ أعلى 100 طالب حياً وتضغطهم في مستند system/leaderboard
-        // ✅ [PROFILE] ضغط مصغر للكاش — 60×60 بكسل JPEG 50% ≈ 3-5KB للصورة الواحدة
-        // 100 طالب × 5KB = 500KB ← آمن من حد 1MB لمستند Firestore
+        // ✅ [PROFILE] ضغط مصغر للكاش — 100×100 بكسل JPEG 70% ≈ 6-8KB للصورة الواحدة
+        // 100 طالب × 8KB = 800KB ← آمن من حد 1MB لمستند Firestore
+        // رُفع من 60×60@50% لأن الضغط المزدوج على JPEG يراكم الأخطاء ويُفقد الحدة
         function recompressAvatarMini(base64) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onerror = () => resolve(null);
                 img.onload  = () => {
                     try {
-                        const SIZE    = 60; // رُفع من 40 إلى 60 لجودة أوضح في لوحة الأوائل
+                        const SIZE    = 100; // رُفع من 60 → 100 لجودة مقبولة بعد الضغط المزدوج
                         const HALF    = SIZE / 2;
                         const canvas  = document.createElement('canvas');
                         canvas.width  = SIZE;
                         canvas.height = SIZE;
                         const ctx     = canvas.getContext('2d');
+                        // تحسين جودة تحجيم الصورة
+                        ctx.imageSmoothingEnabled  = true;
+                        ctx.imageSmoothingQuality  = 'high';
                         const srcSize = Math.min(img.width, img.height);
                         const srcX    = (img.width  - srcSize) / 2;
                         const srcY    = (img.height - srcSize) / 2;
@@ -3181,7 +3192,7 @@ html, body {
                         ctx.arc(HALF, HALF, HALF, 0, Math.PI * 2);
                         ctx.clip();
                         ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
-                        resolve(canvas.toDataURL('image/jpeg', 0.5)); // رُفعت الجودة من 30% إلى 50%
+                        resolve(canvas.toDataURL('image/jpeg', 0.70)); // رُفعت من 50% → 70%
                     } catch(e) { resolve(null); }
                 };
                 img.src = base64;
