@@ -228,10 +228,26 @@ html, body {
             padding: 7px 15px; border-radius: 99px;
             font-size: 13px; font-weight: 700; margin-bottom: 16px;
         }
-        .picker-badge.has-attempts { background: #dbeafe; color: #1d4ed8; }
-        .picker-badge.practice-mode { background: #fef3c7; color: #b45309; }
-        body.dark-mode .picker-badge.has-attempts  { background: #1e3a8a; color: #93c5fd; }
-        body.dark-mode .picker-badge.practice-mode { background: #451a03; color: #fcd34d; }
+        .picker-badge.has-attempts {
+            background: rgba(197,160,89,0.12);
+            color: var(--primary);
+            border: 1px solid rgba(197,160,89,0.35);
+        }
+        .picker-badge.practice-mode {
+            background: rgba(139,38,53,0.08);
+            color: var(--danger);
+            border: 1px solid rgba(139,38,53,0.2);
+        }
+        body.dark-mode .picker-badge.has-attempts {
+            background: rgba(212,175,55,0.12);
+            color: var(--primary);
+            border-color: rgba(212,175,55,0.3);
+        }
+        body.dark-mode .picker-badge.practice-mode {
+            background: rgba(139,38,53,0.18);
+            color: #f87171;
+            border-color: rgba(139,38,53,0.4);
+        }
 
         /* نقاط التنقل الديكورية */
         .picker-dots-row { display: flex; gap: 6px; justify-content: center; margin-top: 6px; }
@@ -1768,6 +1784,30 @@ html, body {
                 const el = document.getElementById(`subject-count-${k}`);
                 if(el) el.innerText = `${fixedSubjects[k].split(' ')[0]}: ${subjectCounts[k]}`;
             });
+            // ✅ إصلاح bug: تحديث الـ slider في شاشة العداد لو كانت ظاهرة
+            const pickerView = document.getElementById('view-count-picker');
+            if (pickerView && pickerView.style.display !== 'none' && activeCategory) {
+                const total  = subjectCounts[activeCategory] || 0;
+                const slider = document.getElementById('picker-slider');
+                if (slider) {
+                    slider.max = total;
+                    // لو القيمة الحالية أكبر من الجديدة، اضبطها
+                    if (parseInt(slider.value) > total) {
+                        slider.value = total;
+                        updatePickerDisplay(total);
+                    }
+                    _updateSliderFill(slider);
+                }
+                const maxLabel = document.getElementById('picker-max-label-num');
+                if (maxLabel) maxLabel.textContent = total;
+                const totalText = document.getElementById('picker-total-text');
+                if (totalText) totalText.textContent = total;
+                const totRatio = document.getElementById('picker-total-ratio');
+                if (totRatio) totRatio.textContent = total;
+                const subjName = document.getElementById('picker-subject-name');
+                if (subjName) subjName.textContent = fixedSubjects[activeCategory] || activeCategory;
+                updatePickerAttemptsBadge();
+            }
         }
 
         // يُستدعى مرة واحدة فقط عند غياب مستند العداد (تهيئة أولى أو تعافٍ)
@@ -2389,7 +2429,7 @@ html, body {
             const remaining = Math.max(0, MAX_XP_ATTEMPTS_PER_SUB - used);
             if (remaining > 0) {
                 badge.className = 'picker-badge has-attempts';
-                badge.innerHTML = `<i class="fa-solid fa-arrow-left"></i> تبقّى لك ${remaining} محاولة في هذا الاختبار`;
+                badge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> تبقّى لك ${remaining} محاولة رسمية في هذا الاختبار`;
             } else {
                 badge.className = 'picker-badge practice-mode';
                 badge.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> وضع تدريبي — لا تُحتسب XP`;
@@ -4232,7 +4272,7 @@ html, body {
             const ans = document.getElementById('form-q-answer').value.trim();
             const exp = document.getElementById('form-q-exp').value.trim();
 
-            if(!text || !o1 || !o2 || !ans) { alert("يرجى ملء نص السؤال والخيارات والإجابة الصحيحة على الأقل."); return; }
+            if(!text || !o1 || !o2 || !ans) { showToast("⚠️ يرجى ملء نص السؤال والخيارات والإجابة الصحيحة على الأقل.", "error"); return; }
 
             const payload = {
                 subject: subject,
