@@ -83,28 +83,6 @@ html, body {
             overflow-x: hidden;
         }
 
-        /* 2. تنسيق الهيدر المتجاوب المطور */
-        header {
-            display: flex;
-            justify-content: space-between; 
-            align-items: center;
-            padding: 15px 30px; 
-            background: var(--card-bg);
-            border-bottom: 2px solid var(--border); 
-            box-shadow: var(--shadow);
-            position: sticky; 
-            top: 0;
-            z-index: 100;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-
         /* ═══ الهيدر ═══ */
         header {
             display: flex; justify-content: space-between; align-items: center;
@@ -362,18 +340,10 @@ html, body {
             overscroll-behavior: none;
             -webkit-overflow-scrolling: auto;
         }
+        .picker-slider-wrap {
             width: 100%; display: flex; align-items: center; gap: 14px;
             margin-bottom: 28px;
         }
-        .picker-btn {
-            width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border);
-            background: var(--card-bg); color: var(--text-main); font-size: 20px;
-            font-weight: 400; cursor: pointer; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.15s; line-height: 1;
-        }
-        .picker-btn:hover  { border-color: var(--primary); color: var(--primary); }
-        .picker-btn:active { transform: scale(0.85); }
         input[type="range"].picker-slider {
             flex: 1; -webkit-appearance: none; appearance: none;
             height: 5px; border-radius: 99px; outline: none;
@@ -566,7 +536,7 @@ html, body {
         .modal-btn-cancel { background: var(--bg-gradient); color: var(--text-muted); border: 1.5px solid var(--border); }
 
         /* نص المعلومات والشرح */
-        body.dark-mode .explanation-box { background: #1e3a8a; color: #bfdbfe; }
+        body.dark-mode .explanation-box { background: #1e3a8a; color: #bfdbfe; border-right-color: #3b82f6; }
 
         /* نص السؤال */
         .arena-question-text {
@@ -701,25 +671,6 @@ html, body {
         body.dark-mode .resume-alert-box { background: linear-gradient(135deg, #2c2401 0%, #463a03 100%); color: #ffe066;
             border-color: #ecc94b; }
 
-        .circular-timer { position: relative; width: 60px; height: 60px;
-            }
-        .circular-timer svg { transform: rotate(-90deg); width: 60px; height: 60px;
-            }
-        .circular-timer circle { fill: none; stroke-width: 4;
-            }
-        .circular-timer .bg-circle { stroke: var(--border);
-            }
-        .circular-timer .progress-circle { stroke: var(--warning); stroke-dasharray: 176; stroke-dashoffset: 0;
-            transition: stroke-dashoffset 1s linear; stroke-linecap: round; }
-        .circular-timer .timer-text { position: absolute;
-            top: 50%; left: 50%; transform: translate(-50%, -50%); font-weight: bold; font-size: 14px; font-family: monospace;
-            }
-
-        .arena-progress-wrapper { width: 100%; background: var(--border); height: 8px; border-radius: 8px; overflow: hidden;
-            margin-bottom: 20px; }
-        .arena-progress-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--primary), var(--success));
-            transition: width 0.3s ease; }
-
         .admin-form-group { margin-bottom: 15px; text-align: right;
             }
         .admin-form-group label { display: block; font-weight: bold; margin-bottom: 5px; font-size: 14px;
@@ -789,8 +740,6 @@ html, body {
         }
         .ban-btn.ban-active   { background: rgba(197,160,89,0.12); color: var(--primary); border-color: var(--primary); }
         .ban-btn.ban-inactive { background: var(--bg-gradient); color: var(--text-muted); border-color: var(--border); }
-        body.dark-mode .ban-btn.ban-inactive { background: rgba(255,255,255,0.04) !important; color: var(--text-muted) !important; }
-        body.dark-mode .ban-btn.ban-active   { background: rgba(212,175,55,0.14) !important; color: var(--primary) !important; border-color: var(--primary) !important; }
 
         .hidden-tab { display: none !important; }
 
@@ -812,8 +761,6 @@ html, body {
         body.dark-mode .achievement-badge.unlocked { background: linear-gradient(135deg, #78350f 0%, #451a03 100%); color: #fef3c7;
             }
 
-        .explanation-box { background: var(--primary-light); border-right: 5px solid var(--primary); padding: 15px; border-radius: var(--radius-sm);
-            margin-top: 20px; display: none; line-height: 1.6; word-break: break-word; }
         /* ✅ إصلاح أزرار "العودة للوحة التحكم" في الوضع الليلي */
         .btn-back-to-dash {
             background: #1e293b !important;
@@ -906,9 +853,6 @@ html, body {
         .name-change-row .btn-save-name:hover { opacity: 0.85; }
         .name-change-row .btn-save-name:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        body.dark-mode .explanation-box { background: #1e3a8a;
-            border-right-color: #3b82f6; }
-        
         .search-box { width: 100%;
             padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
             background: var(--card-bg); color: var(--text-main); margin-bottom: 15px;
@@ -1658,6 +1602,8 @@ html, body {
         let timeRemaining = 30;
         let hasAnsweredCurrent = false;
         let subjectCounts = {};
+        // ✅ [FIX] رقم إصدار لكل مادة — يُستخدم لإبطال كاش الأسئلة عند الطلاب فور أي تعديل/حذف من الأدمن
+        let subjectVersions = {};
         let currentLeaderFilter = "all";
         
         let userQuizAnswersLog = [];
@@ -1689,6 +1635,11 @@ html, body {
                     subjectCounts = JSON.parse(cachedCounts);
                     renderSubjects(); // عرض فوري بالأرقام المخزّنة
                 } catch(e) {}
+            }
+            // ✅ [FIX] تحميل نسخ المواد (لإبطال كاش الأسئلة عند تعديل/حذف الأدمن)
+            const cachedVersions = localStorage.getItem('aq_subject_versions');
+            if (cachedVersions) {
+                try { subjectVersions = JSON.parse(cachedVersions); } catch(e) {}
             }
             fetchSubjectQuestionCounts(); // ثم تحديث من Firestore
             checkAuthenticationState();
@@ -1770,7 +1721,13 @@ html, body {
                         { math: 0, english: 0, economics: 0, management: 0, office: 0 },
                         counts
                     );
+                    // ✅ [FIX] قراءة نسخ المواد لإبطال كاش الأسئلة عند الطلاب فور أي تغيير من الأدمن
+                    subjectVersions = Object.assign(
+                        { math: 0, english: 0, economics: 0, management: 0, office: 0 },
+                        (data.qVersion && typeof data.qVersion === 'object') ? data.qVersion : {}
+                    );
                     try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
+                    try { localStorage.setItem('aq_subject_versions', JSON.stringify(subjectVersions)); } catch(e) {}
                     _applySubjectCounts();
                 } else {
                     rebuildMetadataCounts();
@@ -1848,6 +1805,18 @@ html, body {
             subjectCounts[subject] = Math.max(0, (subjectCounts[subject] || 0) + delta);
             try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
             _applySubjectCounts();
+        }
+
+        // ✅ [FIX] يُستدعى عند أي إضافة/تعديل/حذف سؤال — يرفع "نسخة" المادة
+        // بحيث يكتشف كل طالب (حتى لو كان عنده كاش صالح TTL) أن الأسئلة تغيّرت
+        // ويجبره على إعادة التحميل من Firestore بدل الاعتماد على كاش قديم.
+        function bumpQuestionVersion(subject) {
+            if (!subject || !fixedSubjects[subject]) return;
+            db.collection("questions").doc("--metadata--").set({
+                qVersion: { [subject]: firebase.firestore.FieldValue.increment(1) }
+            }, { merge: true }).catch(() => {});
+            subjectVersions[subject] = (subjectVersions[subject] || 0) + 1;
+            try { localStorage.setItem('aq_subject_versions', JSON.stringify(subjectVersions)); } catch(e) {}
         }
 
         function checkAuthenticationState() {
@@ -2311,9 +2280,16 @@ html, body {
             const CACHE_TTL    = 6 * 60 * 60 * 1000; // 6 ساعات
             const cacheKey     = `aq_q_${activeCategory}`;
             const cacheTimeKey = `aq_q_ts_${activeCategory}`;
+            const cacheVerKey  = `aq_q_ver_${activeCategory}`;
             const cachedRaw    = localStorage.getItem(cacheKey);
             const cachedTs     = parseInt(localStorage.getItem(cacheTimeKey) || '0');
-            const isFresh      = cachedRaw && (Date.now() - cachedTs < CACHE_TTL);
+            // ✅ [FIX] نتحقق أيضاً من "نسخة" المادة، وليس فقط من مدة الصلاحية (TTL).
+            // subjectVersions يُحدَّث من مستند --metadata-- في كل تحميل للصفحة (fetchSubjectQuestionCounts)،
+            // فلو الأدمن حذف/عدّل سؤالاً، النسخة على السيرفر تتغيّر، وهنا نكتشف الفرق
+            // ونتجاهل الكاش المحلي فوراً حتى لو لسه ما خلصتش الـ 6 ساعات.
+            const cachedVer    = parseInt(localStorage.getItem(cacheVerKey) || '0');
+            const currentVer   = subjectVersions[activeCategory] || 0;
+            const isFresh      = cachedRaw && (Date.now() - cachedTs < CACHE_TTL) && (cachedVer === currentVer);
 
             function _onQuestionsLoaded(questions) {
                 startBtn.disabled = false;
@@ -2380,6 +2356,7 @@ html, body {
                 try {
                     localStorage.setItem(cacheKey, JSON.stringify(questions));
                     localStorage.setItem(cacheTimeKey, Date.now().toString());
+                    localStorage.setItem(cacheVerKey, String(currentVer));
                 } catch(e) {
                     // localStorage ممتلئ — استمر بدون كاش
                     console.warn("localStorage full, skipping question cache.");
@@ -2488,15 +2465,22 @@ html, body {
         }
 
         // ✅ [OPT-38] مسح كاش الأسئلة عند تعديل الأدمن — يضمن رؤية الطلاب للأسئلة الجديدة خلال 6 ساعات
+        // ⚠️ ملاحظة مهمة: هذه الدالة تمسح الكاش المحلي (localStorage) الخاص بمتصفح
+        // الأدمن فقط — كل طالب عنده localStorage منفصل خاص بجهازه، فمسح كاش الأدمن
+        // هنا لا يوصل لأي طالب آخر. لهذا كل نقطة حذف/تعديل تستدعي أيضاً
+        // bumpQuestionVersion() لرفع "نسخة" المادة في مستند --metadata-- على السيرفر،
+        // وهو ما يخلي كل طالب (حتى لو عنده كاش لسه صالح TTL) يكتشف التغيير ويحدّث فوراً.
         function _invalidateQuestionCache(subject) {
             if (subject) {
                 localStorage.removeItem(`aq_q_${subject}`);
                 localStorage.removeItem(`aq_q_ts_${subject}`);
+                bumpQuestionVersion(subject);
             } else {
                 // مسح كاش كل المواد (للحذف الشامل والاستيراد)
                 ['math','english','economics','management','office'].forEach(sub => {
                     localStorage.removeItem(`aq_q_${sub}`);
                     localStorage.removeItem(`aq_q_ts_${sub}`);
+                    bumpQuestionVersion(sub);
                 });
             }
         }
