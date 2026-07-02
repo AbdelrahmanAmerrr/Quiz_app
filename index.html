@@ -1901,7 +1901,11 @@ html, body {
                 } else {
                     _attachAuthStateListener(cachedUid);
                 }
-            }).catch(() => {
+            }).catch(err => {
+                // ✅ خطأ شائع أثناء الربط: حساب الجوجل ده مرتبط بحساب طالب تاني بالفعل
+                if (wasLinkingGoogle && err && err.code === 'auth/credential-already-in-use') {
+                    showToast("⚠️ حساب الجوجل ده مرتبط بحساب طالب تاني بالفعل.", "error");
+                }
                 _attachAuthStateListener(cachedUid);
             });
 
@@ -2145,25 +2149,20 @@ html, body {
             }
 
             var provider = new firebase.auth.GoogleAuthProvider();
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-            
-            if (isMobile) {
-                auth.signInWithRedirect(provider);
-            } else {
-                auth.signInWithPopup(provider).then((result) => {
-                    if (result && result.user) {
-                        handleGoogleUserSuccess(result.user);
-                    }
-                }).catch(e => {
-                    if (loginBtn) {
-                        loginBtn.disabled = false;
-                        loginBtn.innerHTML = `<i class="fa-brands fa-google"></i> تسجيل الدخول عبر Google`;
-                    }
-                    if (e.code !== 'auth/popup-closed-by-user') {
-                        alert("فشل تسجيل الدخول عبر Google: " + e.message);
-                    }
-                });
-            }
+
+            // ✅ [FIX] كنا بنستخدم signInWithPopup على الديسكتوب، لكن المتصفحات الحديثة
+            // (Chrome/Safari) بقت تمنع مشاركة الكوكيز بين نافذة الـ popup والصفحة الأصلية
+            // بشكل افتراضي (third-party cookies) — فالـ popup كان بيفتح ويتم تسجيل الدخول فعلاً
+            // لكن النتيجة ما كانتش بترجع لصفحتنا، فتفضل الرسالة "جاري..." معلّقة للأبد بدون
+            // نجاح ولا فشل ظاهر. signInWithRedirect بيحل المشكلة نهائياً لأنه بياخد المستخدم
+            // فعلياً لصفحة جوجل ويرجّعه بعد الموافقة (مفيش مشاركة كوكيز بين نافذتين).
+            auth.signInWithRedirect(provider).catch(e => {
+                if (loginBtn) {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = `<i class="fa-brands fa-google"></i> تسجيل الدخول عبر Google`;
+                }
+                alert("فشل تسجيل الدخول عبر Google: " + e.message);
+            });
         }
 
         function handleGoogleUserSuccess(user) {
@@ -2220,26 +2219,18 @@ html, body {
 
             const btn = document.getElementById('btn-link-google');
             var provider = new firebase.auth.GoogleAuthProvider();
-            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
             if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري الربط...`; }
 
-            if (isMobile) {
-                // ✅ علامة مؤقتة عشان بعد الرجوع من صفحة جوجل نعرف إن ده "ربط" مش "تسجيل دخول جديد"
-                localStorage.setItem('aq_pending_google_link', '1');
-                auth.currentUser.linkWithRedirect(provider);
-            } else {
-                auth.currentUser.linkWithPopup(provider).then((result) => {
-                    _onGoogleLinkSuccess(result.user);
-                }).catch(err => {
-                    if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-brands fa-google"></i> ربط الحساب بجوجل`; }
-                    if (err.code === 'auth/credential-already-in-use') {
-                        showToast("⚠️ حساب الجوجل ده مرتبط بحساب طالب تاني بالفعل.", "error");
-                    } else if (err.code !== 'auth/popup-closed-by-user') {
-                        showToast("❌ فشل الربط: " + err.message, "error");
-                    }
-                });
-            }
+            // ✅ [FIX] نفس مشكلة تسجيل الدخول — linkWithPopup كان بيعلّق للأبد بسبب حجب الكوكيز
+            // بين النوافذ في المتصفحات الحديثة. linkWithRedirect بياخد المستخدم فعلياً لصفحة جوجل
+            // ويرجّعه، فمفيش أي اعتماد على تواصل بين نافذتين.
+            localStorage.setItem('aq_pending_google_link', '1');
+            auth.currentUser.linkWithRedirect(provider).catch(err => {
+                localStorage.removeItem('aq_pending_google_link');
+                if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-brands fa-google"></i> ربط الحساب بجوجل`; }
+                showToast("❌ فشل الربط: " + err.message, "error");
+            });
         }
 
         function _onGoogleLinkSuccess(user) {
