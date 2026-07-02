@@ -463,6 +463,9 @@ html, body {
         body.dark-mode .stat-box[style*="#fef3c7"] { background: #422006 !important; }
         body.dark-mode .stat-box[style*="primary-light"],
         body.dark-mode .stat-box[style*="var(--primary-light)"] { background: #1e3a8a !important; }
+        body.dark-mode .stat-box[style*="#ede9fe"] { background: #3730a3 !important; }
+        body.dark-mode .stat-box[style*="#ede9fe"] i,
+        body.dark-mode .stat-box[style*="#ede9fe"] #result-avg-time { color: #c4b5fd !important; }
 
         /* كروت الأدمن */
         body.dark-mode #tab-upload .stat-box { background: var(--bg-gradient) !important; color: var(--text-main) !important; }
@@ -1269,29 +1272,22 @@ html, body {
                     </div>
                 </div>
 
-                <!-- شريط الإجراءات العلوي: تمييز + خريطة الأسئلة + إبلاغ -->
+                <!-- شريط الإجراءات العلوي: تمييز + خريطة الأسئلة + إبلاغ + حفظ وخروج -->
                 <div class="arena-actions">
                     <button class="arena-action-btn" id="btn-flag-action" onclick="toggleFlagQuestion()">
                         <i class="fa-solid fa-thumbtack"></i> تمييز
                     </button>
                     <button class="arena-action-btn" onclick="openQuestionMap()">
-                        <i class="fa-solid fa-table-cells"></i> خريطة الأسئلة
+                        <i class="fa-solid fa-table-cells"></i> الخريطة
                     </button>
                     <button class="arena-action-btn" onclick="reportQuestionProblem()">
                         <i class="fa-solid fa-flag"></i> إبلاغ
                     </button>
-                </div>
-                <!-- الصف الثاني: الصوت + حفظ وخروج -->
-                <div class="arena-actions">
-                    <button class="arena-action-btn" id="btn-mute-sound" onclick="toggleSoundMute()">
-                        <i class="fa-solid fa-volume-high"></i> الصوت
-                    </button>
                     <button class="arena-action-btn" onclick="saveAndExitQuizArena()"
                             style="color:var(--warning); border-color:var(--warning);">
-                        <i class="fa-solid fa-floppy-disk"></i> حفظ وخروج
+                        <i class="fa-solid fa-floppy-disk"></i> حفظ
                     </button>
                 </div>
-
 
                 <!-- نص السؤال -->
                 <div class="arena-question-text" id="arena-question-text">
@@ -1339,6 +1335,36 @@ html, body {
                 </div>
             </div>
 
+            <!-- ✅ [UX-NEW] نافذة الإبلاغ عن سؤال — مع إمكانية كتابة سبب البلاغ للأدمن -->
+            <div id="report-question-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeReportModal();">
+                <div class="modal-box" id="report-question-box" style="max-width:380px; text-align:right; padding:24px 22px;">
+                    <div style="text-align:center; margin-bottom:14px;">
+                        <div style="font-size:34px; margin-bottom:6px;">🚩</div>
+                        <h3 style="margin:0 0 6px 0; font-size:17px;">إبلاغ عن خطأ في السؤال</h3>
+                        <p style="margin:0; font-size:13px; color:var(--text-muted); line-height:1.6;">وضّح للإدارة سبب الإبلاغ (اختياري) عشان تقدر تراجع السؤال بدقة أكتر.</p>
+                    </div>
+                    <textarea id="report-reason-input" maxlength="300" placeholder="مثال: الإجابة الصحيحة خطأ، أو في السؤال غلطة إملائية..."
+                        style="width:100%; box-sizing:border-box; padding:12px; border-radius:8px; border:1.5px solid var(--border);
+                        background:var(--card-bg); color:var(--text-main); font-family:inherit; font-size:14px; min-height:90px;
+                        resize:vertical; margin-bottom:16px;"></textarea>
+                    <div class="modal-actions">
+                        <button class="modal-btn modal-btn-confirm warning" onclick="submitQuestionReport()">إرسال البلاغ</button>
+                        <button class="modal-btn modal-btn-cancel" onclick="closeReportModal()">إلغاء</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ✅ [UX-NEW] صفحة مراجعة الأسئلة — منفصلة، تظهر أول ما ينتهي الامتحان -->
+            <div class="card" id="view-review" style="display: none;">
+                <div style="text-align:center; margin-bottom:18px;">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size:38px; color:var(--primary);"></i>
+                    <h2 style="margin:10px 0 4px 0; font-size:21px;">مراجعة الأسئلة</h2>
+                    <p style="color:var(--text-muted); font-size:13.5px; margin:0;">راجع إجاباتك بالتفصيل، وبعدين كمّل للإحصائيات</p>
+                </div>
+                <div id="review-cards-container" style="max-height: 55vh; overflow-y:auto; border:1.5px solid var(--border); padding:14px; border-radius:10px; margin-bottom:20px; background:var(--bg-gradient);"></div>
+                <button class="btn-launch" onclick="goToResultStatsPage()"><i class="fa-solid fa-arrow-left"></i> التالي: عرض الإحصائيات</button>
+            </div>
+
             <div class="card" id="view-result" style="display: none;">
                 <div style="text-align: center; margin-bottom: 20px;">
                     <i class="fa-solid fa-trophy" style="font-size: 60px; color: var(--warning); filter: drop-shadow(0 4px 10px rgba(245,158,11,0.3));"></i>
@@ -1357,11 +1383,10 @@ html, body {
 
                 <p id="result-xp-status" style="text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 25px;"></p>
                 
-                <button class="btn-launch" style="background: var(--success); margin-bottom: 12px;" onclick="toggleAnswersReviewZone()"><i class="fa-solid fa-magnifying-glass"></i> مراجعة كافة الأسئلة وإجاباتها</button>
-                <div id="review-answers-zone" style="display:none; max-height: 400px; overflow-y:auto; border:2px solid var(--border); padding:15px; border-radius:8px; margin-bottom:20px; background:var(--bg-gradient);"></div>
-
+                <button class="btn-launch" style="background: var(--success); margin-bottom: 12px;" onclick="showView('view-review')"><i class="fa-solid fa-magnifying-glass"></i> مراجعة الأسئلة تاني</button>
                 <button class="btn-launch btn-back-to-dash" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
             </div>
+
 
             <div class="card" id="view-admin-panel" style="display: none;">
                 <!-- ─── رأس لوحة الأدمن المنظّم ─── -->
@@ -1708,9 +1733,6 @@ html, body {
         // ✅ [UX-2] عداد الـ Streak — بصري فقط، لا يمس XP ولا أي دالة موجودة
         let streakCount = 0;
 
-        // ✅ [UX-NEW] كتم الصوت — يُحفظ في localStorage ويُطبَّق على playSound()
-        let soundMuted = (localStorage.getItem('aq_sound_muted') === '1');
-
         // ✅ [UX-NEW] لحساب متوسط زمن حل السؤال (بالثواني) — يُسجَّل وقت بداية كل سؤال
         let questionStartTime = 0;
 
@@ -1733,7 +1755,6 @@ html, body {
                 try { subjectVersions = JSON.parse(cachedVersions); } catch(e) {}
             }
             fetchSubjectQuestionCounts(); // ثم تحديث من Firestore
-            updateSoundMuteButtonUI();
             checkAuthenticationState();
         };
 
@@ -1757,7 +1778,6 @@ html, body {
 
         // ✅ [UX-1] صوت تغذية راجعة — يعمل بدون ملفات خارجية (Web Audio API)
         function playSound(type) {
-            if (soundMuted) return;
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
                 const osc = ctx.createOscillator();
@@ -1790,22 +1810,6 @@ html, body {
                     osc.stop(ctx.currentTime + 0.4);
                 }
             } catch(e) {}
-        }
-
-        // ✅ [UX-NEW] تبديل كتم/تشغيل الصوت — يُحفظ ويُطبَّق فوراً
-        function toggleSoundMute() {
-            soundMuted = !soundMuted;
-            try { localStorage.setItem('aq_sound_muted', soundMuted ? '1' : '0'); } catch(e) {}
-            updateSoundMuteButtonUI();
-        }
-
-        function updateSoundMuteButtonUI() {
-            const btn = document.getElementById('btn-mute-sound');
-            if (!btn) return;
-            btn.innerHTML = soundMuted
-                ? '<i class="fa-solid fa-volume-xmark"></i> صامت'
-                : '<i class="fa-solid fa-volume-high"></i> الصوت';
-            btn.classList.toggle('flagged', soundMuted);
         }
 
         // ✅ [OPT-6] قراءة واحدة (1 Read) من مستند العداد بدلاً من قراءة جميع الأسئلة
@@ -2852,30 +2856,50 @@ html, body {
             }
         }
 
+        // ✅ [UX-NEW] يفتح نافذة الإبلاغ (مع حقل سبب اختياري) بدل التأكيد المباشر القديم
         function reportQuestionProblem() {
             if (!currentQuestions[qIndex] || !currentUser) return;
-            const activeQ = currentQuestions[qIndex];
-            showModal({
-                icon: '🚩', title: 'إبلاغ عن خطأ',
-                message: 'هل تؤكد الإبلاغ عن خطأ في هذا السؤال لمراجعته من قِبَل الإدارة؟',
-                confirmText: 'نعم، أبلغ', cancelText: 'إلغاء', type: 'warning',
-                onConfirm: () => {
-                db.collection("admin_reports").add({
-                    questionId:     activeQ.id   || "unknown",
-                    questionText:   activeQ.question,
-                    correctAnswer:  activeQ.answer,
-                    subject:        activeQ.subject || activeCategory,
-                    reportedBy:     currentUser.name,
-                    reportedByUid:  currentUser.uid,
-                    status:         "pending",
-                    timestamp:      firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    showToast("✅ تم إرسال البلاغ للإدارة. شكراً لمساعدتك!");
-                    const btn = document.querySelector('.arena-action-btn[onclick="reportQuestionProblem()"]');
-                    if (btn) { btn.style.color = 'var(--success)'; btn.innerHTML = '<i class="fa-solid fa-check"></i> أُرسل'; }
-                }).catch(() => showToast("⚠️ فشل الإرسال، تحقق من الاتصال.", "error"));
-                }
+            const input = document.getElementById('report-reason-input');
+            if (input) input.value = '';
+            const overlay = document.getElementById('report-question-overlay');
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => {
+                const box = document.getElementById('report-question-box');
+                if (box) box.classList.add('modal-show');
             });
+        }
+
+        function closeReportModal() {
+            const box = document.getElementById('report-question-box');
+            if (box) box.classList.remove('modal-show');
+            setTimeout(() => {
+                const overlay = document.getElementById('report-question-overlay');
+                if (overlay) overlay.style.display = 'none';
+            }, 200);
+        }
+
+        function submitQuestionReport() {
+            if (!currentQuestions[qIndex] || !currentUser) { closeReportModal(); return; }
+            const activeQ = currentQuestions[qIndex];
+            const reasonInput = document.getElementById('report-reason-input');
+            const reason = reasonInput ? reasonInput.value.trim().slice(0, 300) : '';
+            closeReportModal();
+
+            db.collection("admin_reports").add({
+                questionId:     activeQ.id   || "unknown",
+                questionText:   activeQ.question,
+                correctAnswer:  activeQ.answer,
+                subject:        activeQ.subject || activeCategory,
+                reportedBy:     currentUser.name,
+                reportedByUid:  currentUser.uid,
+                reason:         reason || null,
+                status:         "pending",
+                timestamp:      firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                showToast("✅ تم إرسال البلاغ للإدارة. شكراً لمساعدتك!");
+                const btn = document.querySelector('.arena-action-btn[onclick="reportQuestionProblem()"]');
+                if (btn) { btn.style.color = 'var(--success)'; btn.innerHTML = '<i class="fa-solid fa-check"></i> أُرسل'; }
+            }).catch(() => showToast("⚠️ فشل الإرسال، تحقق من الاتصال.", "error"));
         }
 
         function resumeSavedQuizArena() {
@@ -3137,62 +3161,66 @@ html, body {
             }
         }
 
-        function toggleAnswersReviewZone() {
-            const zone = document.getElementById('review-answers-zone');
-            if (zone.style.display === "none") {
-                // فصل الممُيَّزة والعادية
-                const flagged = [];
-                const regular = [];
-                userQuizAnswersLog.forEach((log, i) => {
-                    if (!log) return;
-                    if (currentQuestions[i] && currentQuestions[i].isFlagged) flagged.push({ log, i });
-                    else regular.push({ log, i });
-                });
+        // ✅ [UX-NEW] يبني بطاقات مراجعة الأسئلة داخل صفحة "مراجعة الأسئلة" المستقلة
+        function renderReviewCards() {
+            const container = document.getElementById('review-cards-container');
+            if (!container) return;
 
-                function buildCard(log, i, isFlag) {
-                    return `
-                    <div style="padding:12px 14px; border-radius:8px; margin-bottom:10px;
-                        border: 1.5px solid ${isFlag ? '#f59e0b' : (log.isCorrect ? '#10b981' : '#ef4444')};
-                        background: ${isFlag ? 'rgba(245,158,11,0.06)' : 'var(--bg-gradient)'};">
-                        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
-                            ${isFlag ? '<span style="background:#f59e0b;color:#fff;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700;">📌 ممُيَّز للمراجعة</span>' : ''}
-                            <span style="font-size:11px;color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'};font-weight:700;">
-                                ${log.isCorrect ? '✅ صحيح' : '❌ خطأ'}
-                            </span>
-                            ${typeof log.timeSpentSec === 'number' ? `<span style="font-size:11px;color:var(--text-muted);font-weight:600;"><i class="fa-solid fa-stopwatch"></i> ${log.timeSpentSec} ث</span>` : ''}
-                        </div>
-                        <strong style="font-size:14px;">س${i+1}: ${log.question}</strong>
-                        <p style="margin:6px 0 3px 0; font-size:13px;">
-                            إجابتك: <span style="color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">
-                                ${log.chosen || 'فاتك الوقت ⏱️'}
-                            </span>
-                        </p>
-                        <p style="margin:3px 0; font-size:13px; color:var(--success);">
-                            ✔ الإجابة الصحيحة: <strong>${log.correctAnswer}</strong>
-                        </p>
-                        <small style="color:var(--text-muted);display:block;margin-top:5px;">
-                            💡 ${log.explanation || 'لا يوجد شرح متوفر.'}
-                        </small>
-                    </div>`;
-                }
+            // فصل الممُيَّزة والعادية
+            const flagged = [];
+            const regular = [];
+            userQuizAnswersLog.forEach((log, i) => {
+                if (!log) return;
+                if (currentQuestions[i] && currentQuestions[i].isFlagged) flagged.push({ log, i });
+                else regular.push({ log, i });
+            });
 
-                let html = '';
-                if (flagged.length > 0) {
-                    html += `<div style="font-weight:800;color:#b45309;margin-bottom:10px;font-size:14px;">
-                        📌 الأسئلة الممُيَّزة للمراجعة (${flagged.length})</div>`;
-                    flagged.forEach(({ log, i }) => { html += buildCard(log, i, true); });
-                    html += `<hr style="border:none;border-top:1px dashed var(--border);margin:14px 0;">`;
-                }
-                if (regular.length > 0) {
-                    html += `<div style="font-weight:700;color:var(--text-muted);margin-bottom:10px;font-size:13px;">
-                        بقية الأسئلة (${regular.length})</div>`;
-                    regular.forEach(({ log, i }) => { html += buildCard(log, i, false); });
-                }
-                zone.innerHTML = html || "<p style='text-align:center;color:var(--text-muted);'>لم يتم تدوين إجابات للمراجعة.</p>";
-                zone.style.display = "block";
-            } else {
-                zone.style.display = "none";
+            function buildCard(log, i, isFlag) {
+                return `
+                <div style="padding:12px 14px; border-radius:8px; margin-bottom:10px;
+                    border: 1.5px solid ${isFlag ? '#f59e0b' : (log.isCorrect ? '#10b981' : '#ef4444')};
+                    background: ${isFlag ? 'rgba(245,158,11,0.06)' : 'var(--card-bg)'};">
+                    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap;">
+                        ${isFlag ? '<span style="background:#f59e0b;color:#fff;border-radius:99px;padding:2px 8px;font-size:11px;font-weight:700;">📌 ممُيَّز للمراجعة</span>' : ''}
+                        <span style="font-size:11px;color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'};font-weight:700;">
+                            ${log.isCorrect ? '✅ صحيح' : '❌ خطأ'}
+                        </span>
+                        ${typeof log.timeSpentSec === 'number' ? `<span style="font-size:11px;color:var(--text-muted);font-weight:600;"><i class="fa-solid fa-stopwatch"></i> ${log.timeSpentSec} ث</span>` : ''}
+                    </div>
+                    <strong style="font-size:14px;">س${i+1}: ${log.question}</strong>
+                    <p style="margin:6px 0 3px 0; font-size:13px;">
+                        إجابتك: <span style="color:${log.isCorrect ? 'var(--success)' : 'var(--danger)'}; font-weight:600;">
+                            ${log.chosen || 'فاتك الوقت ⏱️'}
+                        </span>
+                    </p>
+                    <p style="margin:3px 0; font-size:13px; color:var(--success);">
+                        ✔ الإجابة الصحيحة: <strong>${log.correctAnswer}</strong>
+                    </p>
+                    <small style="color:var(--text-muted);display:block;margin-top:5px;">
+                        💡 ${log.explanation || 'لا يوجد شرح متوفر.'}
+                    </small>
+                </div>`;
             }
+
+            let html = '';
+            if (flagged.length > 0) {
+                html += `<div style="font-weight:800;color:#b45309;margin-bottom:10px;font-size:14px;">
+                    📌 الأسئلة الممُيَّزة للمراجعة (${flagged.length})</div>`;
+                flagged.forEach(({ log, i }) => { html += buildCard(log, i, true); });
+                html += `<hr style="border:none;border-top:1px dashed var(--border);margin:14px 0;">`;
+            }
+            if (regular.length > 0) {
+                html += `<div style="font-weight:700;color:var(--text-muted);margin-bottom:10px;font-size:13px;">
+                    بقية الأسئلة (${regular.length})</div>`;
+                regular.forEach(({ log, i }) => { html += buildCard(log, i, false); });
+            }
+            container.innerHTML = html || "<p style='text-align:center;color:var(--text-muted);'>لم يتم تدوين إجابات للمراجعة.</p>";
+        }
+
+        // بعد ما يخلص الطالب من مراجعة الأسئلة، يضغط "التالي" فينتقل لصفحة الإحصائيات
+        // (اللي كانت already جاهزة ومحسوبة من finishQuizSession، بس مخفية لحد دلوقتي)
+        function goToResultStatsPage() {
+            showView('view-result');
         }
 
         // ✅ [OPT-16] إرسال إحصائيات الأسئلة دفعة batch واحدة في نهاية الاختبار
@@ -3219,19 +3247,23 @@ html, body {
             streakCount = 0;
             const sbF = document.getElementById('streak-badge');
             if (sbF) sbF.style.display = 'none';
-            showView('view-result');
+
+            // ✅ [UX-NEW] الترتيب الجديد: مراجعة الأسئلة أولاً، والإحصائيات (المحسوبة أدناه) تُعرض بعدها
+            // عند الضغط على "التالي" في صفحة المراجعة (انظر goToResultStatsPage)
+            renderReviewCards();
+            showView('view-review');
+
             localStorage.removeItem(`saved_quiz_${currentUser.uid}`);
-            document.getElementById('review-answers-zone').style.display = "none";
 
             document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
             const percentage = currentQuestions.length > 0 ? Math.round((score / currentQuestions.length) * 100) : 0;
 
-            // ✅ [UX-NEW] متوسط زمن حل السؤال — محسوب من الأوقات الفعلية المسجَّلة أثناء الامتحان
+            // ✅ [UX-NEW] متوسط زمن حل السؤال — محسوب من الأوقات الفعلية المسجَّلة أثناء الامتحان (رقم عشري لدقة أكبر)
             const timedAnswers = userQuizAnswersLog.filter(l => l && typeof l.timeSpentSec === 'number');
             const avgTimeEl = document.getElementById('result-avg-time');
             if (avgTimeEl) {
                 if (timedAnswers.length > 0) {
-                    const avgSec = Math.round(timedAnswers.reduce((sum, l) => sum + l.timeSpentSec, 0) / timedAnswers.length);
+                    const avgSec = (timedAnswers.reduce((sum, l) => sum + l.timeSpentSec, 0) / timedAnswers.length).toFixed(2);
                     avgTimeEl.innerText = `${avgSec} ث`;
                 } else {
                     avgTimeEl.innerText = "-";
@@ -4096,6 +4128,7 @@ html, body {
                                     من: <strong>${r.reportedBy||'—'}</strong> &nbsp;|&nbsp;
                                     ${ts}
                                 </p>
+                                ${r.reason ? `<p style="margin:6px 0 0 0; font-size:12.5px; color:var(--text-main); background:var(--card-bg); border-right:3px solid var(--warning); padding:6px 10px; border-radius:4px;">💬 ${r.reason}</p>` : ''}
                             </div>
                             <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                                 <span style="font-size:11px;padding:3px 8px;border-radius:99px;background:${isPending?'#fee2e2':'#d1fae5'};color:${isPending?'#991b1b':'#065f46'};">
@@ -4773,7 +4806,7 @@ html, body {
         }
 
         function showView(viewId) {
-            const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-count-picker', 'view-arena', 'view-result', 'view-admin-panel'];
+            const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-count-picker', 'view-arena', 'view-review', 'view-result', 'view-admin-panel'];
             views.forEach(v => {
                 const el = document.getElementById(v);
                 if (el) el.style.display = "none";
