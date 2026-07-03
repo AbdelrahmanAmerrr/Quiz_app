@@ -28,7 +28,6 @@ html, body {
     margin: 0 !important;
     padding: 0 !important;
     overflow-x: hidden !important; /* يمنع ظهور شريط التمرير العرضي نهائياً */
-    scroll-behavior: smooth; /* ✅ [UX-NEW] تمرير سلس عام في المنصة */
 }
 
 /* تعديل الـ Layout ليكون 100% عرضاً */
@@ -542,14 +541,16 @@ html, body {
         }
         .modal-btn:active { transform: scale(0.97); }
 
-        /* ✅ [FIX] سلاسة أخف وأسرع — كانت 250ms "all" بتخلي كل حاجة حاسة بتقيلة، دلوقتي أسرع وأخف كتير */
-        @keyframes uxFadeIn {
-            from { opacity: 0; transform: translateY(3px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        .ux-fade-in { animation: uxFadeIn 0.12s ease-out; }
+        /* ✅ [UX-v2] رجعت أراجع الفيديو تاني — شكل النقاط بالأعلى (اختر الموضوعات ← المستوى ← عدد الأسئلة)
+           بيدل على نمط "خطوات" (stepper)، والمحتوى الجديد بيدخل من جهة وبيسيب القديم من الجهة التانية
+           (سلايد أفقي خفيف، مش fade مكانه ثابت). ده أخف بصرياً من fade لأنه بيحاكي حركة "التقدم للأمام"
+           الطبيعية بدل ما يكون مجرد ظهور/اختفاء في مكانه. */
+        @keyframes uxSlideInFwd  { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes uxSlideInBack { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
+        .ux-slide-fwd  { animation: uxSlideInFwd 0.15s ease-out; }
+        .ux-slide-back { animation: uxSlideInBack 0.15s ease-out; }
 
-        /* ✅ [FIX] استجابة لمسية سريعة وخفيفة — transform بس (مش all) وبسرعة عالية بدل 250ms */
+        /* ✅ استجابة لمسية سريعة وخفيفة — transform بس (مش all) وبسرعة عالية، بدون أي fade عند التنقل */
         .option-node:active:not(:disabled)   { transform: scale(0.98); }
         .arena-action-btn:active              { transform: scale(0.95); }
         .nav-tab-link:active                  { transform: scale(0.96); }
@@ -2836,8 +2837,9 @@ html, body {
 
         function jumpToSpecificQuestion(idx) {
             clearInterval(timerInterval);
+            const dir = idx < qIndex ? 'back' : 'fwd';
             qIndex = idx;
-            loadArenaQuestion(false); 
+            loadArenaQuestion(false, dir);
         }
 
         function toggleFlagQuestion() {
@@ -2991,7 +2993,7 @@ html, body {
             }); // end showModal
         }
 
-        function loadArenaQuestion(isResumedFirstLoad = false) {
+        function loadArenaQuestion(isResumedFirstLoad = false, direction = 'fwd') {
             if (qIndex >= currentQuestions.length) { finishQuizSession(); return; }
             
             updateQuestionsNavigationDotsUI();
@@ -3004,14 +3006,14 @@ html, body {
             const activeQ = currentQuestions[qIndex];
             const questionTextEl = document.getElementById('arena-question-text');
             questionTextEl.innerText = activeQ.question;
-            _fadeInEl(questionTextEl);
+            _fadeInEl(questionTextEl, direction);
             
             document.getElementById('arena-explanation-box').style.display = "none";
             document.getElementById('arena-nav-buttons').style.display  = "none";
 
             const box = document.getElementById('arena-options-box');
             box.innerHTML = "";
-            _fadeInEl(box);
+            _fadeInEl(box, direction);
             
             clearInterval(timerInterval);
             
@@ -3176,13 +3178,13 @@ html, body {
 
         function advanceArenaQuestion() {
             qIndex++;
-            loadArenaQuestion();
+            loadArenaQuestion(false, 'fwd');
         }
 
         function goToPrevQuestion() {
             if (qIndex > 0) {
                 qIndex--;
-                loadArenaQuestion();
+                loadArenaQuestion(false, 'back');
             }
         }
 
@@ -4833,12 +4835,13 @@ html, body {
             }
         }
 
-        // ✅ [UX-NEW] يشغّل أنيميشن ظهور خفيف لأي عنصر (صفحة/تبويب) — يُعاد تشغيله حتى لو نفس العنصر ظهر قبل كده
-        function _fadeInEl(el) {
+        // ✅ [UX-v2] سلايد أفقي خفيف واتجاهي (مش fade) — بيتنادى مع كل تنقل بين الأسئلة/الصفحات
+        // direction: 'fwd' (افتراضي، للأمام) أو 'back' (رجوع/سابق)
+        function _fadeInEl(el, direction) {
             if (!el) return;
-            el.classList.remove('ux-fade-in');
-            void el.offsetWidth; // إجبار إعادة التدفق (reflow) لإعادة تشغيل الأنيميشن
-            el.classList.add('ux-fade-in');
+            el.classList.remove('ux-slide-fwd', 'ux-slide-back');
+            void el.offsetWidth; // إعادة تشغيل الأنيميشن حتى لو نفس العنصر
+            el.classList.add(direction === 'back' ? 'ux-slide-back' : 'ux-slide-fwd');
         }
 
         function showView(viewId) {
