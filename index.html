@@ -542,22 +542,22 @@ html, body {
         }
         .modal-btn:active { transform: scale(0.97); }
 
-        /* ✅ [UX-NEW] سلاسة عامة — أنيميشن ظهور خفيف يُستخدم عند التنقل بين الصفحات/التبويبات/الأسئلة */
+        /* ✅ [FIX] سلاسة أخف وأسرع — كانت 250ms "all" بتخلي كل حاجة حاسة بتقيلة، دلوقتي أسرع وأخف كتير */
         @keyframes uxFadeIn {
-            from { opacity: 0; transform: translateY(6px); }
+            from { opacity: 0; transform: translateY(3px); }
             to   { opacity: 1; transform: translateY(0); }
         }
-        .ux-fade-in { animation: uxFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .ux-fade-in { animation: uxFadeIn 0.12s ease-out; }
 
-        /* ✅ [UX-NEW] استجابة لمسية فورية عند الضغط — تحسّن الإحساس العام بخفة المنصة */
+        /* ✅ [FIX] استجابة لمسية سريعة وخفيفة — transform بس (مش all) وبسرعة عالية بدل 250ms */
         .option-node:active:not(:disabled)   { transform: scale(0.98); }
         .arena-action-btn:active              { transform: scale(0.95); }
         .nav-tab-link:active                  { transform: scale(0.96); }
         .arena-nav-next:active,
         .arena-nav-prev:active                { transform: scale(0.96); }
         .qmap-chip:active:not(:disabled)      { transform: scale(0.92); }
-        .nav-tab-link { transition: var(--transition); }
-        .arena-nav-next, .arena-nav-prev      { transition: var(--transition); }
+        .nav-tab-link                         { transition: transform 0.08s ease, color 0.15s ease; }
+        .arena-nav-next, .arena-nav-prev      { transition: transform 0.08s ease; }
         .modal-btn-confirm         { background: var(--danger);  color: white; }
         .modal-btn-confirm.safe    { background: var(--primary); color: white; }
         .modal-btn-confirm.warning { background: var(--warning); color: white; }
