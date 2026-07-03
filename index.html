@@ -28,6 +28,7 @@ html, body {
     margin: 0 !important;
     padding: 0 !important;
     overflow-x: hidden !important; /* يمنع ظهور شريط التمرير العرضي نهائياً */
+    scroll-behavior: smooth; /* ✅ [UX-NEW] تمرير سلس عام في المنصة */
 }
 
 /* تعديل الـ Layout ليكون 100% عرضاً */
@@ -540,6 +541,23 @@ html, body {
             font-family: 'Tajawal', sans-serif; transition: opacity 0.15s, transform 0.1s;
         }
         .modal-btn:active { transform: scale(0.97); }
+
+        /* ✅ [UX-NEW] سلاسة عامة — أنيميشن ظهور خفيف يُستخدم عند التنقل بين الصفحات/التبويبات/الأسئلة */
+        @keyframes uxFadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .ux-fade-in { animation: uxFadeIn 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+
+        /* ✅ [UX-NEW] استجابة لمسية فورية عند الضغط — تحسّن الإحساس العام بخفة المنصة */
+        .option-node:active:not(:disabled)   { transform: scale(0.98); }
+        .arena-action-btn:active              { transform: scale(0.95); }
+        .nav-tab-link:active                  { transform: scale(0.96); }
+        .arena-nav-next:active,
+        .arena-nav-prev:active                { transform: scale(0.96); }
+        .qmap-chip:active:not(:disabled)      { transform: scale(0.92); }
+        .nav-tab-link { transition: var(--transition); }
+        .arena-nav-next, .arena-nav-prev      { transition: var(--transition); }
         .modal-btn-confirm         { background: var(--danger);  color: white; }
         .modal-btn-confirm.safe    { background: var(--primary); color: white; }
         .modal-btn-confirm.warning { background: var(--warning); color: white; }
@@ -2984,13 +3002,16 @@ html, body {
             document.getElementById('arena-progress-bar-fill').style.width = `${percentFill}%`;
 
             const activeQ = currentQuestions[qIndex];
-            document.getElementById('arena-question-text').innerText = activeQ.question;
+            const questionTextEl = document.getElementById('arena-question-text');
+            questionTextEl.innerText = activeQ.question;
+            _fadeInEl(questionTextEl);
             
             document.getElementById('arena-explanation-box').style.display = "none";
             document.getElementById('arena-nav-buttons').style.display  = "none";
 
             const box = document.getElementById('arena-options-box');
             box.innerHTML = "";
+            _fadeInEl(box);
             
             clearInterval(timerInterval);
             
@@ -3042,7 +3063,9 @@ html, body {
             });
             
             document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل.";
-            document.getElementById('arena-explanation-box').style.display = "block";
+            const expBoxFrozen = document.getElementById('arena-explanation-box');
+            expBoxFrozen.style.display = "block";
+            _fadeInEl(expBoxFrozen);
             document.getElementById('arena-nav-buttons').style.display  = "flex";
             document.getElementById('btn-prev-question').style.display  = qIndex > 0 ? "flex" : "none";
             updateNextButtonLabel();
@@ -3129,7 +3152,9 @@ html, body {
             }
 
             document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل لهذا السؤال من قبل المشرف.";
-            document.getElementById('arena-explanation-box').style.display = "block";
+            const expBoxAnswered = document.getElementById('arena-explanation-box');
+            expBoxAnswered.style.display = "block";
+            _fadeInEl(expBoxAnswered);
             document.getElementById('arena-nav-buttons').style.display  = "flex";
             document.getElementById('btn-prev-question').style.display  = qIndex > 0 ? "flex" : "none";
             updateNextButtonLabel();
@@ -3667,15 +3692,18 @@ html, body {
             if (tabName === 'dash') {
                 dashTab.classList.remove('hidden-tab');
                 dashLink.classList.add('active');
+                _fadeInEl(dashTab);
             } else if (tabName === 'profile') {
                 profileTab.classList.remove('hidden-tab');
                 profileLink.classList.add('active');
                 updateGoogleLinkUI();
+                _fadeInEl(profileTab);
             } else if (tabName === 'leaders') {
                 leadersTab.classList.remove('hidden-tab');
                 if (leadersLink) leadersLink.classList.add('active');
                 // تحميل اللوحة عند أول فتح للتاب فقط
                 loadGlobalLeaderboard();
+                _fadeInEl(leadersTab);
             }
         }
 
@@ -4026,7 +4054,7 @@ html, body {
             // إخفاء كل المحتويات
             document.querySelectorAll('.admin-tab-content').forEach(el => el.classList.add('hidden-tab'));
             const target = document.getElementById(tabId);
-            if (target) target.classList.remove('hidden-tab');
+            if (target) { target.classList.remove('hidden-tab'); _fadeInEl(target); }
 
             // إزالة الكلاس النشط من كل أزرار التبويبات
             ['btn-tab-upload','btn-tab-students','btn-tab-stats','btn-tab-reports','btn-tab-tools','btn-tab-logs'].forEach(id => {
@@ -4805,6 +4833,14 @@ html, body {
             }
         }
 
+        // ✅ [UX-NEW] يشغّل أنيميشن ظهور خفيف لأي عنصر (صفحة/تبويب) — يُعاد تشغيله حتى لو نفس العنصر ظهر قبل كده
+        function _fadeInEl(el) {
+            if (!el) return;
+            el.classList.remove('ux-fade-in');
+            void el.offsetWidth; // إجبار إعادة التدفق (reflow) لإعادة تشغيل الأنيميشن
+            el.classList.add('ux-fade-in');
+        }
+
         function showView(viewId) {
             const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-count-picker', 'view-arena', 'view-review', 'view-result', 'view-admin-panel'];
             views.forEach(v => {
@@ -4812,7 +4848,10 @@ html, body {
                 if (el) el.style.display = "none";
             });
             const target = document.getElementById(viewId);
-            if (target) target.style.display = (viewId === 'view-loading' || viewId === 'view-register') ? "flex" : "block";
+            if (target) {
+                target.style.display = (viewId === 'view-loading' || viewId === 'view-register') ? "flex" : "block";
+                _fadeInEl(target);
+            }
         }
 
         function toggleTheme() { 
