@@ -541,15 +541,24 @@ html, body {
         }
         .modal-btn:active { transform: scale(0.97); }
 
-        /* ✅ [UX-v2] رجعت أراجع الفيديو تاني — شكل النقاط بالأعلى (اختر الموضوعات ← المستوى ← عدد الأسئلة)
-           بيدل على نمط "خطوات" (stepper)، والمحتوى الجديد بيدخل من جهة وبيسيب القديم من الجهة التانية
-           (سلايد أفقي خفيف، مش fade مكانه ثابت). ده أخف بصرياً من fade لأنه بيحاكي حركة "التقدم للأمام"
-           الطبيعية بدل ما يكون مجرد ظهور/اختفاء في مكانه. */
+        /* ✅ [UX-v3] مستويين للسرعة:
+           - عادي (للتنقل بين الصفحات/التبويبات): حركة أوضح بمنحنى "premium" (ease-out-quint) لإحساس بصري أرقى
+           - سريع (لصفحة الامتحان فقط): شبه فوري (90ms) وحركة صغيرة جداً — الأولوية هنا للاستجابة الفورية،
+             مش للاستعراض، عشان الطالب ميحسش إنه بينتظر وهو بيمتحن. */
         @keyframes uxSlideInFwd  { from { opacity: 0; transform: translateX(18px); } to { opacity: 1; transform: translateX(0); } }
         @keyframes uxSlideInBack { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
-        .ux-slide-fwd  { animation: uxSlideInFwd 0.15s ease-out; }
-        .ux-slide-back { animation: uxSlideInBack 0.15s ease-out; }
+        .ux-slide-fwd  { animation: uxSlideInFwd 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
+        .ux-slide-back { animation: uxSlideInBack 0.2s cubic-bezier(0.22, 1, 0.36, 1); }
 
+        @keyframes uxSlideInFwdFast  { from { opacity: 0; transform: translateX(7px); } to { opacity: 1; transform: translateX(0); } }
+        @keyframes uxSlideInBackFast { from { opacity: 0; transform: translateX(-7px); } to { opacity: 1; transform: translateX(0); } }
+        .ux-slide-fwd-fast  { animation: uxSlideInFwdFast 0.09s ease-out; }
+        .ux-slide-back-fast { animation: uxSlideInBackFast 0.09s ease-out; }
+
+        /* ✅ [UX-v3] ظهور متتالٍ خفيف لخيارات الإجابة — كل خيار يظهر بعد اللي قبله بفارق بسيط جداً،
+           بيدي إحساس "مصمم" بدل ما الخيارات كلها تطلع فجأة مرة واحدة، بدون أي تأخير محسوس فعلياً */
+        @keyframes uxOptionPop { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .option-node { animation: uxOptionPop 0.16s ease-out backwards; }
         /* ✅ استجابة لمسية سريعة وخفيفة — transform بس (مش all) وبسرعة عالية، بدون أي fade عند التنقل */
         .option-node:active:not(:disabled)   { transform: scale(0.98); }
         .arena-action-btn:active              { transform: scale(0.95); }
@@ -3006,14 +3015,14 @@ html, body {
             const activeQ = currentQuestions[qIndex];
             const questionTextEl = document.getElementById('arena-question-text');
             questionTextEl.innerText = activeQ.question;
-            _fadeInEl(questionTextEl, direction);
+            // ✅ [UX-v3] صفحة الامتحان تحديداً تستخدم الطبقة السريعة (شبه فورية) — الأولوية للاستجابة
+            _fadeInEl(questionTextEl, direction, true);
             
             document.getElementById('arena-explanation-box').style.display = "none";
             document.getElementById('arena-nav-buttons').style.display  = "none";
 
             const box = document.getElementById('arena-options-box');
             box.innerHTML = "";
-            _fadeInEl(box, direction);
             
             clearInterval(timerInterval);
             
@@ -3038,9 +3047,12 @@ html, body {
                     if (timeRemaining <= 0) { handleSelection(null, null, activeQ); }
                 }, 1000);
 
-                activeQ.shuffledOptions.forEach(opt => {
+                // ✅ [UX-v3] ظهور متتالٍ سريع جداً للخيارات (فرق 25ms بين كل خيار والتالي) — إحساس مصمم
+                // بدون أي تأخير فعلي محسوس؛ كل الخيارات تكون ظاهرة تماماً خلال أقل من ربع ثانية
+                activeQ.shuffledOptions.forEach((opt, i) => {
                     const node = document.createElement('button');
                     node.className = "option-node";
+                    node.style.animationDelay = (i * 25) + 'ms';
                     node.innerHTML = `<span>${opt}</span><i class="fa-regular fa-circle"></i>`;
                     node.onclick = () => handleSelection(node, opt, activeQ);
                     box.appendChild(node);
@@ -4835,13 +4847,17 @@ html, body {
             }
         }
 
-        // ✅ [UX-v2] سلايد أفقي خفيف واتجاهي (مش fade) — بيتنادى مع كل تنقل بين الأسئلة/الصفحات
-        // direction: 'fwd' (افتراضي، للأمام) أو 'back' (رجوع/سابق)
-        function _fadeInEl(el, direction) {
+        // ✅ [UX-v3] سلايد أفقي خفيف واتجاهي — بيتنادى مع كل تنقل بين الصفحات/التبويبات/الأسئلة
+        // direction: 'fwd' (افتراضي) أو 'back' | fast: true لصفحة الامتحان (شبه فوري، بدون استعراض)
+        function _fadeInEl(el, direction, fast) {
             if (!el) return;
-            el.classList.remove('ux-slide-fwd', 'ux-slide-back');
+            el.classList.remove('ux-slide-fwd', 'ux-slide-back', 'ux-slide-fwd-fast', 'ux-slide-back-fast');
             void el.offsetWidth; // إعادة تشغيل الأنيميشن حتى لو نفس العنصر
-            el.classList.add(direction === 'back' ? 'ux-slide-back' : 'ux-slide-fwd');
+            if (fast) {
+                el.classList.add(direction === 'back' ? 'ux-slide-back-fast' : 'ux-slide-fwd-fast');
+            } else {
+                el.classList.add(direction === 'back' ? 'ux-slide-back' : 'ux-slide-fwd');
+            }
         }
 
         function showView(viewId) {
