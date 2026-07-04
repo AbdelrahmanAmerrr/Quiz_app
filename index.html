@@ -1026,7 +1026,7 @@ html, body {
         }
     </script>
 
-    <div id="toast" class="toast-msg"></div>
+    <div id="toast" class="toast-msg" role="status" aria-live="polite"></div>
 
     <header>
         <div class="brand-wrap" onclick="showDashboardTab('dash')"><div class="logo-badge">A</div><span class="brand-name">Amer<span>Quiz</span></span></div>
@@ -1347,11 +1347,11 @@ html, body {
             </div>
 
             <!-- ✅ [UX-NEW] خريطة الأسئلة — نافذة منبثقة مستقلة عن نظام showModal الأساسي -->
-            <div id="question-map-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeQuestionMap();">
+            <div id="question-map-overlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="question-map-title" onclick="if(event.target===this) closeQuestionMap();">
                 <div class="modal-box" id="question-map-box" style="max-width:380px; text-align:right; padding:22px 20px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                        <h3 style="margin:0; font-size:16px;"><i class="fa-solid fa-table-cells" style="color:var(--primary);"></i> خريطة الأسئلة</h3>
-                        <button onclick="closeQuestionMap()" style="background:none; border:none; font-size:22px; color:var(--text-muted); cursor:pointer; line-height:1; padding:0 4px;">×</button>
+                        <h3 id="question-map-title" style="margin:0; font-size:16px;"><i class="fa-solid fa-table-cells" style="color:var(--primary);"></i> خريطة الأسئلة</h3>
+                        <button onclick="closeQuestionMap()" aria-label="إغلاق خريطة الأسئلة" style="background:none; border:none; font-size:22px; color:var(--text-muted); cursor:pointer; line-height:1; padding:0 4px;">×</button>
                     </div>
                     <div id="question-map-grid" style="display:grid; grid-template-columns:repeat(5,1fr); gap:8px; max-height:340px; overflow-y:auto; margin-bottom:14px; padding:2px;"></div>
                     <div style="display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--text-muted); justify-content:center;">
@@ -1364,11 +1364,11 @@ html, body {
             </div>
 
             <!-- ✅ [UX-NEW] نافذة الإبلاغ عن سؤال — مع إمكانية كتابة سبب البلاغ للأدمن -->
-            <div id="report-question-overlay" class="modal-overlay" style="display:none;" onclick="if(event.target===this) closeReportModal();">
+            <div id="report-question-overlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="report-question-title" onclick="if(event.target===this) closeReportModal();">
                 <div class="modal-box" id="report-question-box" style="max-width:380px; text-align:right; padding:24px 22px;">
                     <div style="text-align:center; margin-bottom:14px;">
                         <div style="font-size:34px; margin-bottom:6px;">🚩</div>
-                        <h3 style="margin:0 0 6px 0; font-size:17px;">إبلاغ عن خطأ في السؤال</h3>
+                        <h3 id="report-question-title" style="margin:0 0 6px 0; font-size:17px;">إبلاغ عن خطأ في السؤال</h3>
                         <p style="margin:0; font-size:13px; color:var(--text-muted); line-height:1.6;">وضّح للإدارة سبب الإبلاغ (اختياري) عشان تقدر تراجع السؤال بدقة أكتر.</p>
                     </div>
                     <textarea id="report-reason-input" maxlength="300" placeholder="مثال: الإجابة الصحيحة خطأ، أو في السؤال غلطة إملائية..."
@@ -1795,6 +1795,18 @@ html, body {
                 e.returnValue = '';
             }
         });
+
+        // ✅ [SEC-1] دالة تعقيم عامة لأي نص قادم من المستخدم قبل حقنه في innerHTML
+        // يمنع Stored XSS عبر الاسم / سبب البلاغ / أي حقل نصي يخزّنه الطالب
+        function esc(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
         function showToast(text, type = "success") {
             const toast = document.getElementById("toast");
@@ -2292,7 +2304,7 @@ html, body {
                     loginBtn.disabled = false;
                     loginBtn.innerHTML = `<i class="fa-brands fa-google"></i> تسجيل الدخول عبر Google`;
                 }
-                alert("فشل تسجيل الدخول عبر Google: " + e.message);
+                showToast("فشل تسجيل الدخول عبر Google: " + e.message, "error");
             });
         }
 
@@ -2565,7 +2577,7 @@ html, body {
                 startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
 
                 if (!questions || questions.length === 0) {
-                    alert("لا توجد أسئلة مضافة في هذه المادة حالياً.");
+                    showToast("لا توجد أسئلة مضافة في هذه المادة حالياً.", "error");
                     return;
                 }
 
@@ -2634,7 +2646,7 @@ html, body {
             }).catch(err => {
                 startBtn.disabled = false;
                 startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
-                alert("تعذّر تحميل الأسئلة، يرجى التحقق من اتصالك بالإنترنت.");
+                showToast("تعذّر تحميل الأسئلة، يرجى التحقق من اتصالك بالإنترنت.", "error");
             });
         }
 
@@ -3541,8 +3553,8 @@ html, body {
                         <div class="user-row">
                             <div style="display:flex; align-items:center; gap:10px;">
                                 <span style="font-weight:bold; min-width:50px;">${medalBadge}</span>
-                                <img src="${avatarSrc}">
-                                <span>${u.name}</span>
+                                <img src="${esc(avatarSrc)}">
+                                <span>${esc(u.name)}</span>
                             </div>
                             <span><strong>${u.xp || 0}</strong> <small style="color:var(--text-muted)">XP</small> (Lvl ${u.level || 1})</span>
                         </div>
@@ -3554,23 +3566,23 @@ html, body {
                     podiumHtml = `
                         ${top3.second ? `
                         <div class="podium-step second">
-                            <img class="podium-avatar" src="${top3.second.avatar}">
-                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${top3.second.name.split(' ')[0]}</div>
+                            <img class="podium-avatar" src="${esc(top3.second.avatar)}">
+                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.second.name.split(' ')[0])}</div>
                             <div class="podium-pillar">٢</div>
                         </div>` : ''}
                         
                         ${top3.first ? `
                         <div class="podium-step first">
                             <i class="fa-solid fa-crown" style="color:var(--warning); margin-bottom:-4px; font-size:14px;"></i>
-                            <img class="podium-avatar" src="${top3.first.avatar}">
-                            <div style="font-size:12px; font-weight:black; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; color:var(--warning);">${top3.first.name.split(' ')[0]}</div>
+                            <img class="podium-avatar" src="${esc(top3.first.avatar)}">
+                            <div style="font-size:12px; font-weight:black; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; color:var(--warning);">${esc(top3.first.name.split(' ')[0])}</div>
                             <div class="podium-pillar">١</div>
                         </div>` : ''}
 
                         ${top3.third ? `
                         <div class="podium-step third">
-                            <img class="podium-avatar" src="${top3.third.avatar}">
-                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${top3.third.name.split(' ')[0]}</div>
+                            <img class="podium-avatar" src="${esc(top3.third.avatar)}">
+                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.third.name.split(' ')[0])}</div>
                             <div class="podium-pillar">٣</div>
                         </div>` : ''}
                     `;
@@ -3746,11 +3758,11 @@ html, body {
                         logAdminAction("تسجيل دخول", "تم الدخول إلى لوحة التحكم");
                         openAdminPanel();
                     } else {
-                        alert("عذراً، هذا الحساب لا يملك صلاحيات سوبر أدمن.");
+                        showToast("عذراً، هذا الحساب لا يملك صلاحيات سوبر أدمن.", "error");
                         auth.signOut();
                     }
                 });
-            }).catch(e => alert("خطأ في التحقق: " + e.message));
+            }).catch(e => showToast("خطأ في التحقق: " + e.message, "error"));
         }
 
         function openAdminPanel() {
@@ -4161,22 +4173,22 @@ html, body {
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                             <div style="flex:1;">
                                 <p style="margin:0 0 6px 0;font-weight:700;font-size:14px;color:var(--text-main);">
-                                    📌 ${r.questionText || 'نص غير متاح'}
+                                    📌 ${esc(r.questionText) || 'نص غير متاح'}
                                     ${repCount > 1 ? `<span style="margin-right:6px;background:#fee2e2;color:#991b1b;border-radius:99px;padding:2px 8px;font-size:11px;">🔥 ${repCount} بلاغ</span>` : ''}
                                 </p>
                                 <p style="margin:0;font-size:12px;color:var(--text-muted);">
-                                    الإجابة: <strong>${r.correctAnswer||'—'}</strong> &nbsp;|&nbsp;
-                                    المادة: <strong>${r.subject||'—'}</strong> &nbsp;|&nbsp;
-                                    من: <strong>${r.reportedBy||'—'}</strong> &nbsp;|&nbsp;
+                                    الإجابة: <strong>${esc(r.correctAnswer)||'—'}</strong> &nbsp;|&nbsp;
+                                    المادة: <strong>${esc(r.subject)||'—'}</strong> &nbsp;|&nbsp;
+                                    من: <strong>${esc(r.reportedBy)||'—'}</strong> &nbsp;|&nbsp;
                                     ${ts}
                                 </p>
-                                ${r.reason ? `<p style="margin:6px 0 0 0; font-size:12.5px; color:var(--text-main); background:var(--card-bg); border-right:3px solid var(--warning); padding:6px 10px; border-radius:4px;">💬 ${r.reason}</p>` : ''}
+                                ${r.reason ? `<p style="margin:6px 0 0 0; font-size:12.5px; color:var(--text-main); background:var(--card-bg); border-right:3px solid var(--warning); padding:6px 10px; border-radius:4px;">💬 ${esc(r.reason)}</p>` : ''}
                             </div>
                             <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
                                 <span style="font-size:11px;padding:3px 8px;border-radius:99px;background:${isPending?'#fee2e2':'#d1fae5'};color:${isPending?'#991b1b':'#065f46'};">
                                     ${isPending ? '⏳ معلق' : '✅ تمت المراجعة'}
                                 </span>
-                                ${isPending ? `<button onclick="resolveReport('${r._id}', this)" style="font-size:11px;padding:4px 8px;border:1px solid var(--success);background:none;color:var(--success);border-radius:6px;cursor:pointer;">✔ تم الحل</button>` : ''}
+                                ${isPending ? `<button onclick="resolveReport('${esc(r._id)}', this)" style="font-size:11px;padding:4px 8px;border:1px solid var(--success);background:none;color:var(--success);border-radius:6px;cursor:pointer;">✔ تم الحل</button>` : ''}
                             </div>
                         </div>`;
                     listEl.appendChild(card);
@@ -4208,8 +4220,8 @@ html, body {
             const subjectSelect = document.getElementById('csvFileSubject');
             const selectedSubject = subjectSelect.value;
 
-            if (fileInput.files.length === 0) { alert("يا قائد، يرجى اختيار ملف الـ CSV أولاً!"); return; }
-            if (!selectedSubject) { alert("يا قائد، يرجى تحديد المادة التعليمية أولاً!"); return; }
+            if (fileInput.files.length === 0) { showToast("يا قائد، يرجى اختيار ملف الـ CSV أولاً!", "error"); return; }
+            if (!selectedSubject) { showToast("يا قائد، يرجى تحديد المادة التعليمية أولاً!", "error"); return; }
 
             const file = fileInput.files[0];
             
@@ -4239,7 +4251,7 @@ html, body {
                     });
 
                     if(count === 0) {
-                        alert("لم نجد أسئلة صالحة، يرجى التأكد من العناوين الإجبارية بالأعمدة.");
+                        showToast("لم نجد أسئلة صالحة، يرجى التأكد من العناوين الإجبارية بالأعمدة.", "error");
                         return;
                     }
 
@@ -4255,7 +4267,7 @@ html, body {
                         _invalidateQuestionCache(selectedSubject);
                         cachedAdminQuestions = [];
                         openAdminPanel();
-                    }).catch(err => alert("حدث خطأ أثناء الرفع: " + err.message));
+                    }).catch(err => showToast("حدث خطأ أثناء الرفع: " + err.message, "error"));
                 }
             });
         }
@@ -4285,27 +4297,42 @@ html, body {
                     
                     const tr = document.createElement('tr');
                     tr.dataset.studentName = (student.name || '').toLowerCase(); // ✅ للبحث بالاسم
+                    // ✅ [SEC-2] البيانات القادمة من المستخدم (student.name) تُمرَّر عبر data-* attributes
+                    // مُعقَّمة بـ esc()، وليس داخل onclick/onblur كسلسلة نصية — لمنع كسر السياق البرمجي وتنفيذ كود دخيل
                     tr.innerHTML = `
-                        <td style="padding: 12px; font-weight: bold; ${isBanned ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${student.name || 'طالب مجهول'}</td>
+                        <td style="padding: 12px; font-weight: bold; ${isBanned ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${esc(student.name) || 'طالب مجهول'}</td>
                         <td style="padding: 12px;">
-                            <input type="number" class="search-box" style="width:90px; margin:0; padding:6px;" value="${student.xp || 0}" onblur="updateStudentXpManually('${uid}', this.value, '${student.name}')">
+                            <input type="number" class="search-box admin-xp-input" style="width:90px; margin:0; padding:6px;" value="${student.xp || 0}" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
                         </td>
                         <td style="padding: 12px;">
-                            <input type="number" class="search-box" style="width:60px; margin:0; padding:6px;" value="${student.level || 1}" onblur="updateStudentLevelManually('${uid}', this.value, '${student.name}')">
+                            <input type="number" class="search-box admin-level-input" style="width:60px; margin:0; padding:6px;" value="${student.level || 1}" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
                         </td>
                         <td style="padding: 12px; font-size:12px; color:var(--text-muted);">
                             <div>دخول: ${dateStr}</div>
                             <div>آخر اختبار: ${lastQuizStr}</div>
                         </td>
                         <td style="padding: 12px; text-align: center; display:flex; gap:5px; justify-content:center;">
-                            <button onclick="toggleBanStudent('${uid}', ${isBanned}, '${student.name}')" class="ban-btn ${isBanned ? 'ban-inactive' : 'ban-active'}" style="font-size:11px;">
+                            <button type="button" class="ban-btn admin-ban-btn ${isBanned ? 'ban-inactive' : 'ban-active'}" style="font-size:11px;" data-uid="${esc(uid)}" data-banned="${isBanned}" data-name="${esc(student.name || '')}">
                                 ${isBanned ? '🔓 فك حظر' : '🚫 حظر'}
                             </button>
-                            <button onclick="resetStudentAttemptsSpecific('${uid}', '${student.name}')" class="ban-btn ban-active" style="background:#f59e0b; color:white; font-size:11px;">
+                            <button type="button" class="ban-btn admin-reset-btn ban-active" style="background:#f59e0b; color:white; font-size:11px;" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
                                 🔄 تصفير مادة
                             </button>
                         </td>
                     `;
+                    // ✅ ربط الأحداث برمجياً (addEventListener) بدل onclick/onblur — يقرأ القيم الخام من dataset بأمان
+                    tr.querySelector('.admin-xp-input').addEventListener('blur', function() {
+                        updateStudentXpManually(this.dataset.uid, this.value, this.dataset.name);
+                    });
+                    tr.querySelector('.admin-level-input').addEventListener('blur', function() {
+                        updateStudentLevelManually(this.dataset.uid, this.value, this.dataset.name);
+                    });
+                    tr.querySelector('.admin-ban-btn').addEventListener('click', function() {
+                        toggleBanStudent(this.dataset.uid, this.dataset.banned === 'true', this.dataset.name);
+                    });
+                    tr.querySelector('.admin-reset-btn').addEventListener('click', function() {
+                        resetStudentAttemptsSpecific(this.dataset.uid, this.dataset.name);
+                    });
                     tbody.appendChild(tr);
                 });
             }).catch(err => {
@@ -4334,8 +4361,8 @@ html, body {
                 icon: currentStatus ? '🔓' : '🚫',
                 title: currentStatus ? 'فك الحظر' : 'حظر الطالب',
                 message: currentStatus
-                    ? `هل تريد إلغاء الحظر عن الطالب <strong>${studentName}</strong>؟`
-                    : `هل أنت متأكد من حظر <strong>${studentName}</strong>؟ لن يتمكن من دخول المنصة.`,
+                    ? `هل تريد إلغاء الحظر عن الطالب <strong>${esc(studentName)}</strong>؟`
+                    : `هل أنت متأكد من حظر <strong>${esc(studentName)}</strong>؟ لن يتمكن من دخول المنصة.`,
                 confirmText: currentStatus ? 'نعم، فك الحظر' : 'نعم، احظر',
                 cancelText: 'إلغاء',
                 type: currentStatus ? 'success' : 'danger',
@@ -4355,7 +4382,7 @@ html, body {
             if(!fixedSubjects[subKey]) { showToast("⚠️ رمز المادة غير صحيح!", "error"); return; }
             showModal({
                 icon: '🔄', title: 'تصفير مادة',
-                message: `سيتم تصفير محاولات مادة <strong>${fixedSubjects[subKey]}</strong> للطالب <strong>${studentName}</strong>.`,
+                message: `سيتم تصفير محاولات مادة <strong>${esc(fixedSubjects[subKey])}</strong> للطالب <strong>${esc(studentName)}</strong>.`,
                 confirmText: 'تصفير', cancelText: 'إلغاء', type: 'warning',
                 onConfirm: () => {
                     db.collection("users").doc(uid).collection("attempts").doc(subKey).delete().then(() => {
@@ -4576,7 +4603,7 @@ html, body {
                     let tStr = l.timestamp ? l.timestamp.toDate().toLocaleTimeString('ar-EG') : "";
                     html += `
                         <div style="padding:10px; border-bottom:1px solid var(--border); font-size:13px; display:flex; justify-content:space-between;">
-                            <span><strong>[${l.adminName}]</strong> ${l.actionType}: ${l.detail}</span>
+                            <span><strong>[${esc(l.adminName)}]</strong> ${esc(l.actionType)}: ${esc(l.detail)}</span>
                             <span style="color:var(--text-muted); font-size:11px;">${tStr}</span>
                         </div>
                     `;
@@ -4668,7 +4695,7 @@ html, body {
                         } // end onConfirm
                     });
                 } catch(err) {
-                    alert("فشل قراءة وفك تشفير الملف البديل!");
+                    showToast("فشل قراءة وفك تشفير الملف البديل!", "error");
                 }
             };
             reader.readAsText(file);
@@ -4884,7 +4911,7 @@ html, body {
     </script>
 
     <!-- ══════ مودال مخصص يحل محل confirm() ══════ -->
-    <div id="custom-modal-overlay" class="modal-overlay" style="display:none;" onclick="handleModalOverlayClick(event)">
+    <div id="custom-modal-overlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" aria-labelledby="modal-title" onclick="handleModalOverlayClick(event)">
         <div class="modal-box" id="modal-box">
             <div class="modal-icon-wrap" id="modal-icon-wrap">⚠️</div>
             <h3 class="modal-title" id="modal-title">تأكيد</h3>
