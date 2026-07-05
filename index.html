@@ -4517,7 +4517,7 @@ html, body {
                     return;
                 }
 
-                renderAiReviewCards(allQuestions, subjectSelect.value);
+                await renderAiReviewCards(allQuestions, subjectSelect.value);
                 if (failedBatches > 0) {
                     showToast(`تم التوليد مع فشل ${failedBatches} من ${batches.length} دفعة`, "error");
                 }
@@ -4530,7 +4530,73 @@ html, body {
             }
         }
 
-        function renderAiReviewCards(questions, subject) {
+        // تطبيع نص عربي للمقارنة: إزالة التشكيل والتطويل وتوحيد أشكال الحروف المتقاربة والمسافات
+        function _normalizeArabicText(str) {
+            return String(str || '')
+                .replace(/[\u064B-\u0652\u0670\u0640]/g, '') // تشكيل + حرف التطويل
+                .replace(/[إأآا]/g, 'ا')
+                .replace(/ى/g, 'ي')
+                .replace(/ة/g, 'ه')
+                .replace(/[^\u0600-\u06FFa-zA-Z0-9]+/g, ' ')
+                .trim()
+                .toLowerCase()
+                .replace(/\s+/g, ' ');
+        }
+
+        // نسبة تشابه بين نصين من 0 إلى 1 (1 = متطابقان تماماً) عبر مسافة Levenshtein
+        function _textSimilarity(a, b) {
+            if (a === b) return 1;
+            const lenA = a.length, lenB = b.length;
+            if (!lenA || !lenB) return 0;
+            // فرق طول كبير جداً = مستحيل يبقوا متشابهين، نتجاهل الحساب توفيراً للأداء
+            if (Math.abs(lenA - lenB) / Math.max(lenA, lenB) > 0.5) return 0;
+
+            const dp = new Array(lenB + 1);
+            for (let j = 0; j <= lenB; j++) dp[j] = j;
+            for (let i = 1; i <= lenA; i++) {
+                let prev = dp[0];
+                dp[0] = i;
+                for (let j = 1; j <= lenB; j++) {
+                    const temp = dp[j];
+                    dp[j] = a[i - 1] === b[j - 1] ? prev : 1 + Math.min(prev, dp[j], dp[j - 1]);
+                    prev = temp;
+                }
+            }
+            return 1 - (dp[lenB] / Math.max(lenA, lenB));
+        }
+
+        // يجيب نصوص أسئلة نفس المادة الموجودة فعلاً بالبنك — من الكاش المحمّل أصلاً (بدون أي قراءة إضافية) لو متاح،
+        // وإلا نداء واحد مفلتر بالمادة فقط (أرخص من تحميل كل البنك) كحل احتياطي لو الكاش لسه فاضي
+        async function _getExistingQuestionsForSubject(subject) {
+            if (cachedAdminQuestions && cachedAdminQuestions.length > 0) {
+                return cachedAdminQuestions.filter(q => q.subject === subject).map(q => q.question || '');
+            }
+            try {
+                const snap = await db.collection("questions").where("subject", "==", subject).get();
+                return snap.docs.map(d => (d.data().question || ''));
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // يحدد لكل سؤال مولّد إن كان مكرراً شبه مؤكد ('exact') أو يشبه سؤال موجود ('similar') أو جديد (null)
+        function _findDuplicateFlags(questions, existingTexts) {
+            const existingNorm = existingTexts.map(_normalizeArabicText);
+            return questions.map(q => {
+                const norm = _normalizeArabicText(q.question);
+                let bestScore = 0;
+                for (const ex of existingNorm) {
+                    const score = _textSimilarity(norm, ex);
+                    if (score > bestScore) bestScore = score;
+                    if (bestScore >= 0.97) break;
+                }
+                if (bestScore >= 0.97) return 'exact';
+                if (bestScore >= 0.8) return 'similar';
+                return null;
+            });
+        }
+
+        async function renderAiReviewCards(questions, subject) {
             aiGenCurrentSubject = subject;
             document.getElementById('ai-gen-form').style.display = 'none';
             document.getElementById('ai-gen-review').style.display = 'block';
@@ -4538,19 +4604,29 @@ html, body {
             if (searchBox) searchBox.value = '';
 
             const container = document.getElementById('ai-gen-cards');
+            container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px 0;"><i class="fa-solid fa-spinner fa-spin"></i> جاري فحص التكرار مع بنك الأسئلة...</p>`;
+
+            const existingTexts = await _getExistingQuestionsForSubject(subject);
+            const dupFlags = _findDuplicateFlags(questions, existingTexts);
+
             // ✅ كل القيم القادمة من الذكاء الاصطناعي تُعقَّم بـ esc() قبل الحقن في innerHTML — نفس قاعدة أي محتوى خارجي بالمنصة
-            container.innerHTML = questions.map((q, i) => `
-                <div class="ai-gen-card" data-index="${i}" data-search="${esc(q.question.toLowerCase())}" style="border:2px solid var(--border); border-radius:10px; margin-bottom:10px; background:var(--card-bg); overflow:hidden;">
+            container.innerHTML = questions.map((q, i) => {
+                const flag = dupFlags[i];
+                const badge = flag === 'exact'
+                    ? `<span style="background:#fee2e2; color:#b91c1c; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap;">🔴 مكرر بالبنك</span>`
+                    : (flag === 'similar'
+                        ? `<span style="background:#fef3c7; color:#92400e; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap;">🟡 يشبه سؤال موجود</span>`
+                        : '');
+                return `
+                <div class="ai-gen-card" data-index="${i}" data-search="${esc(q.question.toLowerCase())}" style="border:2px solid ${flag ? '#f59e0b' : 'var(--border)'}; border-radius:10px; margin-bottom:10px; background:var(--card-bg); overflow:hidden;">
                     <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; cursor:pointer;" onclick="toggleAiCard(${i})">
-                        <input type="checkbox" id="ai-inc-${i}" checked onclick="event.stopPropagation(); updateAiGenSelectedCount();" style="width:18px; height:18px; flex-shrink:0;">
+                        <input type="checkbox" id="ai-inc-${i}" ${flag === 'exact' ? '' : 'checked'} onclick="event.stopPropagation(); updateAiGenSelectedCount();" style="width:18px; height:18px; flex-shrink:0;">
                         <span class="ai-card-preview" id="ai-preview-${i}" style="flex:1; font-size:13px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i + 1}. ${esc(q.question)}</span>
+                        ${badge}
                         <i class="fa-solid fa-chevron-down ai-card-chevron" id="ai-chevron-${i}" style="transition:transform .2s; color:var(--text-muted); flex-shrink:0;"></i>
                     </div>
                     <div class="ai-card-details" id="ai-details-${i}" style="display:none; padding:0 12px 12px 12px; border-top:1px solid var(--border);">
-                        <div style="display:flex; align-items:center; gap:8px; margin:10px 0 8px;">
-                            <label style="font-size:12px; font-weight:bold; color:var(--text-muted);">تضمين هذا السؤال</label>
-                        </div>
-                        <textarea id="ai-q-${i}" class="search-box" style="width:100%; min-height:50px; margin-bottom:8px; padding:8px; resize:vertical;" oninput="syncAiCardPreview(${i})">${esc(q.question)}</textarea>
+                        <textarea id="ai-q-${i}" class="search-box" style="width:100%; min-height:50px; margin:10px 0 8px; padding:8px; resize:vertical;" oninput="syncAiCardPreview(${i})">${esc(q.question)}</textarea>
                         ${q.options.map((opt, j) => `
                             <input type="text" id="ai-opt-${i}-${j}" class="search-box" style="width:100%; margin-bottom:6px; padding:8px; font-size:13px;" value="${esc(opt)}">
                         `).join('')}
@@ -4561,7 +4637,8 @@ html, body {
                         <textarea id="ai-exp-${i}" class="search-box" style="width:100%; min-height:35px; padding:8px; font-size:12px;" placeholder="شرح الإجابة (اختياري)">${esc(q.explanation || '')}</textarea>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
 
             updateAiGenSelectedCount();
         }
@@ -5438,7 +5515,8 @@ html, body {
                     <button onclick="resetAiGenModal()" style="background:none; border:none; color:var(--text-muted); font-size:12px; cursor:pointer; text-decoration:underline;">توليد من جديد</button>
                 </div>
 
-                <input type="text" id="aiGenReviewSearch" class="search-box" style="width:100%; margin-bottom:8px; padding:8px;" placeholder="🔍 ابحث بنص السؤال..." oninput="filterAiCards()">
+                <input type="text" id="aiGenReviewSearch" class="search-box" style="width:100%; margin-bottom:6px; padding:8px;" placeholder="🔍 ابحث بنص السؤال..." oninput="filterAiCards()">
+                <p style="font-size:11px; color:var(--text-muted); margin:0 0 10px;">🔴 مكرر شبه مؤكد بالبنك (أُلغي تحديده تلقائياً) &nbsp;|&nbsp; 🟡 يشبه سؤال موجود (راجعه قبل الحفظ)</p>
 
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px;">
                     <label style="display:flex; align-items:center; gap:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">
