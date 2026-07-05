@@ -14,6 +14,12 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+    </script>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 
         <style>
@@ -4301,6 +4307,10 @@ html, body {
         // ══════════════════════════════════════════════════════════════
 
         let aiGenCurrentSubject = '';
+        let aiGenPageImages = []; // كل الصور/الصفحات الجاهزة للتحليل بعد المعالجة
+
+        const AI_GEN_BATCH_PAGE_SIZE = 3;   // كام صورة تُرسل بالنداء الواحد لـ Gemini
+        const AI_GEN_MAX_TOTAL_PAGES = 12;  // حد أقصى لعدد الصفحات/الصور بالمرة الواحدة
 
         function openAiGenModal() {
             resetAiGenModal();
@@ -4325,20 +4335,13 @@ html, body {
             document.getElementById('ai-gen-form').style.display = 'block';
             document.getElementById('ai-gen-review').style.display = 'none';
             document.getElementById('ai-gen-cards').innerHTML = '';
-            document.getElementById('aiGenImageInput').value = '';
+            document.getElementById('aiGenFileInput').value = '';
             document.getElementById('aiGenSubject').value = '';
             document.getElementById('aiGenCount').value = '5';
-            document.getElementById('aiGenFileDisplay').innerText = 'اضغط لاختيار صورة صفحة من المنهج';
+            document.getElementById('aiGenNote').value = '';
+            document.getElementById('aiGenFileDisplay').innerText = 'اضغط لاختيار صورة أو ملف PDF (تقدر تختار أكثر من صورة)';
             document.getElementById('aiGenFileDisplay').style.color = '';
-        }
-
-        function updateAiGenFileDisplay() {
-            const fileInput = document.getElementById('aiGenImageInput');
-            const display = document.getElementById('aiGenFileDisplay');
-            if (fileInput.files.length > 0) {
-                display.innerText = "🖼️ " + fileInput.files[0].name;
-                display.style.color = "var(--success)";
-            }
+            aiGenPageImages = [];
         }
 
         // ضغط صورة مستطيلة (صفحة منهج) مع الحفاظ على أبعادها — بدون قص دائري (بعكس compressImageToBase64 المخصصة للأفاتار)
@@ -4369,47 +4372,146 @@ html, body {
             });
         }
 
+        // يحوّل كل صفحات ملف PDF لصور base64 (نفس معايير ضغط الصورة العادية)
+        function extractPdfPageImages(file, maxWidth, quality) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = () => reject(new Error("فشل قراءة ملف PDF"));
+                reader.onload = async (e) => {
+                    try {
+                        const typedArray = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument({ data: typedArray }).promise;
+                        const images = [];
+                        for (let p = 1; p <= pdf.numPages; p++) {
+                            const page = await pdf.getPage(p);
+                            const viewport = page.getViewport({ scale: 2 });
+                            const canvas = document.createElement('canvas');
+                            canvas.width = viewport.width;
+                            canvas.height = viewport.height;
+                            await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+
+                            let targetCanvas = canvas;
+                            if (canvas.width > maxWidth) {
+                                const scale = maxWidth / canvas.width;
+                                const resized = document.createElement('canvas');
+                                resized.width = maxWidth;
+                                resized.height = Math.round(canvas.height * scale);
+                                resized.getContext('2d').drawImage(canvas, 0, 0, resized.width, resized.height);
+                                targetCanvas = resized;
+                            }
+                            images.push(targetCanvas.toDataURL('image/jpeg', quality));
+                        }
+                        resolve(images);
+                    } catch (err) {
+                        reject(new Error("تعذّر قراءة صفحات PDF: " + err.message));
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // يُستدعى عند اختيار ملف/ملفات — يجهّز aiGenPageImages من صور مباشرة أو من صفحات PDF
+        async function updateAiGenFileDisplay() {
+            const fileInput = document.getElementById('aiGenFileInput');
+            const display = document.getElementById('aiGenFileDisplay');
+            aiGenPageImages = [];
+            if (fileInput.files.length === 0) return;
+
+            display.innerText = "⏳ جاري تجهيز الملف...";
+            display.style.color = "";
+
+            try {
+                for (const file of fileInput.files) {
+                    if (file.type === 'application/pdf') {
+                        const pdfImages = await extractPdfPageImages(file, 1600, 0.8);
+                        aiGenPageImages.push(...pdfImages);
+                    } else {
+                        const img = await compressCurriculumImage(file, 1600, 0.8);
+                        aiGenPageImages.push(img);
+                    }
+                }
+                if (aiGenPageImages.length > AI_GEN_MAX_TOTAL_PAGES) {
+                    aiGenPageImages = aiGenPageImages.slice(0, AI_GEN_MAX_TOTAL_PAGES);
+                    showToast(`تم أخذ أول ${AI_GEN_MAX_TOTAL_PAGES} صفحة فقط بالحد الأقصى المسموح`, "error");
+                }
+                display.innerText = `✅ ${aiGenPageImages.length} صفحة/صورة جاهزة للتحليل`;
+                display.style.color = "var(--success)";
+            } catch (err) {
+                display.innerText = "❌ فشل تجهيز الملف: " + err.message;
+                display.style.color = "var(--danger)";
+                aiGenPageImages = [];
+            }
+        }
+
+        // ينفّذ التوليد على دفعات متتابعة (كل دفعة نداء منفصل لـ /api/generate-questions) ثم يجمع كل النتائج بشاشة مراجعة واحدة
         async function generateQuestionsFromImage() {
-            const fileInput = document.getElementById('aiGenImageInput');
             const subjectSelect = document.getElementById('aiGenSubject');
             const countInput = document.getElementById('aiGenCount');
+            const noteInput = document.getElementById('aiGenNote');
             const btn = document.getElementById('aiGenSubmitBtn');
 
-            if (fileInput.files.length === 0) { showToast("يرجى اختيار صورة أولاً", "error"); return; }
+            if (aiGenPageImages.length === 0) { showToast("يرجى اختيار صورة أو ملف PDF أولاً", "error"); return; }
             if (!subjectSelect.value) { showToast("يرجى تحديد المادة أولاً", "error"); return; }
+
+            const totalRequested = Math.min(Math.max(parseInt(countInput.value, 10) || 5, 1), 40);
+            const customNote = (noteInput?.value || '').trim().slice(0, 300);
+
+            const batches = [];
+            for (let i = 0; i < aiGenPageImages.length; i += AI_GEN_BATCH_PAGE_SIZE) {
+                batches.push(aiGenPageImages.slice(i, i + AI_GEN_BATCH_PAGE_SIZE));
+            }
+            const perBatchCount = Math.max(1, Math.ceil(totalRequested / batches.length));
 
             const originalBtnHtml = btn.innerHTML;
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري تحليل الصورة (قد تستغرق حتى 30 ثانية)...`;
+
+            let allQuestions = [];
+            let failedBatches = 0;
 
             try {
-                const imageBase64 = await compressCurriculumImage(fileInput.files[0], 1600, 0.8);
                 const idToken = await firebase.auth().currentUser.getIdToken();
 
-                const response = await fetch('/api/generate-questions', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Bearer ' + idToken
-                    },
-                    body: JSON.stringify({
-                        imageBase64: imageBase64,
-                        subject: subjectSelect.value,
-                        count: countInput.value
-                    })
-                });
+                for (let b = 0; b < batches.length; b++) {
+                    btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> دفعة ${b + 1} من ${batches.length}...`;
 
-                const data = await response.json();
-                if (!response.ok) {
-                    showToast(data.error || "حدث خطأ أثناء التوليد", "error");
+                    try {
+                        const response = await fetch('/api/generate-questions', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': 'Bearer ' + idToken
+                            },
+                            body: JSON.stringify({
+                                imagesBase64: batches[b],
+                                subject: subjectSelect.value,
+                                count: perBatchCount,
+                                customNote: customNote
+                            })
+                        });
+                        const data = await response.json();
+                        if (!response.ok) {
+                            failedBatches++;
+                            showToast(`دفعة ${b + 1}: ${data.error || 'فشل التوليد'}`, "error");
+                            continue;
+                        }
+                        if (data.questions && data.questions.length) {
+                            allQuestions.push(...data.questions);
+                        }
+                    } catch (batchErr) {
+                        failedBatches++;
+                        showToast(`دفعة ${b + 1}: خطأ اتصال (${batchErr.message})`, "error");
+                    }
+                }
+
+                if (allQuestions.length === 0) {
+                    showToast("لم يتمكن الذكاء الاصطناعي من استخراج أي أسئلة صالحة، جرّب ملفاً أوضح.", "error");
                     return;
                 }
-                if (!data.questions || data.questions.length === 0) {
-                    showToast("لم يتمكن الذكاء الاصطناعي من استخراج أسئلة صالحة من هذه الصورة، جرّب صورة أوضح.", "error");
-                    return;
-                }
 
-                renderAiReviewCards(data.questions, data.subject);
+                renderAiReviewCards(allQuestions, subjectSelect.value);
+                if (failedBatches > 0) {
+                    showToast(`تم التوليد مع فشل ${failedBatches} من ${batches.length} دفعة`, "error");
+                }
 
             } catch (err) {
                 showToast("خطأ: " + err.message, "error");
@@ -5226,11 +5328,11 @@ html, body {
 
             <!-- نموذج الإدخال -->
             <div id="ai-gen-form">
-                <input type="file" id="aiGenImageInput" accept="image/*" style="display:none;" onchange="updateAiGenFileDisplay()" />
-                <label for="aiGenImageInput" class="file-label">
-                    <i class="fa-solid fa-image file-icon"></i>
-                    <span id="aiGenFileDisplay" style="font-weight:bold; display:block; margin-bottom:5px;">اضغط لاختيار صورة صفحة من المنهج</span>
-                    <small style="color:var(--text-muted); display:block;">صورة واضحة وغير مائلة تعطي نتيجة أدق</small>
+                <input type="file" id="aiGenFileInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="updateAiGenFileDisplay()" />
+                <label for="aiGenFileInput" class="file-label">
+                    <i class="fa-solid fa-file-pdf file-icon"></i>
+                    <span id="aiGenFileDisplay" style="font-weight:bold; display:block; margin-bottom:5px;">اضغط لاختيار صورة أو ملف PDF (تقدر تختار أكثر من صورة)</span>
+                    <small style="color:var(--text-muted); display:block;">PDF بيتحول تلقائياً لصفحات — حتى 12 صفحة بالمرة الواحدة</small>
                 </label>
 
                 <div style="margin:14px 0 10px 0;">
@@ -5244,9 +5346,14 @@ html, body {
                     </select>
                 </div>
 
+                <div style="margin:0 0 10px 0;">
+                    <label for="aiGenNote" style="font-size:12px; font-weight:bold; color:var(--text-muted); display:block; margin-bottom:4px;">ملاحظة للذكاء الاصطناعي (اختياري):</label>
+                    <textarea id="aiGenNote" class="search-box" style="width:100%; min-height:45px; padding:8px; font-size:12px;" placeholder="مثال: نوّع طول الخيارات الأربعة، ولا تخلي الإجابة الصحيحة دايماً هي الأطول"></textarea>
+                </div>
+
                 <div style="margin:0 0 14px 0; display:flex; align-items:center; gap:10px;">
-                    <label for="aiGenCount" style="font-size:13px; font-weight:bold; color:var(--text-muted);">عدد الأسئلة المطلوب (1-10):</label>
-                    <input type="number" id="aiGenCount" value="5" min="1" max="10" class="search-box" style="width:70px; margin:0; padding:6px;">
+                    <label for="aiGenCount" style="font-size:13px; font-weight:bold; color:var(--text-muted);">عدد الأسئلة الإجمالي المطلوب (1-40):</label>
+                    <input type="number" id="aiGenCount" value="5" min="1" max="40" class="search-box" style="width:70px; margin:0; padding:6px;">
                 </div>
 
                 <button id="aiGenSubmitBtn" class="btn-launch" style="background:#be185d; width:100%;" onclick="generateQuestionsFromImage()">
