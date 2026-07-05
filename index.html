@@ -4421,14 +4421,23 @@ html, body {
             display.style.color = "";
 
             try {
+                let skippedNames = [];
                 for (const file of fileInput.files) {
-                    if (file.type === 'application/pdf') {
+                    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+                    const isImage = file.type.startsWith('image/') || /\.(jpe?g|png|webp|heic|heif)$/i.test(file.name);
+
+                    if (isPdf) {
                         const pdfImages = await extractPdfPageImages(file, 1600, 0.8);
                         aiGenPageImages.push(...pdfImages);
-                    } else {
+                    } else if (isImage) {
                         const img = await compressCurriculumImage(file, 1600, 0.8);
                         aiGenPageImages.push(img);
+                    } else {
+                        skippedNames.push(file.name);
                     }
+                }
+                if (skippedNames.length) {
+                    showToast(`تم تجاهل ملفات غير مدعومة (صور أو PDF فقط): ${skippedNames.join('، ')}`, "error");
                 }
                 if (aiGenPageImages.length > AI_GEN_MAX_TOTAL_PAGES) {
                     aiGenPageImages = aiGenPageImages.slice(0, AI_GEN_MAX_TOTAL_PAGES);
@@ -5328,7 +5337,7 @@ html, body {
 
             <!-- نموذج الإدخال -->
             <div id="ai-gen-form">
-                <input type="file" id="aiGenFileInput" accept="image/*,application/pdf" multiple style="display:none;" onchange="updateAiGenFileDisplay()" />
+                <input type="file" id="aiGenFileInput" multiple style="display:none;" onchange="updateAiGenFileDisplay()" />
                 <label for="aiGenFileInput" class="file-label">
                     <i class="fa-solid fa-file-pdf file-icon"></i>
                     <span id="aiGenFileDisplay" style="font-weight:bold; display:block; margin-bottom:5px;">اضغط لاختيار صورة أو ملف PDF (تقدر تختار أكثر من صورة)</span>
