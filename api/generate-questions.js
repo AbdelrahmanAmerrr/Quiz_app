@@ -1,5 +1,7 @@
 // /api/generate-questions.js
-// Vercel Serverless Function — يستقبل صورة منهج + مادة، ويرجّع أسئلة مقترحة من Gemini.
+// Vercel Serverless Function — يستقبل صورة/صور منهج + مادة، ويرجّع أسئلة مقترحة من Gemini.
+// ✅ تحديث: يدعم الآن مصفوفة صور (imagesBase64) لدعم دفعات صفحات PDF بجانب الصورة المفردة القديمة (imageBase64).
+// ✅ تحديث: يدعم customNote — ملاحظة نصية اختيارية من الأدمن تُضاف لتعليمات الذكاء الاصطناعي (مثال: تنويع طول الخيارات).
 // الأمان: يتحقق من Firebase ID Token ومن وجود الـ uid داخل مجموعة admins قبل أي نداء لـ Gemini،
 // حتى لا يقدر أي زائر يكتشف رابط الـ API ويستهلك حصتك المجانية.
 
@@ -20,6 +22,11 @@ const SUBJECT_LABELS = {
     operations_management: "إدارة الانتاج والعمليات",
     economics_english: "انجليزي اقتصاد"
 };
+
+// حماية إضافية بجانب حد الدفعة المضبوط بالفرونت (لو حد استدعى الـ API مباشرة)
+const MAX_IMAGES_PER_REQUEST = 4;
+const MAX_QUESTIONS_PER_REQUEST = 15;
+const MAX_NOTE_LENGTH = 300;
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') {
@@ -48,30 +55,49 @@ module.exports = async (req, res) => {
         }
 
         // ── ٢) قراءة وتحقق أساسي من المدخلات ──
-        const { imageBase64, subject, count } = req.body || {};
-        if (!imageBase64 || !subject || !SUBJECT_LABELS[subject]) {
-            return res.status(400).json({ error: 'الصورة والمادة مطلوبتان (مادة غير معروفة؟)' });
-        }
-        const questionCount = Math.min(Math.max(parseInt(count, 10) || 5, 1), 10);
+        // دعم الشكل القديم (imageBase64 مفرد) والجديد (imagesBase64 مصفوفة) معاً للتوافق العكسي
+        const { imageBase64, imagesBase64, subject, count, customNote } = req.body || {};
+        const imagesList = Array.isArray(imagesBase64) && imagesBase64.length
+            ? imagesBase64
+            : (imageBase64 ? [imageBase64] : []);
 
-        const match = imageBase64.match(/^data:(image\/\w+);base64,(.+)$/);
-        if (!match) {
-            return res.status(400).json({ error: 'صيغة الصورة غير صالحة' });
+        if (!imagesList.length || !subject || !SUBJECT_LABELS[subject]) {
+            return res.status(400).json({ error: 'صورة واحدة على الأقل والمادة مطلوبتان (مادة غير معروفة؟)' });
         }
-        const mimeType = match[1];
-        const base64Data = match[2];
+        if (imagesList.length > MAX_IMAGES_PER_REQUEST) {
+            return res.status(400).json({ error: `الحد الأقصى ${MAX_IMAGES_PER_REQUEST} صور/صفحات بالنداء الواحد` });
+        }
+
+        const questionCount = Math.min(Math.max(parseInt(count, 10) || 5, 1), MAX_QUESTIONS_PER_REQUEST);
+
+        const imageParts = [];
+        for (const img of imagesList) {
+            const match = String(img).match(/^data:(image\/\w+);base64,(.+)$/);
+            if (!match) {
+                return res.status(400).json({ error: 'صيغة إحدى الصور غير صالحة' });
+            }
+            imageParts.push({ inline_data: { mime_type: match[1], data: match[2] } });
+        }
+
+        const safeNote = typeof customNote === 'string' ? customNote.trim().slice(0, MAX_NOTE_LENGTH) : '';
 
         // ── ٣) بناء الطلب لـ Gemini ──
         const subjectLabel = SUBJECT_LABELS[subject];
-        const prompt = `أنت مساعد متخصص في إعداد أسئلة اختبارات جامعية باللغة العربية من محتوى صورة صفحة منهج دراسي.
+        const pagesNote = imageParts.length > 1
+            ? `مرفق ${imageParts.length} صور تمثل صفحات متتالية من نفس المصدر — اعتبرها محتوى واحد متصل.`
+            : '';
+
+        const prompt = `أنت مساعد متخصص في إعداد أسئلة اختبارات جامعية باللغة العربية من محتوى صورة/صفحات منهج دراسي.
 المادة: ${subjectLabel}
-المطلوب: استخرج حتى ${questionCount} سؤال بناءً فقط على المحتوى الفعلي الموجود في الصورة المرفقة.
+${pagesNote}
+المطلوب: استخرج حتى ${questionCount} سؤال بناءً فقط على المحتوى الفعلي الموجود في الصور المرفقة.
 
 القواعد الإلزامية:
 - لكل سؤال اختيار من متعدد: أعطِ بالضبط 4 خيارات (options)، واحد منها صحيح فقط.
 - لكل سؤال صح/خطأ: أعطِ خيارين فقط بالضبط: ["صح", "خطأ"].
 - answer يجب أن يطابق نص أحد الخيارات حرفياً تماماً (نفس الحروف والمسافات تماماً).
-- ممنوع اختراع معلومات غير موجودة في الصورة. لو المحتوى غير كافٍ لعدد الأسئلة المطلوب، أرجع عدد أقل بدل الاختلاق.
+- مهم جداً: نوّع طول الخيارات الأربعة بشكل عشوائي وواقعي — لا تجعل الخيار الصحيح هو الأطول دائماً ولا في نفس الترتيب دائماً (وزّع مكانه عشوائياً بين الخيارات). اجعل الخيارات الخاطئة معقولة وقريبة بالطول من الخيار الصحيح.
+- ممنوع اختراع معلومات غير موجودة في الصور. لو المحتوى غير كافٍ لعدد الأسئلة المطلوب، أرجع عدد أقل بدل الاختلاق.${safeNote ? `\n- ملاحظة إضافية من الأدمن يجب مراعاتها بدقة: "${safeNote}"` : ''}
 - أعد الإجابة بصيغة JSON فقط، بدون أي نص أو شرح قبله أو بعده، وبدون علامات backticks أو كلمة json، بالضبط بهذا الشكل:
 [{"question":"...","options":["...","...","...","..."],"answer":"...","explanation":"..."}]`;
 
@@ -84,10 +110,10 @@ module.exports = async (req, res) => {
                     contents: [{
                         parts: [
                             { text: prompt },
-                            { inline_data: { mime_type: mimeType, data: base64Data } }
+                            ...imageParts
                         ]
                     }],
-                    generationConfig: { temperature: 0.2 }
+                    generationConfig: { temperature: 0.4 }
                 })
             }
         );
