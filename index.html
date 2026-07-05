@@ -4534,26 +4534,87 @@ html, body {
             aiGenCurrentSubject = subject;
             document.getElementById('ai-gen-form').style.display = 'none';
             document.getElementById('ai-gen-review').style.display = 'block';
+            const searchBox = document.getElementById('aiGenReviewSearch');
+            if (searchBox) searchBox.value = '';
 
             const container = document.getElementById('ai-gen-cards');
             // ✅ كل القيم القادمة من الذكاء الاصطناعي تُعقَّم بـ esc() قبل الحقن في innerHTML — نفس قاعدة أي محتوى خارجي بالمنصة
             container.innerHTML = questions.map((q, i) => `
-                <div class="ai-gen-card" data-index="${i}" style="border:2px solid var(--border); border-radius:10px; padding:12px; margin-bottom:12px; background:var(--card-bg);">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                        <input type="checkbox" id="ai-inc-${i}" checked style="width:18px; height:18px;">
-                        <label for="ai-inc-${i}" style="font-size:12px; font-weight:bold; color:var(--text-muted);">تضمين هذا السؤال</label>
+                <div class="ai-gen-card" data-index="${i}" data-search="${esc(q.question.toLowerCase())}" style="border:2px solid var(--border); border-radius:10px; margin-bottom:10px; background:var(--card-bg); overflow:hidden;">
+                    <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; cursor:pointer;" onclick="toggleAiCard(${i})">
+                        <input type="checkbox" id="ai-inc-${i}" checked onclick="event.stopPropagation(); updateAiGenSelectedCount();" style="width:18px; height:18px; flex-shrink:0;">
+                        <span class="ai-card-preview" id="ai-preview-${i}" style="flex:1; font-size:13px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i + 1}. ${esc(q.question)}</span>
+                        <i class="fa-solid fa-chevron-down ai-card-chevron" id="ai-chevron-${i}" style="transition:transform .2s; color:var(--text-muted); flex-shrink:0;"></i>
                     </div>
-                    <textarea id="ai-q-${i}" class="search-box" style="width:100%; min-height:50px; margin-bottom:8px; padding:8px; resize:vertical;">${esc(q.question)}</textarea>
-                    ${q.options.map((opt, j) => `
-                        <input type="text" id="ai-opt-${i}-${j}" class="search-box" style="width:100%; margin-bottom:6px; padding:8px; font-size:13px;" value="${esc(opt)}">
-                    `).join('')}
-                    <div style="margin:8px 0;">
-                        <label style="font-size:12px; font-weight:bold; color:var(--text-muted);">الإجابة الصحيحة (يجب أن تطابق أحد الخيارات أعلاه حرفياً):</label>
-                        <input type="text" id="ai-answer-${i}" class="search-box" style="width:100%; margin-top:4px; padding:8px;" value="${esc(q.answer)}">
+                    <div class="ai-card-details" id="ai-details-${i}" style="display:none; padding:0 12px 12px 12px; border-top:1px solid var(--border);">
+                        <div style="display:flex; align-items:center; gap:8px; margin:10px 0 8px;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--text-muted);">تضمين هذا السؤال</label>
+                        </div>
+                        <textarea id="ai-q-${i}" class="search-box" style="width:100%; min-height:50px; margin-bottom:8px; padding:8px; resize:vertical;" oninput="syncAiCardPreview(${i})">${esc(q.question)}</textarea>
+                        ${q.options.map((opt, j) => `
+                            <input type="text" id="ai-opt-${i}-${j}" class="search-box" style="width:100%; margin-bottom:6px; padding:8px; font-size:13px;" value="${esc(opt)}">
+                        `).join('')}
+                        <div style="margin:8px 0;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--text-muted);">الإجابة الصحيحة (يجب أن تطابق أحد الخيارات أعلاه حرفياً):</label>
+                            <input type="text" id="ai-answer-${i}" class="search-box" style="width:100%; margin-top:4px; padding:8px;" value="${esc(q.answer)}">
+                        </div>
+                        <textarea id="ai-exp-${i}" class="search-box" style="width:100%; min-height:35px; padding:8px; font-size:12px;" placeholder="شرح الإجابة (اختياري)">${esc(q.explanation || '')}</textarea>
                     </div>
-                    <textarea id="ai-exp-${i}" class="search-box" style="width:100%; min-height:35px; padding:8px; font-size:12px;" placeholder="شرح الإجابة (اختياري)">${esc(q.explanation || '')}</textarea>
                 </div>
             `).join('');
+
+            updateAiGenSelectedCount();
+        }
+
+        // فتح/طي بطاقة سؤال واحدة
+        function toggleAiCard(i) {
+            const details = document.getElementById(`ai-details-${i}`);
+            const chevron = document.getElementById(`ai-chevron-${i}`);
+            if (!details) return;
+            const isOpen = details.style.display !== 'none';
+            details.style.display = isOpen ? 'none' : 'block';
+            if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        }
+
+        // فتح أو طي كل البطاقات دفعة واحدة
+        function toggleAllAiCards(expand) {
+            document.querySelectorAll('.ai-card-details').forEach(d => d.style.display = expand ? 'block' : 'none');
+            document.querySelectorAll('.ai-card-chevron').forEach(c => c.style.transform = expand ? 'rotate(180deg)' : '');
+        }
+
+        // تحديث نص المعاينة بالهيدر لما الأدمن يعدّل نص السؤال جوه البطاقة المفتوحة
+        function syncAiCardPreview(i) {
+            const preview = document.getElementById(`ai-preview-${i}`);
+            const input = document.getElementById(`ai-q-${i}`);
+            if (!preview || !input) return;
+            const text = input.value.trim() || '(بدون نص)';
+            preview.textContent = `${parseInt(i) + 1}. ${text}`;
+        }
+
+        // تحديد/إلغاء تحديد كل الأسئلة دفعة واحدة
+        function toggleAiSelectAll(checked) {
+            document.querySelectorAll('#ai-gen-cards input[id^="ai-inc-"]').forEach(box => box.checked = checked);
+            updateAiGenSelectedCount();
+        }
+
+        // تحديث عداد "X من Y محدد" + حالة صندوق "تحديد الكل"
+        function updateAiGenSelectedCount() {
+            const boxes = document.querySelectorAll('#ai-gen-cards input[id^="ai-inc-"]');
+            const total = boxes.length;
+            const checkedCount = document.querySelectorAll('#ai-gen-cards input[id^="ai-inc-"]:checked').length;
+            const counter = document.getElementById('aiGenSelectedCounter');
+            if (counter) counter.innerText = `${checkedCount} من ${total} محدد`;
+            const selectAllBox = document.getElementById('aiGenSelectAllBox');
+            if (selectAllBox) selectAllBox.checked = (total > 0 && checkedCount === total);
+        }
+
+        // فلترة البطاقات المعروضة بنص البحث (بدون التأثير على حفظ الأسئلة المخفية بالبحث)
+        function filterAiCards() {
+            const query = (document.getElementById('aiGenReviewSearch')?.value || '').trim().toLowerCase();
+            document.querySelectorAll('.ai-gen-card').forEach(card => {
+                const match = !query || (card.dataset.search || '').includes(query);
+                card.style.display = match ? '' : 'none';
+            });
         }
 
         function saveApprovedAiQuestions() {
@@ -5374,8 +5435,23 @@ html, body {
             <div id="ai-gen-review" style="display:none; margin-top:18px;">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                     <h4 style="margin:0; font-size:14px;">راجع الأسئلة قبل الحفظ ✏️</h4>
-                    <button onclick="resetAiGenModal()" style="background:none; border:none; color:var(--text-muted); font-size:12px; cursor:pointer; text-decoration:underline;">توليد من صورة جديدة</button>
+                    <button onclick="resetAiGenModal()" style="background:none; border:none; color:var(--text-muted); font-size:12px; cursor:pointer; text-decoration:underline;">توليد من جديد</button>
                 </div>
+
+                <input type="text" id="aiGenReviewSearch" class="search-box" style="width:100%; margin-bottom:8px; padding:8px;" placeholder="🔍 ابحث بنص السؤال..." oninput="filterAiCards()">
+
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px;">
+                    <label style="display:flex; align-items:center; gap:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">
+                        <input type="checkbox" id="aiGenSelectAllBox" checked onclick="toggleAiSelectAll(this.checked)" style="width:16px; height:16px;">
+                        تحديد الكل
+                    </label>
+                    <span id="aiGenSelectedCounter" style="color:var(--text-muted); font-weight:bold;"></span>
+                    <div style="display:flex; gap:8px;">
+                        <button onclick="toggleAllAiCards(true)" style="background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; color:var(--text-main);">فتح الكل</button>
+                        <button onclick="toggleAllAiCards(false)" style="background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; color:var(--text-main);">طي الكل</button>
+                    </div>
+                </div>
+
                 <div id="ai-gen-cards"></div>
                 <button id="aiGenSaveBtn" class="btn-launch" style="background:var(--success); width:100%; margin-top:10px;" onclick="saveApprovedAiQuestions()">
                     <i class="fa-solid fa-check"></i> حفظ الأسئلة المحدَّدة في البنك
