@@ -93,8 +93,18 @@ module.exports = async (req, res) => {
         );
 
         if (!geminiResponse.ok) {
-            const errText = await geminiResponse.text();
-            return res.status(502).json({ error: 'فشل الاتصال بخدمة الذكاء الاصطناعي: ' + errText });
+            let friendlyMsg = `فشل الاتصال بخدمة الذكاء الاصطناعي (رمز الخطأ: ${geminiResponse.status})`;
+            try {
+                const errJson = await geminiResponse.json();
+                const status = errJson?.error?.status;
+                if (geminiResponse.status === 429 || status === 'RESOURCE_EXHAUSTED') {
+                    friendlyMsg = '⏳ تم تجاوز الحد المجاني المسموح من Gemini مؤقتاً. انتظر دقيقة وحاول مرة أخرى.';
+                } else if (errJson?.error?.message) {
+                    // نكتفي بأول 150 حرف من رسالة جوجل الحقيقية بدل تفريغها كاملة (كانت تملأ الشاشة)
+                    friendlyMsg = 'فشل الاتصال بخدمة الذكاء الاصطناعي: ' + String(errJson.error.message).slice(0, 150);
+                }
+            } catch (e) { /* الرد مش JSON صالح، نكتفي بالرسالة الافتراضية أعلاه */ }
+            return res.status(502).json({ error: friendlyMsg });
         }
 
         const geminiData = await geminiResponse.json();
