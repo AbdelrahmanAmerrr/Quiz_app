@@ -1585,11 +1585,11 @@ html, body {
                     <!-- توزيع أسئلة المواد -->
                     <div style="margin-bottom:16px; font-size:13px; display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-gradient); padding:12px; border-radius:8px; border:1px solid var(--border);">
                         <strong style="width:100%; margin-bottom:4px;">📚 توزيع الأسئلة على المواد:</strong>
-                        <span id="subject-count-math">الرياضة: 0</span> |
-                        <span id="subject-count-english">مصطلحات: 0</span> |
-                        <span id="subject-count-economics">اقتصاد: 0</span> |
-                        <span id="subject-count-management">إدارة: 0</span> |
-                        <span id="subject-count-office">حزم: 0</span>
+                        <span id="subject-count-databases">قواعد البيانات: 0</span> |
+                        <span id="subject-count-structured_programming">البرمجة الهيكلية: 0</span> |
+                        <span id="subject-count-corporate_accounting">محاسبة شركات: 0</span> |
+                        <span id="subject-count-operations_management">إدارة الانتاج: 0</span> |
+                        <span id="subject-count-economics_english">انجليزي اقتصاد: 0</span>
                     </div>
 
                     <!-- أسهل / أصعب -->
@@ -1874,7 +1874,7 @@ html, body {
                     }
                     // هيكل قديم مكسور: { 'counts.math': 50, ... } — أصلحه وأعد كتابته
                     else {
-                        counts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
+                        counts = { databases: 0, structured_programming: 0, corporate_accounting: 0, operations_management: 0, economics_english: 0 };
                         let foundDotKeys = false;
                         Object.keys(data).forEach(k => {
                             if (k.startsWith('counts.')) {
@@ -1898,12 +1898,12 @@ html, body {
                     }
 
                     subjectCounts = Object.assign(
-                        { math: 0, english: 0, economics: 0, management: 0, office: 0 },
+                        { databases: 0, structured_programming: 0, corporate_accounting: 0, operations_management: 0, economics_english: 0 },
                         counts
                     );
                     // ✅ [FIX] قراءة نسخ المواد لإبطال كاش الأسئلة عند الطلاب فور أي تغيير من الأدمن
                     subjectVersions = Object.assign(
-                        { math: 0, english: 0, economics: 0, management: 0, office: 0 },
+                        { databases: 0, structured_programming: 0, corporate_accounting: 0, operations_management: 0, economics_english: 0 },
                         (data.qVersion && typeof data.qVersion === 'object') ? data.qVersion : {}
                     );
                     try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
@@ -1951,7 +1951,7 @@ html, body {
         // كما يمكن استدعاؤه يدوياً من لوحة الأدمن لإصلاح أي تعارض في العدادات (زر "إعادة حساب العدادات")
         function rebuildMetadataCounts() {
             return db.collection("questions").get().then(snapshot => {
-                const counts = { math: 0, english: 0, economics: 0, management: 0, office: 0 };
+                const counts = { databases: 0, structured_programming: 0, corporate_accounting: 0, operations_management: 0, economics_english: 0 };
                 let totalQ = 0;
                 snapshot.forEach(doc => {
                     if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
@@ -4613,7 +4613,7 @@ html, body {
         }
 
         function resetStudentAttemptsSpecific(uid, studentName) {
-            const subKey = prompt(`الرجاء كتابة رمز المادة المراد تصفير محاولاتها للطالب ${studentName}:\n (math / english / economics / management / office)`);
+            const subKey = prompt(`الرجاء كتابة رمز المادة المراد تصفير محاولاتها للطالب ${studentName}:\n (databases / structured_programming / corporate_accounting / operations_management / economics_english)`);
             if(!subKey) return;
             if(!fixedSubjects[subKey]) { showToast("⚠️ رمز المادة غير صحيح!", "error"); return; }
             showModal({
