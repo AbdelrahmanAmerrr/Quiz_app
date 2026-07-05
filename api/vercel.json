@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/generate-questions.js": {
+      "maxDuration": 30
+    }
+  }
+}
