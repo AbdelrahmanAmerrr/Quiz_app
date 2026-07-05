@@ -1441,6 +1441,15 @@ html, body {
                 <!-- ══════════ تبويب: الأسئلة ══════════ -->
                 <div id="tab-upload" class="admin-tab-content">
 
+                    <!-- ══ تنقل فرعي داخل تبويب الأسئلة ══ -->
+                    <div style="display:flex; gap:5px; background:var(--border); padding:3px; border-radius:8px; margin-bottom:18px;">
+                        <button id="qsub-btn-add" class="tab-btn active-upload" style="flex:1; font-size:13px; padding:9px; font-weight:600;" onclick="switchQuestionsSubTab('add')"><i class="fa-solid fa-plus"></i> إضافة أسئلة</button>
+                        <button id="qsub-btn-manage" class="tab-btn" style="flex:1; font-size:13px; padding:9px; font-weight:600; color:var(--text-main);" onclick="switchQuestionsSubTab('manage')"><i class="fa-solid fa-database"></i> إدارة البنك</button>
+                    </div>
+
+                    <!-- ══════ فرعي: إضافة أسئلة ══════ -->
+                    <div id="qsub-add" class="qsub-content">
+
                     <!-- ── رفع CSV ── -->
                     <div class="bulk-upload-card">
                         <h4 style="margin:0 0 12px 0; color:var(--primary);"><i class="fa-solid fa-cloud-arrow-up"></i> رفع أسئلة CSV</h4>
@@ -1465,31 +1474,18 @@ html, body {
                         </button>
                     </div>
 
-                    <!-- ── حذف الأسئلة ── -->
-                    <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:8px; padding:14px; margin:16px 0;">
-                        <h4 style="margin:0 0 12px 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> حذف الأسئلة</h4>
-                        <div style="margin-bottom:10px;">
-                            <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">حذف أسئلة مادة محددة:</label>
-                            <select id="deleteSubjectSelect" style="width:100%; padding:9px; border-radius:8px; border:1px solid #fca5a5; background:var(--card-bg); color:var(--text-main); font-size:14px;">
-                                <option value="">-- اختر المادة للحذف --</option>
-                                <option value="databases">قواعد البيانات</option>
-                                <option value="structured_programming">البرمجة الهيكلية</option>
-                                <option value="corporate_accounting">محاسبة شركات</option>
-                                <option value="operations_management">إدارة الانتاج والعمليات</option>
-                                <option value="economics_english">انجليزي اقتصاد</option>
-                            </select>
-                        </div>
-                        <button class="ban-btn" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; width:100%; margin-bottom:8px;" onclick="deleteQuestionsBySubject()">
-                            <i class="fa-solid fa-trash"></i> حذف أسئلة المادة المحددة
-                        </button>
-                        <button class="ban-btn" style="background:#7f1d1d; color:#fff; width:100%;" onclick="deleteAllQuestions()">
-                            <i class="fa-solid fa-skull"></i> مسح جميع الأسئلة (الكل)
+                    <!-- ── توليد بالذكاء الاصطناعي (منقولة من تبويب الأدوات لأنها طريقة إضافة أسئلة) ── -->
+                    <div class="bulk-upload-card" style="margin-top:16px; border-color:#f9a8d4;">
+                        <h4 style="margin:0 0 12px 0; color:#be185d;"><i class="fa-solid fa-wand-magic-sparkles"></i> توليد أسئلة بالذكاء الاصطناعي</h4>
+                        <p style="font-size:13px; color:var(--text-muted); margin:0 0 12px 0;">ارفع صورة صفحة من المنهج، وسيقترح الذكاء الاصطناعي أسئلة تُعرض عليك للمراجعة والتعديل قبل حفظها في بنك الأسئلة.</p>
+                        <button onclick="openAiGenModal()" class="ban-btn ban-inactive" style="background:#fce7f3; color:#be185d; border:1px solid #f9a8d4; width:100%;">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i> توليد أسئلة من صورة
                         </button>
                     </div>
 
                     <div style="text-align: center; margin: 25px 0; font-weight: bold; color: var(--text-muted);">─ أو إضافة / تعديل سؤال بشكل يدوي فردي ─</div>
 
-                    <div class="card" style="background: var(--bg-gradient); margin-bottom: 25px; border-color: var(--primary);">
+                    <div class="card" style="background: var(--bg-gradient); margin-bottom: 10px; border-color: var(--primary);">
                         <input type="hidden" id="form-q-id">
                         <div class="admin-form-group">
                             <label>اختر المادة الدراسية:</label>
@@ -1510,6 +1506,34 @@ html, body {
                         <div class="admin-form-group"><textarea id="form-q-exp" placeholder="التوضيح العلمي للاستفادة مابعد الحل..."></textarea></div>
                         <button class="btn-launch" style="background: var(--primary);" onclick="saveQuestionData()">حفظ السؤال بالسيرفر</button>
                         <button class="btn-launch" style="background: var(--danger); margin-top:10px; display:none;" id="btn-cancel-edit" onclick="resetQuestionForm()">إلغاء التعديل</button>
+                    </div>
+
+                    </div>
+                    <!-- ══════ نهاية فرعي: إضافة أسئلة ══════ -->
+
+                    <!-- ══════ فرعي: إدارة البنك ══════ -->
+                    <div id="qsub-manage" class="qsub-content hidden-tab">
+
+                    <!-- ── حذف الأسئلة ── -->
+                    <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:8px; padding:14px; margin-bottom:16px;">
+                        <h4 style="margin:0 0 12px 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> حذف الأسئلة</h4>
+                        <div style="margin-bottom:10px;">
+                            <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">حذف أسئلة مادة محددة:</label>
+                            <select id="deleteSubjectSelect" style="width:100%; padding:9px; border-radius:8px; border:1px solid #fca5a5; background:var(--card-bg); color:var(--text-main); font-size:14px;">
+                                <option value="">-- اختر المادة للحذف --</option>
+                                <option value="databases">قواعد البيانات</option>
+                                <option value="structured_programming">البرمجة الهيكلية</option>
+                                <option value="corporate_accounting">محاسبة شركات</option>
+                                <option value="operations_management">إدارة الانتاج والعمليات</option>
+                                <option value="economics_english">انجليزي اقتصاد</option>
+                            </select>
+                        </div>
+                        <button class="ban-btn" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; width:100%; margin-bottom:8px;" onclick="deleteQuestionsBySubject()">
+                            <i class="fa-solid fa-trash"></i> حذف أسئلة المادة المحددة
+                        </button>
+                        <button class="ban-btn" style="background:#7f1d1d; color:#fff; width:100%;" onclick="deleteAllQuestions()">
+                            <i class="fa-solid fa-skull"></i> مسح جميع الأسئلة (الكل)
+                        </button>
                     </div>
 
                     <h3>🗂️ بنك الأسئلة المتاحة حالياً بالسيرفر</h3>
@@ -1536,6 +1560,10 @@ html, body {
                     <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px;" id="admin-questions-list">
                         جاري تحميل بنك الأسئلة...
                     </div>
+
+                    </div>
+                    <!-- ══════ نهاية فرعي: إدارة البنك ══════ -->
+
                 </div>
 
                 <!-- ══════════ تبويب: الطلاب ══════════ -->
@@ -1578,29 +1606,33 @@ html, body {
                         <div class="stat-box" style="background:var(--primary-light);"><i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">—</div><span>إجمالي الطلاب</span></div>
                         <div class="stat-box" style="background:#fef3c7;"><i class="fa-solid fa-file-invoice" style="color:#b45309"></i><div id="admin-total-questions">—</div><span>إجمالي الأسئلة</span></div>
                         <div class="stat-box" style="background:#d1fae5;"><i class="fa-solid fa-calendar-day" style="color:var(--success)"></i><div id="admin-daily-attempts">—</div><span>محاولات كلية</span></div>
-                        <div class="stat-box" style="background:#e0f2fe;"><i class="fa-solid fa-chart-bar" style="color:#0284c7"></i><div id="admin-avg-score">—</div><span>متوسط الدرجات</span></div>
-                        <div class="stat-box" style="background:#f3e8ff;"><i class="fa-solid fa-user-clock" style="color:#7c3aed"></i><div id="admin-active-students">—</div><span>نشطين (7 أيام)</span></div>
+                        <!-- ✅ [FIX] كانت "متوسط الدرجات" لا تُحسب أبداً وتظل "—" دائماً — استُبدلت بدقة البنك المحسوبة فعلياً من بيانات الأسئلة المحمّلة -->
+                        <div class="stat-box" style="background:#e0f2fe;"><i class="fa-solid fa-chart-bar" style="color:#0284c7"></i><div id="admin-avg-score">—</div><span>دقة البنك العامة</span></div>
+                        <!-- ✅ [FIX] كانت "نشطين (7 أيام)" لا تُحسب أبداً وتظل "—" دائماً — أصبحت تُحسب بالفعل من lastActivityAt -->
+                        <div class="stat-box" style="background:#f3e8ff;"><i class="fa-solid fa-user-clock" style="color:#7c3aed"></i><div id="admin-active-students">—</div><span>نشطون (٧ أيام)</span></div>
                     </div>
 
                     <!-- توزيع أسئلة المواد -->
-                    <div style="margin-bottom:16px; font-size:13px; display:flex; flex-wrap:wrap; gap:8px; background:var(--bg-gradient); padding:12px; border-radius:8px; border:1px solid var(--border);">
-                        <strong style="width:100%; margin-bottom:4px;">📚 توزيع الأسئلة على المواد:</strong>
-                        <span id="subject-count-databases">قواعد البيانات: 0</span> |
-                        <span id="subject-count-structured_programming">البرمجة الهيكلية: 0</span> |
-                        <span id="subject-count-corporate_accounting">محاسبة شركات: 0</span> |
-                        <span id="subject-count-operations_management">إدارة الانتاج: 0</span> |
-                        <span id="subject-count-economics_english">انجليزي اقتصاد: 0</span>
+                    <div style="margin-bottom:16px; background:var(--bg-gradient); padding:14px; border-radius:8px; border:1px solid var(--border);">
+                        <strong style="display:block; margin-bottom:10px; font-size:13px;">📚 توزيع الأسئلة على المواد</strong>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; font-size:13px;">
+                            <div><i class="fa-solid fa-database" style="color:var(--primary); width:16px;"></i> <span id="subject-count-databases">قواعد البيانات: 0</span></div>
+                            <div><i class="fa-solid fa-code" style="color:var(--primary); width:16px;"></i> <span id="subject-count-structured_programming">البرمجة الهيكلية: 0</span></div>
+                            <div><i class="fa-solid fa-file-invoice-dollar" style="color:var(--primary); width:16px;"></i> <span id="subject-count-corporate_accounting">محاسبة شركات: 0</span></div>
+                            <div><i class="fa-solid fa-industry" style="color:var(--primary); width:16px;"></i> <span id="subject-count-operations_management">إدارة الانتاج: 0</span></div>
+                            <div><i class="fa-solid fa-language" style="color:var(--primary); width:16px;"></i> <span id="subject-count-economics_english">انجليزي اقتصاد: 0</span></div>
+                        </div>
                     </div>
 
                     <!-- أسهل / أصعب -->
                     <div style="background:var(--card-bg); padding:14px; border-radius:8px; border:1px solid var(--border); display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                         <div style="background:rgba(16,185,129,0.1); padding:10px; border-radius:8px;">
                             <h5 style="margin:0 0 6px 0; color:#065f46; font-size:13px;"><i class="fa-solid fa-circle-check"></i> أسهل الأسئلة</h5>
-                            <p id="admin-analytics-easiest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
+                            <p id="admin-analytics-easiest" style="font-size:12px; margin:0; color:var(--text-muted);">لا توجد بيانات كافية بعد (تحتاج محاولات طلاب على السؤال)</p>
                         </div>
                         <div style="background:rgba(239,68,68,0.1); padding:10px; border-radius:8px;">
                             <h5 style="margin:0 0 6px 0; color:#991b1b; font-size:13px;"><i class="fa-solid fa-circle-xmark"></i> أصعب الأسئلة</h5>
-                            <p id="admin-analytics-hardest" style="font-size:12px; margin:0; color:var(--text-muted);">جاري التحليل...</p>
+                            <p id="admin-analytics-hardest" style="font-size:12px; margin:0; color:var(--text-muted);">لا توجد بيانات كافية بعد (تحتاج محاولات طلاب على السؤال)</p>
                         </div>
                     </div>
                 </div>
@@ -1678,15 +1710,6 @@ html, body {
                             <p>يعيد حساب عدد الأسئلة الحقيقي لكل مادة من بنك الأسئلة الفعلي، ويجبر أجهزة الطلاب على تحديث كاش الأسئلة فوراً. استخدمه لو لاحظت رقماً غير مطابق للواقع.</p>
                             <button id="btn-repair-subject-counts" onclick="manualRepairSubjectCounts(this)" class="ban-btn ban-inactive" style="background:#e0f2fe; color:#0369a1; border:1px solid #7dd3fc; margin-top:auto;">
                                 <i class="fa-solid fa-wrench"></i> إصلاح العدادات الآن
-                            </button>
-                        </div>
-
-                        <!-- ✅ [AI-GEN] توليد أسئلة من صور المنهج بالذكاء الاصطناعي -->
-                        <div class="tool-card">
-                            <h4 style="color:#be185d;"><i class="fa-solid fa-wand-magic-sparkles"></i> توليد أسئلة بالذكاء الاصطناعي</h4>
-                            <p>ارفع صورة صفحة من المنهج، وسيقترح الذكاء الاصطناعي أسئلة تُعرض عليك للمراجعة والتعديل قبل حفظها في بنك الأسئلة.</p>
-                            <button onclick="openAiGenModal()" class="ban-btn ban-inactive" style="background:#fce7f3; color:#be185d; border:1px solid #f9a8d4; margin-top:auto;">
-                                <i class="fa-solid fa-wand-magic-sparkles"></i> توليد أسئلة من صورة
                             </button>
                         </div>
                     </div>
@@ -1917,9 +1940,11 @@ html, body {
 
         function _applySubjectCounts() {
             renderSubjects();
-            Object.keys(subjectCounts).forEach(k => {
+            // ✅ [FIX] نكرر على مفاتيح fixedSubjects المعروفة فقط (مش كل مفاتيح subjectCounts)
+            // حتى لو فضلت مفاتيح مواد قديمة عالقة في مستند --metadata-- على السيرفر، متعملش تعطّل الشاشة
+            Object.keys(fixedSubjects).forEach(k => {
                 const el = document.getElementById(`subject-count-${k}`);
-                if(el) el.innerText = `${fixedSubjects[k].split(' ')[0]}: ${subjectCounts[k]}`;
+                if (el) el.innerText = `${fixedSubjects[k].split(' ')[0]}: ${subjectCounts[k] || 0}`;
             });
             // ✅ إصلاح bug: تحديث الـ slider في شاشة العداد لو كانت ظاهرة
             const pickerView = document.getElementById('view-count-picker');
@@ -3815,17 +3840,32 @@ html, body {
                     });
                 }
 
-                // activeStudents + avgScore: محسوبة تدريجياً من الميتاداتا
-                document.getElementById('admin-active-students').innerText =
-                    meta.activeStudents != null ? meta.activeStudents : '—';
-                document.getElementById('admin-avg-score').innerText =
-                    meta.avgScore ? `${Math.round(meta.avgScore)}%` : '—';
+                // ✅ [FIX] activeStudents لم تكن تُكتب أبداً في أي مكان بالكود، فكانت تظل "—" دائماً.
+                // نحسبها الآن فعلياً باستعلام على lastActivityAt (متاح بفضل نظام فلتر "الشهر الحالي" في لوحة الأوائل)
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                db.collection("users").where("lastActivityAt", ">=", sevenDaysAgo).get()
+                    .then(s => { document.getElementById('admin-active-students').innerText = s.size; })
+                    .catch(() => { document.getElementById('admin-active-students').innerText = '—'; });
             });
+
+            // ✅ [FIX] avgScore لم تكن تُكتب أبداً بأي مكان، فكانت تظل "—" دائماً.
+            // نحسبها فعلياً كمتوسط دقة عام لكل أسئلة البنك (من نفس البيانات المحمّلة أصلاً، بدون أي قراءة إضافية)
+            function _computeBankAccuracy(list) {
+                const withAttempts = list.filter(q => (q.correctCount || 0) + (q.wrongCount || 0) > 0);
+                const el = document.getElementById('admin-avg-score');
+                if (!el) return;
+                if (withAttempts.length === 0) { el.innerText = '—'; return; }
+                const totalCorrect = withAttempts.reduce((sum, q) => sum + (q.correctCount || 0), 0);
+                const totalAll = withAttempts.reduce((sum, q) => sum + (q.correctCount || 0) + (q.wrongCount || 0), 0);
+                el.innerText = `${Math.round((totalCorrect / totalAll) * 100)}%`;
+            }
 
             // ✅ [OPT-19] تحميل الأسئلة مرة واحدة في الجلسة — نفس البيانات تُعاد للـ UI بدون إعادة قراءة
             if (cachedAdminQuestions.length > 0) {
                 renderQuestionsListUI(cachedAdminQuestions);
                 calculateEasiestAndHardestQuestionsAnalytic(cachedAdminQuestions);
+                _computeBankAccuracy(cachedAdminQuestions);
             } else {
                 db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
                     cachedAdminQuestions = [];
@@ -3841,6 +3881,7 @@ html, body {
                     );
                     renderQuestionsListUI(cachedAdminQuestions);
                     calculateEasiestAndHardestQuestionsAnalytic(cachedAdminQuestions);
+                    _computeBankAccuracy(cachedAdminQuestions);
                 });
             }
         }
@@ -3861,8 +3902,9 @@ html, body {
             const rateH = Math.round((hardest.correctCount || 0) / ((hardest.correctCount || 0) + (hardest.wrongCount || 0)) * 100);
             const rateE = Math.round((easiest.correctCount || 0) / ((easiest.correctCount || 0) + (easiest.wrongCount || 0)) * 100);
 
-            document.getElementById('admin-analytics-hardest').innerHTML = `<strong>[${fixedSubjects[hardest.subject] || 'عام'}]</strong> ${hardest.question} <br> <span class='q-stat-tag q-stat-wrong'>نسبة دقة إجاباته: ${rateH}% فقط</span>`;
-            document.getElementById('admin-analytics-easiest').innerHTML = `<strong>[${fixedSubjects[easiest.subject] || 'عام'}]</strong> ${easiest.question} <br> <span class='q-stat-tag q-stat-success'>نسبة إجاباته الصحيحة: ${rateE}%</span>`;
+            // ✅ [SEC] esc() على نص السؤال قبل الحقن في innerHTML (نفس سياسة أي محتوى نصي بالمنصة)
+            document.getElementById('admin-analytics-hardest').innerHTML = `<strong>[${esc(fixedSubjects[hardest.subject]) || 'عام'}]</strong> ${esc(hardest.question)} <br> <span class='q-stat-tag q-stat-wrong'>نسبة دقة إجاباته: ${rateH}% فقط</span>`;
+            document.getElementById('admin-analytics-easiest').innerHTML = `<strong>[${esc(fixedSubjects[easiest.subject]) || 'عام'}]</strong> ${esc(easiest.question)} <br> <span class='q-stat-tag q-stat-success'>نسبة إجاباته الصحيحة: ${rateE}%</span>`;
         }
 
         function renderQuestionsListUI(list) {
@@ -4122,6 +4164,34 @@ html, body {
             // تحميل البيانات عند الطلب
             if (tabId === 'tab-students') loadAdminStudentsList();
             if (tabId === 'tab-logs')     loadAdminLogsList();
+            if (tabId === 'tab-upload')   switchQuestionsSubTab('add');
+        }
+
+        // ✅ تنقل فرعي داخل تبويب "الأسئلة": إضافة أسئلة ↔ إدارة البنك
+        function switchQuestionsSubTab(subId) {
+            const addEl    = document.getElementById('qsub-add');
+            const manageEl = document.getElementById('qsub-manage');
+            const btnAdd    = document.getElementById('qsub-btn-add');
+            const btnManage = document.getElementById('qsub-btn-manage');
+            if (!addEl || !manageEl) return;
+
+            if (subId === 'manage') {
+                addEl.classList.add('hidden-tab');
+                manageEl.classList.remove('hidden-tab');
+                _fadeInEl(manageEl);
+                btnAdd.className = 'tab-btn';
+                btnAdd.style.color = 'var(--text-main)';
+                btnManage.className = 'tab-btn active-upload';
+                btnManage.style.color = '';
+            } else {
+                manageEl.classList.add('hidden-tab');
+                addEl.classList.remove('hidden-tab');
+                _fadeInEl(addEl);
+                btnManage.className = 'tab-btn';
+                btnManage.style.color = 'var(--text-main)';
+                btnAdd.className = 'tab-btn active-upload';
+                btnAdd.style.color = '';
+            }
         }
 
         // ✅ بحث الطلاب بالاسم في لوحة الأدمن
