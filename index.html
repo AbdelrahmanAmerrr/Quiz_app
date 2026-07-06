@@ -1959,6 +1959,12 @@ html, body {
 
             aiChatBusy = true;
             aiChatHistoryByQuestion[key] = aiChatHistoryByQuestion[key] || [];
+
+            // نجهّز تاريخ المحادثة الفعلي (أدوار حقيقية بس، من غير رسائل الحالة/الأخطاء) قبل إضافة الرسالة الحالية
+            const conversationalRoles = ['user', 'bot', 'refused'];
+            const priorTurns = aiChatHistoryByQuestion[key].filter(m => conversationalRoles.includes(m.role));
+            const historyForApi = priorTurns.slice(-6).map(m => ({ role: m.role === 'user' ? 'user' : 'bot', text: m.text }));
+
             if (!isRetry) aiChatHistoryByQuestion[key].push({ role: 'user', text: displayText });
             aiChatHistoryByQuestion[key].push({ role: 'status', text: 'جاري التحضير', dots: true });
             _renderExamChatBody();
@@ -1975,7 +1981,8 @@ html, body {
                     questionText: activeQ.question,
                     questionUid: key,
                     actionType: actionType,
-                    message: actionType === 'custom' ? displayText : ''
+                    message: actionType === 'custom' ? displayText : '',
+                    history: historyForApi
                 };
 
                 let attempt = 0;
