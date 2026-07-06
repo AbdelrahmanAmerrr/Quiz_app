@@ -442,17 +442,16 @@ html, body {
             50% { transform: scale(1.08); }
         }
 
-        /* شريط الإجراءات — أيقونات صغيرة */
+        /* شريط الإجراءات — أيقونات فقط، مدمج ومنظم حتى مع 5 أزرار */
         .arena-actions {
             display: flex; gap: 8px; margin-bottom: 14px;
         }
         .arena-action-btn {
             flex: 1; display: flex; align-items: center; justify-content: center;
-            gap: 5px; padding: 8px 6px; border: 1px solid var(--border);
-            border-radius: 8px; background: var(--card-bg);
-            font-size: 12px; font-weight: 600; color: var(--text-muted);
-            cursor: pointer; transition: all 0.15s; white-space: nowrap;
-            font-family: 'DM Sans','Tajawal',sans-serif;
+            padding: 11px 0; border: 1px solid var(--border);
+            border-radius: 10px; background: var(--card-bg);
+            font-size: 16px; color: var(--text-muted);
+            cursor: pointer; transition: all 0.15s;
         }
         .arena-action-btn:hover { border-color: var(--primary); color: var(--primary); }
         .arena-action-btn.starred { color: var(--warning); border-color: var(--warning);
@@ -1308,21 +1307,21 @@ html, body {
 
                 <!-- شريط الإجراءات العلوي: تمييز + خريطة الأسئلة + إبلاغ + حفظ وخروج -->
                 <div class="arena-actions">
-                    <button class="arena-action-btn" id="btn-flag-action" onclick="toggleFlagQuestion()">
-                        <i class="fa-solid fa-thumbtack"></i> تمييز
+                    <button class="arena-action-btn" id="btn-flag-action" onclick="toggleFlagQuestion()" title="تمييز" aria-label="تمييز السؤال">
+                        <i class="fa-solid fa-thumbtack"></i>
                     </button>
-                    <button class="arena-action-btn" onclick="openQuestionMap()">
-                        <i class="fa-solid fa-table-cells"></i> الخريطة
+                    <button class="arena-action-btn" onclick="openQuestionMap()" title="خريطة الأسئلة" aria-label="خريطة الأسئلة">
+                        <i class="fa-solid fa-table-cells"></i>
                     </button>
-                    <button class="arena-action-btn" onclick="openExamChatPanel()">
-                        <i class="fa-solid fa-robot"></i> المساعد
+                    <button class="arena-action-btn" onclick="openExamChatPanel()" title="مساعد المذاكرة" aria-label="مساعد المذاكرة">
+                        <i class="fa-solid fa-robot"></i>
                     </button>
-                    <button class="arena-action-btn" onclick="reportQuestionProblem()">
-                        <i class="fa-solid fa-flag"></i> إبلاغ
+                    <button class="arena-action-btn" onclick="reportQuestionProblem()" title="الإبلاغ عن مشكلة" aria-label="الإبلاغ عن مشكلة">
+                        <i class="fa-solid fa-flag"></i>
                     </button>
                     <button class="arena-action-btn" onclick="saveAndExitQuizArena()"
-                            style="color:var(--warning); border-color:var(--warning);">
-                        <i class="fa-solid fa-floppy-disk"></i> حفظ
+                            style="color:var(--warning); border-color:var(--warning);" title="حفظ وخروج" aria-label="حفظ وخروج">
+                        <i class="fa-solid fa-floppy-disk"></i>
                     </button>
                 </div>
 
@@ -1380,6 +1379,8 @@ html, body {
                 .exam-chat-bubble.refused .exam-chat-bot-label { display:block; font-size:10.5px; font-weight:bold; margin-bottom:4px; opacity:0.85; }
                 .exam-chat-bubble.error { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); font-size:12.5px; }
                 .exam-chat-bubble.error .exam-chat-retry-btn { display:block; margin-top:8px; background:none; border:1.5px solid var(--text-muted); color:var(--text-main); font-size:11px; font-weight:bold; padding:5px 12px; border-radius:99px; cursor:pointer; }
+                .exam-chat-bubble.quota { align-self:flex-start; background:rgba(120,120,120,0.1); color:var(--text-muted); font-size:12.5px; font-style:italic; }
+                .exam-chat-drag-handle { width:40px; height:4px; border-radius:99px; background:var(--border); margin:8px auto 0; }
                 .exam-chat-templates { display:flex; gap:8px; flex-wrap:wrap; padding:0 16px 10px; }
                 .exam-chat-chip { background:none; border:1.5px solid var(--primary); color:var(--primary); font-size:11px; font-weight:bold; padding:6px 12px; border-radius:99px; cursor:pointer; white-space:nowrap; }
                 .exam-chat-chip:disabled { opacity:0.4; cursor:not-allowed; }
@@ -1392,6 +1393,7 @@ html, body {
 
             <div id="exam-chat-overlay" onclick="if(event.target===this) closeExamChatPanel();">
                 <div id="exam-chat-panel">
+                    <div class="exam-chat-drag-handle"></div>
                     <div class="exam-chat-header">
                         <div>
                             <h4>🤖 مساعد المذاكرة</h4>
@@ -1845,7 +1847,7 @@ html, body {
 
         function _examChatQKey() {
             const activeQ = currentQuestions[qIndex];
-            return activeQ ? (activeQ.uid || `idx-${qIndex}`) : null;
+            return activeQ ? (activeQ.id || activeQ.uid || `idx-${qIndex}`) : null;
         }
 
         function openExamChatPanel() {
@@ -1880,6 +1882,9 @@ html, body {
             if (m.role === 'refused') {
                 return `<div class="exam-chat-bubble refused"><span class="exam-chat-bot-label">🛡️ خارج نطاق المساعدة</span>${esc(m.text)}</div>`;
             }
+            if (m.role === 'quota') {
+                return `<div class="exam-chat-bubble quota">🔒 ${esc(m.text)}</div>`;
+            }
             if (m.role === 'error') {
                 const retryBtn = (typeof m.retryId === 'number')
                     ? `<button class="exam-chat-retry-btn" onclick="_aiChatRetryFromRegistry(${m.retryId})">🔄 إعادة المحاولة (من غير خصم من رصيدك)</button>`
@@ -1896,10 +1901,14 @@ html, body {
             if (!(key in aiChatRemainingByQuestion)) aiChatRemainingByQuestion[key] = AI_CHAT_MAX_PER_QUESTION;
 
             const history = aiChatHistoryByQuestion[key] || [];
+            const remainingNow = aiChatRemainingByQuestion[key];
+            const emptyStateText = remainingNow <= 0
+                ? `<div class="exam-chat-bubble quota">🔒 وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.</div>`
+                : `<div class="exam-chat-bubble bot"><span class="exam-chat-bot-label">🤖 المساعد</span>أهلاً! اختار من الأزرار تحت أو اكتب سؤالك عن مفهوم السؤال ده (مش هجاوبك على إجابته مباشرة).</div>`;
             const body = document.getElementById('exam-chat-body');
             body.innerHTML = history.length
                 ? history.map(_renderAiChatBubble).join('')
-                : `<div class="exam-chat-bubble bot"><span class="exam-chat-bot-label">🤖 المساعد</span>أهلاً! اختار من الأزرار تحت أو اكتب سؤالك عن مفهوم السؤال ده (مش هجاوبك على إجابته مباشرة).</div>`;
+                : emptyStateText;
             body.scrollTop = body.scrollHeight;
             _updateExamChatCounterUI();
         }
@@ -2015,6 +2024,9 @@ html, body {
                     list.push({ role: 'refused', text: finalReply });
                 } else if (finalReply) {
                     list.push({ role: 'bot', text: finalReply });
+                } else if (finalErrorCode === 'QUOTA_EXCEEDED') {
+                    aiChatRemainingByQuestion[key] = 0; // نصفّر فوراً بالفرونت عشان الأزرار تتعطل ومايتكررش الخطأ
+                    list.push({ role: 'quota', text: 'وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.' });
                 } else {
                     const retryId = aiChatRetryIdCounter++;
                     aiChatRetryRegistry[retryId] = { actionType, displayText };
