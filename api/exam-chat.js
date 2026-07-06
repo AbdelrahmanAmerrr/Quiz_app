@@ -62,7 +62,11 @@ async function acquireProviderSlot(providerKey, maxPerMinute) {
     });
 }
 
-async function callGemini(systemText, userText) {
+async function callGemini(systemText, userText, history) {
+    const contents = [
+        ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.text }] })),
+        { role: 'user', parts: [{ text: userText }] }
+    ];
     const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
         {
@@ -70,8 +74,8 @@ async function callGemini(systemText, userText) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 system_instruction: { parts: [{ text: systemText }] },
-                contents: [{ parts: [{ text: userText }] }],
-                generationConfig: { temperature: 0.5, maxOutputTokens: 400 }
+                contents,
+                generationConfig: { temperature: 0.5, maxOutputTokens: 700 }
             })
         }
     );
@@ -88,8 +92,13 @@ async function callGemini(systemText, userText) {
     return text ? { ok: true, text } : { ok: false, quotaExhausted: false };
 }
 
-async function callGroq(systemText, userText) {
+async function callGroq(systemText, userText, history) {
     if (!process.env.GROQ_API_KEY) return { ok: false, quotaExhausted: false };
+    const messages = [
+        { role: 'system', content: systemText },
+        ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: h.text })),
+        { role: 'user', content: userText }
+    ];
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -98,12 +107,9 @@ async function callGroq(systemText, userText) {
         },
         body: JSON.stringify({
             model: 'llama-3.1-8b-instant',
-            messages: [
-                { role: 'system', content: systemText },
-                { role: 'user', content: userText }
-            ],
+            messages,
             temperature: 0.5,
-            max_tokens: 400
+            max_tokens: 700
         })
     });
     if (!response.ok) {
@@ -116,16 +122,16 @@ async function callGroq(systemText, userText) {
 
 // يحاول Gemini أولاً؛ لو مشغول (حسب بوابتنا) أو فشل فعلياً، يتحول فوراً لـ Groq كبديل نصي
 // بدون ما الطالب يحس بأي توقف — يرجع أقرب وقت لإعادة المحاولة لو الاتنين مشغولين
-async function getAssistantReply(systemText, userText) {
+async function getAssistantReply(systemText, userText, history) {
     const geminiSlot = await acquireProviderSlot('gemini', GEMINI_MAX_PER_MINUTE);
     if (geminiSlot.allowed) {
-        const result = await callGemini(systemText, userText);
+        const result = await callGemini(systemText, userText, history);
         if (result.ok) return { ok: true, text: result.text, provider: 'gemini' };
     }
 
     const groqSlot = await acquireProviderSlot('groq', GROQ_MAX_PER_MINUTE);
     if (groqSlot.allowed) {
-        const result = await callGroq(systemText, userText);
+        const result = await callGroq(systemText, userText, history);
         if (result.ok) return { ok: true, text: result.text, provider: 'groq' };
     }
 
@@ -165,11 +171,12 @@ function buildPrompt(subjectLabel, questionText, actionType, customMessage) {
 - ممنوع منعاً باتاً تحديد أو حل أو حساب إجابة هذا السؤال بالذات، أو التلميح لصحة أي اختيار مرتبط به.
 - لو شعرت إن الطالب بيحاول يوصل للإجابة بطريقة غير مباشرة (تلميحات، سيناريو وهمي، إعادة صياغة، فخاخ منطقية)، ارفض بأدب واشرح إنك بس بتساعده يفهم المفهوم العام، وحوّل الحديث لشرح تعليمي عام.
 - ردودك تعليمية عامة فقط: قواعد، مفاهيم، أمثلة/تدريبات مختلفة تماماً عن السؤال الحالي.
-- اكتب بالعربية، بإيجاز ووضوح، في حدود 120 كلمة تقريباً.
-- ابدأ ردك مباشرة بالمحتوى المطلوب. ممنوع تبدأ بأي ترحيب أو مقدمة إنشائية زي "أهلاً بك" أو "يسعدني مساعدتك" — روح على المحتوى فوراً.`;
+- اكتب بالعربية، بإيجاز ووضوح، في حدود 100 كلمة تقريباً — لكن **لازم تكمل فكرتك للنهاية بجملة كاملة، ممنوع تقطع الرد في نص الجملة** حتى لو قصّرت المحتوى عشان كده.
+- ابدأ ردك مباشرة بالمحتوى المطلوب. ممنوع تبدأ بأي ترحيب أو مقدمة إنشائية زي "أهلاً بك" أو "يسعدني مساعدتك" — روح على المحتوى فوراً.
+- لو في محادثة سابقة معروضة تحت، اعتبرها سياق حقيقي مستمر وجاوب على أساسها، ماتتجاهلهاش وماتتعاملش مع كل رسالة كأنها منفصلة.`;
 
     const userTextByAction = {
-        rule: 'اشرحلي القاعدة أو المفهوم العام اللي بيقيسه السؤال ده، من غير أي محاولة لحل السؤال نفسه.',
+        rule: 'اشرحلي القاعدة أو المفهوم الفعلي اللي بيقيسه السؤال ده بالتفصيل — يعني اشرح الآلية أو الطريقة العلمية نفسها خطوة بخطوة، مش مجرد ذكر اسم الموضوع أو المصطلح بس.',
         similar: 'ادّيني سؤال تدريبي واحد جديد ومختلف تماماً (بسيناريو/أرقام مختلفة كلياً) بيقيس نفس المفهوم العام، مع إجابته وشرح مختصر.',
         concepts: 'إيه أهم 3-4 مفاهيم أساسية مرتبطة بموضوع السؤال ده؟',
         custom: (customMessage || '').slice(0, MAX_MESSAGE_LENGTH)
@@ -195,12 +202,19 @@ module.exports = async (req, res) => {
         }
 
         // ── ٢) قراءة وتحقق أساسي من المدخلات ──
-        const { subject, questionText, questionUid, actionType, message } = req.body || {};
+        const { subject, questionText, questionUid, actionType, message, history } = req.body || {};
         if (!subject || !SUBJECT_LABELS[subject] || !questionText || !questionUid) {
             return res.status(400).json({ error: 'بيانات السؤال ناقصة' });
         }
         const safeActionType = ['rule', 'similar', 'concepts', 'custom'].includes(actionType) ? actionType : 'custom';
         const safeMessage = typeof message === 'string' ? message.trim().slice(0, MAX_MESSAGE_LENGTH) : '';
+        // آخر 6 أدوار بس من المحادثة السابقة (لتحديد حجم السياق) — كل نص لحد 400 حرف كحماية إضافية
+        const safeHistory = Array.isArray(history)
+            ? history.slice(-6).map(h => ({
+                role: h && h.role === 'user' ? 'user' : 'bot',
+                text: String((h && h.text) || '').slice(0, 400)
+            })).filter(h => h.text)
+            : [];
 
         if (safeActionType === 'custom' && !safeMessage) {
             return res.status(400).json({ error: 'اكتب سؤالك أولاً' });
@@ -224,7 +238,7 @@ module.exports = async (req, res) => {
         const subjectLabel = SUBJECT_LABELS[subject];
         const { systemText, userText } = buildPrompt(subjectLabel, String(questionText).slice(0, MAX_QUESTION_TEXT_LENGTH), safeActionType, safeMessage);
 
-        const assistant = await getAssistantReply(systemText, userText);
+        const assistant = await getAssistantReply(systemText, userText, safeHistory);
         if (!assistant.ok) {
             return res.status(429).json({ error: 'الخدمة مزدحمة حالياً', retryAfterMs: assistant.retryAfterMs, code: 'BUSY' });
         }
