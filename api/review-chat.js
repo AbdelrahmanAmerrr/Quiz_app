@@ -6,7 +6,7 @@
 // بالتفصيل، يقول ليه اختيار الطالب كان صح أو غلط، ويقترح أسئلة تدريبية بإجاباتها كاملة.
 //
 // اللي فضل من التصميم القديم (لأسباب تشغيلية بحتة، مش أمنية):
-// 1) Gemini أولاً، وتحويل تلقائي فوري لـ Groq لو مشغول/فشل — بدون ما الطالب يحس بأي توقف.
+// 1) Gemini أولاً، وتحويل تلقائي فوري لـ Groq ثم Cerebras لو الاتنين مشغولين/فشلوا — بدون ما الطالب يحس بأي توقف.
 // 2) حد أقصى لعدد رسائل كل طالب لكل سؤال — يحمي الحصة المجانية المشتركة من الاستنزاف.
 // 3) سياق محادثة (آخر 6 أدوار) — عشان المتابعات تتفهم صح.
 // 4) تسجيل كل محادثة بـ Firestore لمراجعة لاحقة لو حبيت.
@@ -29,6 +29,7 @@ const SUBJECT_LABELS = {
 // ── إعدادات الحماية التشغيلية (حماية حصة API، مش قيود أمنية) ──
 const GEMINI_MAX_PER_MINUTE = 5;
 const GROQ_MAX_PER_MINUTE = 25;
+const CEREBRAS_MAX_PER_MINUTE = 4; // التوثيق الرسمي الأحدث (يونيو 2026) يقول 5 طلبات/دقيقة فقط — هامش أمان تحتها
 const MAX_MESSAGES_PER_QUESTION = 4;
 const MAX_MESSAGE_LENGTH = 300;
 const MAX_QUESTION_TEXT_LENGTH = 800;
@@ -112,22 +113,71 @@ async function callGroq(systemText, userText, history) {
     return text ? { ok: true, text } : { ok: false, quotaExhausted: false };
 }
 
+// مزوّد ثالث احتياطي — Cerebras (متوافق مع OpenAI). حصته اليومية كبيرة (مليون توكن) لكن معدلها بالدقيقة صغير،
+// فبييجي كخط دفاع ثالث بعد Gemini وGroq مش بديل أساسي عنهم.
+async function callCerebras(systemText, userText, history) {
+    if (!process.env.CEREBRAS_API_KEY) return { ok: false, quotaExhausted: false };
+    const messages = [
+        { role: 'system', content: systemText },
+        ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'assistant', content: h.text })),
+        { role: 'user', content: userText }
+    ];
+    const response = await fetch('https://api.cerebras.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + process.env.CEREBRAS_API_KEY
+        },
+        body: JSON.stringify({
+            model: 'gpt-oss-120b',
+            messages,
+            temperature: 0.6,
+            max_tokens: 700
+        })
+    });
+    if (!response.ok) {
+        return { ok: false, quotaExhausted: response.status === 429 };
+    }
+    const data = await response.json();
+    const text = data?.choices?.[0]?.message?.content?.trim();
+    return text ? { ok: true, text } : { ok: false, quotaExhausted: false };
+}
+
+// يسجّل عداد يومي خفيف جداً (كتابة increment وحيدة، بدون أي قراءة) — تغذي لوحة مراقبة الاستهلاك بالأدمن فقط
+function _logDailyAiUsage(provider) {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const docId = `${dateStr}_${provider}`;
+    db.collection('ai_daily_stats').doc(docId).set({
+        date: dateStr,
+        provider,
+        count: admin.firestore.FieldValue.increment(1)
+    }, { merge: true }).catch(() => {});
+}
+
 async function getAssistantReply(systemText, userText, history) {
     const geminiSlot = await acquireProviderSlot('gemini', GEMINI_MAX_PER_MINUTE);
     if (geminiSlot.allowed) {
         const result = await callGemini(systemText, userText, history);
-        if (result.ok) return { ok: true, text: result.text, provider: 'gemini' };
+        if (result.ok) { _logDailyAiUsage('gemini'); return { ok: true, text: result.text, provider: 'gemini' }; }
     }
 
     const groqSlot = await acquireProviderSlot('groq', GROQ_MAX_PER_MINUTE);
     if (groqSlot.allowed) {
         const result = await callGroq(systemText, userText, history);
-        if (result.ok) return { ok: true, text: result.text, provider: 'groq' };
+        if (result.ok) { _logDailyAiUsage('groq'); return { ok: true, text: result.text, provider: 'groq' }; }
     }
 
+    const cerebrasSlot = await acquireProviderSlot('cerebras', CEREBRAS_MAX_PER_MINUTE);
+    if (cerebrasSlot.allowed) {
+        const result = await callCerebras(systemText, userText, history);
+        if (result.ok) { _logDailyAiUsage('cerebras'); return { ok: true, text: result.text, provider: 'cerebras' }; }
+    }
+
+    _logDailyAiUsage('busy');
     const retryAfterMs = Math.min(
         geminiSlot.allowed ? 10000 : geminiSlot.retryAfterMs,
-        groqSlot.allowed ? 10000 : groqSlot.retryAfterMs
+        groqSlot.allowed ? 10000 : groqSlot.retryAfterMs,
+        cerebrasSlot.allowed ? 10000 : cerebrasSlot.retryAfterMs
     );
     return { ok: false, retryAfterMs };
 }
