@@ -1500,6 +1500,7 @@ html, body {
                     <button onclick="switchAdminTab('tab-stats')"    id="btn-tab-stats"    class="admin-tab-top-btn"><i class="fa-solid fa-chart-bar fa-sm"></i> الإحصائيات</button>
                     <button onclick="switchAdminTab('tab-reports'); loadAdminReports();" id="btn-tab-reports" class="admin-tab-top-btn"><i class="fa-solid fa-flag fa-sm"></i> البلاغات <span id="reports-badge" style="display:none; background:#ef4444; color:#fff; border-radius:99px; padding:1px 6px; font-size:11px; margin-right:3px;">0</span></button>
                     <button onclick="switchAdminTab('tab-tools')"    id="btn-tab-tools"    class="admin-tab-top-btn"><i class="fa-solid fa-sliders fa-sm"></i> الأدوات</button>
+                    <button onclick="switchAdminTab('tab-ai')"       id="btn-tab-ai"       class="admin-tab-top-btn"><i class="fa-solid fa-robot fa-sm"></i> الذكاء الاصطناعي</button>
                     <button onclick="switchAdminTab('tab-logs')"     id="btn-tab-logs"     class="admin-tab-top-btn"><i class="fa-solid fa-scroll fa-sm"></i> السجل</button>
                 </div>
 
@@ -1731,41 +1732,6 @@ html, body {
                 <div id="tab-tools" class="admin-tab-content hidden-tab">
                     <h3>⚙️ أدوات الإدارة والصيانة</h3>
 
-                    <!-- ══ لوحة مراقبة استهلاك الذكاء الاصطناعي ══ -->
-                    <div style="border:1.5px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px; background:var(--card-bg);">
-                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
-                            <h4 style="margin:0; font-size:15px;"><i class="fa-solid fa-chart-line" style="color:var(--primary);"></i> استهلاك الذكاء الاصطناعي (آخر 7 أيام)</h4>
-                            <button onclick="loadAiUsageDashboard()" class="ban-btn ban-inactive" style="padding:5px 12px; font-size:11px;">
-                                <i class="fa-solid fa-arrows-rotate"></i> تحديث
-                            </button>
-                        </div>
-
-                        <div id="ai-usage-today-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:16px;">
-                            <p style="color:var(--text-muted); font-size:12px; grid-column:1/-1;">جاري تحميل بيانات اليوم...</p>
-                        </div>
-
-                        <div id="ai-usage-table-wrap" style="overflow-x:auto;">
-                            <table style="width:100%; border-collapse:collapse; font-size:12px;">
-                                <thead>
-                                    <tr style="border-bottom:2px solid var(--border); text-align:right;">
-                                        <th style="padding:6px 8px;">التاريخ</th>
-                                        <th style="padding:6px 8px;">Gemini</th>
-                                        <th style="padding:6px 8px;">Groq</th>
-                                        <th style="padding:6px 8px;">Cerebras</th>
-                                        <th style="padding:6px 8px; color:var(--danger);">مزدحم</th>
-                                        <th style="padding:6px 8px; font-weight:800;">الإجمالي</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="ai-usage-table-body">
-                                    <tr><td colspan="6" style="padding:14px; text-align:center; color:var(--text-muted);">جاري التحميل...</td></tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <small style="color:var(--text-muted); display:block; margin-top:10px; line-height:1.6;">
-                            "مزدحم" = عدد المرات اللي كل المزوّدين الثلاثة كانوا مشغولين فيها والطالب استنى. الأرقام دي عدد نداءات ناجحة، مش استهلاك توكنات دقيق — استخدمها كمؤشر اتجاه عام.
-                        </small>
-                    </div>
-
                     <div class="tools-grid">
                         <!-- Backup -->
                         <div class="tool-card">
@@ -1812,6 +1778,58 @@ html, body {
                                 <i class="fa-solid fa-wrench"></i> إصلاح العدادات الآن
                             </button>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ══════════ تبويب: الذكاء الاصطناعي ══════════ -->
+                <div id="tab-ai" class="admin-tab-content hidden-tab">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px; flex-wrap:wrap; gap:10px;">
+                        <div>
+                            <h3 style="margin:0;">🤖 استهلاك الذكاء الاصطناعي</h3>
+                            <p style="color:var(--text-muted); font-size:12.5px; margin:4px 0 0;">مراقبة استخدام مساعد المراجعة عبر المزوّدين الثلاثة</p>
+                        </div>
+                        <button onclick="loadAiUsageDashboard()" class="ban-btn ban-inactive" style="padding:7px 16px; font-size:12px;">
+                            <i class="fa-solid fa-arrows-rotate"></i> تحديث
+                        </button>
+                    </div>
+
+                    <!-- بطاقات مزوّدي اليوم -->
+                    <div id="ai-usage-today-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:24px;">
+                        <p style="color:var(--text-muted); font-size:12px; grid-column:1/-1;">⏳ جاري تحميل بيانات اليوم...</p>
+                    </div>
+
+                    <!-- جدول آخر 7 أيام -->
+                    <div style="border:1.5px solid var(--border); border-radius:14px; overflow:hidden; background:var(--card-bg);">
+                        <div style="padding:14px 16px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-calendar-days" style="color:var(--primary);"></i>
+                            <h4 style="margin:0; font-size:14px;">سجل آخر 7 أيام</h4>
+                        </div>
+                        <div style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:12.5px; min-width:480px;">
+                                <thead>
+                                    <tr style="background:var(--bg-gradient); text-align:right;">
+                                        <th style="padding:10px 12px; font-weight:800;">التاريخ</th>
+                                        <th style="padding:10px 12px;">✨ Gemini</th>
+                                        <th style="padding:10px 12px;">⚡ Groq</th>
+                                        <th style="padding:10px 12px;">🧠 Cerebras</th>
+                                        <th style="padding:10px 12px; color:var(--danger);">⏳ مزدحم</th>
+                                        <th style="padding:10px 12px; font-weight:800;">الإجمالي</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ai-usage-table-body">
+                                    <tr><td colspan="6" style="padding:18px; text-align:center; color:var(--text-muted);">⏳ جاري التحميل...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="display:flex; gap:10px; align-items:flex-start; margin-top:16px; padding:12px 14px; background:var(--bg-gradient); border-radius:10px; border:1px dashed var(--border);">
+                        <i class="fa-solid fa-circle-info" style="color:var(--primary); margin-top:2px;"></i>
+                        <small style="color:var(--text-muted); line-height:1.7;">
+                            <b>"مزدحم"</b> = عدد المرات اللي كل المزوّدين الثلاثة كانوا مشغولين فيها والطالب استنى.
+                            الأرقام دي <b>عدد نداءات ناجحة</b>، مش استهلاك توكنات دقيق — استخدمها كمؤشر اتجاه عام بس.
+                            للرقم الحقيقي الدقيق لاستهلاك Firebase نفسه (قراءة/كتابة كل المنصة)، راجع Firebase Console ← Usage and billing.
+                        </small>
                     </div>
                 </div>
 
@@ -4440,7 +4458,7 @@ html, body {
             if (target) { target.classList.remove('hidden-tab'); _fadeInEl(target); }
 
             // إزالة الكلاس النشط من كل أزرار التبويبات
-            ['btn-tab-upload','btn-tab-students','btn-tab-stats','btn-tab-reports','btn-tab-tools','btn-tab-logs'].forEach(id => {
+            ['btn-tab-upload','btn-tab-students','btn-tab-stats','btn-tab-reports','btn-tab-tools','btn-tab-ai','btn-tab-logs'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.className = 'admin-tab-top-btn';
             });
@@ -4452,6 +4470,7 @@ html, body {
                 'tab-stats':    'atab-active-purple',
                 'tab-reports':  'atab-active-red',
                 'tab-tools':    'atab-active-orange',
+                'tab-ai':       'atab-active-purple',
                 'tab-logs':     'atab-active',
             };
             const btnMap = {
@@ -4460,6 +4479,7 @@ html, body {
                 'tab-stats':    'btn-tab-stats',
                 'tab-reports':  'btn-tab-reports',
                 'tab-tools':    'btn-tab-tools',
+                'tab-ai':       'btn-tab-ai',
                 'tab-logs':     'btn-tab-logs',
             };
             const activeBtn = document.getElementById(btnMap[tabId]);
@@ -4469,7 +4489,7 @@ html, body {
             if (tabId === 'tab-students') loadAdminStudentsList();
             if (tabId === 'tab-logs')     loadAdminLogsList();
             if (tabId === 'tab-upload')   switchQuestionsSubTab('add');
-            if (tabId === 'tab-tools')    loadAiUsageDashboard();
+            if (tabId === 'tab-ai')       loadAiUsageDashboard();
         }
 
         // ✅ تنقل فرعي داخل تبويب "الأسئلة": إضافة أسئلة ↔ إدارة البنك
