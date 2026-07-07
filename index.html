@@ -1313,9 +1313,6 @@ html, body {
                     <button class="arena-action-btn" onclick="openQuestionMap()" title="خريطة الأسئلة" aria-label="خريطة الأسئلة">
                         <i class="fa-solid fa-table-cells"></i>
                     </button>
-                    <button class="arena-action-btn" onclick="openExamChatPanel()" title="مساعد المذاكرة" aria-label="مساعد المذاكرة">
-                        <i class="fa-solid fa-robot"></i>
-                    </button>
                     <button class="arena-action-btn" onclick="reportQuestionProblem()" title="الإبلاغ عن مشكلة" aria-label="الإبلاغ عن مشكلة">
                         <i class="fa-solid fa-flag"></i>
                     </button>
@@ -1351,67 +1348,6 @@ html, body {
                         <i class="fa-solid fa-circle-info"></i> الشرح:
                     </strong>
                     <p id="arena-explanation-text" style="margin:6px 0 0 0; font-size:14px;"></p>
-                </div>
-            </div>
-
-            <!-- ══════ مساعد المذاكرة بالذكاء الاصطناعي أثناء الامتحان (وضع مقيّد) ══════ -->
-            <style>
-                #exam-chat-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9998; display:none; align-items:flex-end; justify-content:center; }
-                #exam-chat-panel { width:100%; max-width:480px; background:var(--card-bg); border-radius:20px 20px 0 0; max-height:82vh; display:flex; flex-direction:column; box-shadow:0 -8px 30px rgba(0,0,0,0.25); transform:translateY(100%); transition:transform .28s cubic-bezier(.22,1,.36,1); }
-                #exam-chat-panel.chat-show { transform:translateY(0); }
-                .exam-chat-header { display:flex; align-items:flex-start; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
-                .exam-chat-header h4 { margin:0; font-size:15px; color:var(--primary); }
-                .exam-chat-header small { display:block; color:var(--text-muted); font-size:11px; margin-top:3px; line-height:1.5; }
-                .exam-chat-close { background:none; border:none; font-size:18px; color:var(--text-muted); cursor:pointer; padding:4px 8px; flex-shrink:0; }
-                .exam-chat-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; min-height:120px; }
-                .exam-chat-bubble { max-width:85%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.7; white-space:pre-wrap; animation: examChatFadeIn 0.25s ease; }
-                @keyframes examChatFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-                .exam-chat-bubble.user { align-self:flex-end; background:var(--primary); color:#fff; border-bottom-left-radius:4px; }
-                .exam-chat-bubble.bot { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); border-bottom-right-radius:4px; }
-                .exam-chat-bubble.bot .exam-chat-bot-label { display:block; font-size:10.5px; font-weight:bold; color:var(--primary); margin-bottom:4px; opacity:0.85; }
-                .exam-chat-bubble.status { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-muted); font-size:12.5px; display:flex; align-items:center; gap:8px; border-bottom-right-radius:4px; }
-                .exam-chat-typing-dots { display:inline-flex; gap:3px; }
-                .exam-chat-typing-dots span { width:5px; height:5px; border-radius:50%; background:var(--text-muted); animation: examChatBlink 1.2s infinite ease-in-out; }
-                .exam-chat-typing-dots span:nth-child(2) { animation-delay:0.2s; }
-                .exam-chat-typing-dots span:nth-child(3) { animation-delay:0.4s; }
-                @keyframes examChatBlink { 0%, 80%, 100% { opacity:0.25; } 40% { opacity:1; } }
-                .exam-chat-bubble.refused { align-self:flex-start; background:#fef3c7; color:#92400e; font-size:12.5px; font-weight:600; border-bottom-right-radius:4px; }
-                .exam-chat-bubble.refused .exam-chat-bot-label { display:block; font-size:10.5px; font-weight:bold; margin-bottom:4px; opacity:0.85; }
-                .exam-chat-bubble.error { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); font-size:12.5px; }
-                .exam-chat-bubble.error .exam-chat-retry-btn { display:block; margin-top:8px; background:none; border:1.5px solid var(--text-muted); color:var(--text-main); font-size:11px; font-weight:bold; padding:5px 12px; border-radius:99px; cursor:pointer; }
-                .exam-chat-bubble.quota { align-self:flex-start; background:rgba(120,120,120,0.1); color:var(--text-muted); font-size:12.5px; font-style:italic; }
-                .exam-chat-drag-handle { width:40px; height:4px; border-radius:99px; background:var(--border); margin:8px auto 0; }
-                .exam-chat-templates { display:flex; gap:8px; flex-wrap:wrap; padding:0 16px 10px; }
-                .exam-chat-chip { background:none; border:1.5px solid var(--primary); color:var(--primary); font-size:11px; font-weight:bold; padding:6px 12px; border-radius:99px; cursor:pointer; white-space:nowrap; }
-                .exam-chat-chip:disabled { opacity:0.4; cursor:not-allowed; }
-                .exam-chat-footer { display:flex; align-items:center; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
-                .exam-chat-input { flex:1; border:2px solid var(--border); border-radius:12px; padding:10px 12px; font-size:13px; background:var(--card-bg); color:var(--text-main); resize:none; font-family:inherit; }
-                .exam-chat-send { background:var(--primary); color:#fff; border:none; border-radius:12px; width:42px; height:42px; flex-shrink:0; cursor:pointer; font-size:15px; }
-                .exam-chat-send:disabled { opacity:0.4; cursor:not-allowed; }
-                .exam-chat-counter { text-align:center; font-size:10.5px; color:var(--text-muted); padding-bottom:6px; }
-            </style>
-
-            <div id="exam-chat-overlay" onclick="if(event.target===this) closeExamChatPanel();">
-                <div id="exam-chat-panel">
-                    <div class="exam-chat-drag-handle"></div>
-                    <div class="exam-chat-header">
-                        <div>
-                            <h4>🤖 مساعد المذاكرة</h4>
-                            <small>هيساعدك تفهم المفهوم العام بس — مش هيجاوبك على إجابة السؤال</small>
-                        </div>
-                        <button class="exam-chat-close" onclick="closeExamChatPanel()"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <div class="exam-chat-body" id="exam-chat-body"></div>
-                    <div class="exam-chat-templates" id="exam-chat-templates">
-                        <button class="exam-chat-chip" onclick="aiChatSendTemplate('rule')">📖 القاعدة العامة</button>
-                        <button class="exam-chat-chip" onclick="aiChatSendTemplate('similar')">📝 سؤال تدريبي شبيه</button>
-                        <button class="exam-chat-chip" onclick="aiChatSendTemplate('concepts')">💡 أهم المفاهيم</button>
-                    </div>
-                    <div class="exam-chat-counter" id="exam-chat-counter"></div>
-                    <div class="exam-chat-footer">
-                        <textarea id="exam-chat-input" class="exam-chat-input" rows="1" placeholder="اكتب سؤالك هنا..." onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); aiChatSendCustom(); }"></textarea>
-                        <button class="exam-chat-send" id="exam-chat-send-btn" onclick="aiChatSendCustom()"><i class="fa-solid fa-paper-plane"></i></button>
-                    </div>
                 </div>
             </div>
 
@@ -1460,6 +1396,66 @@ html, body {
                 </div>
                 <div id="review-cards-container" style="max-height: 55vh; overflow-y:auto; border:1.5px solid var(--border); padding:14px; border-radius:10px; margin-bottom:20px; background:var(--bg-gradient);"></div>
                 <button class="btn-launch" onclick="goToResultStatsPage()"><i class="fa-solid fa-arrow-left"></i> التالي: عرض الإحصائيات</button>
+            </div>
+
+            <!-- ══════ مساعد المذاكرة بعد التسليم — بدون أي قيود، السؤال اتقيّم فعلاً ══════ -->
+            <style>
+                .review-chat-open-btn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:10px; padding:8px 0; background:none; border:1.5px solid var(--primary); color:var(--primary); font-size:12px; font-weight:bold; border-radius:8px; cursor:pointer; }
+                #review-chat-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9998; display:none; align-items:flex-end; justify-content:center; }
+                #review-chat-panel { width:100%; max-width:480px; background:var(--card-bg); border-radius:20px 20px 0 0; max-height:82vh; display:flex; flex-direction:column; box-shadow:0 -8px 30px rgba(0,0,0,0.25); transform:translateY(100%); transition:transform .28s cubic-bezier(.22,1,.36,1); }
+                #review-chat-panel.chat-show { transform:translateY(0); }
+                .review-chat-drag-handle { width:40px; height:4px; border-radius:99px; background:var(--border); margin:8px auto 0; }
+                .review-chat-header { display:flex; align-items:flex-start; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
+                .review-chat-header h4 { margin:0; font-size:15px; color:var(--primary); }
+                .review-chat-header small { display:block; color:var(--text-muted); font-size:11px; margin-top:3px; line-height:1.5; }
+                .review-chat-close { background:none; border:none; font-size:18px; color:var(--text-muted); cursor:pointer; padding:4px 8px; flex-shrink:0; }
+                .review-chat-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; min-height:120px; }
+                .review-chat-bubble { max-width:85%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.7; white-space:pre-wrap; animation: reviewChatFadeIn 0.25s ease; }
+                @keyframes reviewChatFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+                .review-chat-bubble.user { align-self:flex-end; background:var(--primary); color:#fff; border-bottom-left-radius:4px; }
+                .review-chat-bubble.bot { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); border-bottom-right-radius:4px; }
+                .review-chat-bubble.bot .review-chat-bot-label { display:block; font-size:10.5px; font-weight:bold; color:var(--primary); margin-bottom:4px; opacity:0.85; }
+                .review-chat-bubble.status { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-muted); font-size:12.5px; display:flex; align-items:center; gap:8px; border-bottom-right-radius:4px; }
+                .review-chat-typing-dots { display:inline-flex; gap:3px; }
+                .review-chat-typing-dots span { width:5px; height:5px; border-radius:50%; background:var(--text-muted); animation: reviewChatBlink 1.2s infinite ease-in-out; }
+                .review-chat-typing-dots span:nth-child(2) { animation-delay:0.2s; }
+                .review-chat-typing-dots span:nth-child(3) { animation-delay:0.4s; }
+                @keyframes reviewChatBlink { 0%, 80%, 100% { opacity:0.25; } 40% { opacity:1; } }
+                .review-chat-bubble.quota { align-self:flex-start; background:rgba(120,120,120,0.1); color:var(--text-muted); font-size:12.5px; font-style:italic; }
+                .review-chat-bubble.error { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); font-size:12.5px; }
+                .review-chat-bubble.error .review-chat-retry-btn { display:block; margin-top:8px; background:none; border:1.5px solid var(--text-muted); color:var(--text-main); font-size:11px; font-weight:bold; padding:5px 12px; border-radius:99px; cursor:pointer; }
+                .review-chat-templates { display:flex; gap:8px; flex-wrap:wrap; padding:0 16px 10px; }
+                .review-chat-chip { background:none; border:1.5px solid var(--primary); color:var(--primary); font-size:11px; font-weight:bold; padding:6px 12px; border-radius:99px; cursor:pointer; white-space:nowrap; }
+                .review-chat-chip:disabled { opacity:0.4; cursor:not-allowed; }
+                .review-chat-counter { text-align:center; font-size:10.5px; color:var(--text-muted); padding-bottom:6px; }
+                .review-chat-footer { display:flex; align-items:center; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
+                .review-chat-input { flex:1; border:2px solid var(--border); border-radius:12px; padding:10px 12px; font-size:13px; background:var(--card-bg); color:var(--text-main); resize:none; font-family:inherit; }
+                .review-chat-send { background:var(--primary); color:#fff; border:none; border-radius:12px; width:42px; height:42px; flex-shrink:0; cursor:pointer; font-size:15px; }
+                .review-chat-send:disabled { opacity:0.4; cursor:not-allowed; }
+            </style>
+
+            <div id="review-chat-overlay" onclick="if(event.target===this) closeReviewChatPanel();">
+                <div id="review-chat-panel">
+                    <div class="review-chat-drag-handle"></div>
+                    <div class="review-chat-header">
+                        <div>
+                            <h4>🤖 مساعد المذاكرة</h4>
+                            <small id="review-chat-subtitle">اسأل براحتك — الامتحان خلص وانحسبت درجتك بالفعل</small>
+                        </div>
+                        <button class="review-chat-close" onclick="closeReviewChatPanel()"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="review-chat-body" id="review-chat-body"></div>
+                    <div class="review-chat-templates" id="review-chat-templates">
+                        <button class="review-chat-chip" onclick="reviewChatSendTemplate('explain')">📖 اشرحلي أكتر</button>
+                        <button class="review-chat-chip" onclick="reviewChatSendTemplate('why')">❓ ليه إجابتي كده</button>
+                        <button class="review-chat-chip" onclick="reviewChatSendTemplate('similar')">📝 سؤال تدريبي شبيه</button>
+                    </div>
+                    <div class="review-chat-counter" id="review-chat-counter"></div>
+                    <div class="review-chat-footer">
+                        <textarea id="review-chat-input" class="review-chat-input" rows="1" placeholder="اكتب سؤالك هنا..." onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); reviewChatSendCustom(); }"></textarea>
+                        <button class="review-chat-send" id="review-chat-send-btn" onclick="reviewChatSendCustom()"><i class="fa-solid fa-paper-plane"></i></button>
+                    </div>
+                </div>
             </div>
 
             <div class="card" id="view-result" style="display: none;">
@@ -1837,213 +1833,6 @@ html, body {
         let selectedAdminQuestionsGroup = [];
         let qIndex = 0;
 
-        // ══════ مساعد المذاكرة أثناء الامتحان ══════
-        let aiChatHistoryByQuestion = {};   // questionKey -> [{role:'user'|'bot'|'status'|'refused'|'error', text, dots?, retryId?}]
-        let aiChatRemainingByQuestion = {}; // questionKey -> عدد الرسائل المتبقية
-        let aiChatRetryRegistry = {};       // retryId -> {actionType, displayText}
-        let aiChatRetryIdCounter = 0;
-        const AI_CHAT_MAX_PER_QUESTION = 4;
-        let aiChatBusy = false;
-
-        function _examChatQKey() {
-            const activeQ = currentQuestions[qIndex];
-            return activeQ ? (activeQ.id || activeQ.uid || `idx-${qIndex}`) : null;
-        }
-
-        function openExamChatPanel() {
-            const activeQ = currentQuestions[qIndex];
-            if (!activeQ) return;
-            document.getElementById('exam-chat-overlay').style.display = 'flex';
-            requestAnimationFrame(() => {
-                document.getElementById('exam-chat-panel').classList.add('chat-show');
-            });
-            _renderExamChatBody();
-        }
-
-        function closeExamChatPanel() {
-            const panel = document.getElementById('exam-chat-panel');
-            const overlay = document.getElementById('exam-chat-overlay');
-            if (!panel || !overlay) return;
-            panel.classList.remove('chat-show');
-            setTimeout(() => { overlay.style.display = 'none'; }, 250);
-        }
-
-        // يبني HTML الفقاعة الواحدة حسب دورها (رد عادي / حالة مؤقتة / رفض سياسة / خطأ تقني قابل لإعادة المحاولة)
-        function _renderAiChatBubble(m) {
-            if (m.role === 'status') {
-                const dots = m.dots
-                    ? `<span class="exam-chat-typing-dots"><span></span><span></span><span></span></span>`
-                    : '';
-                return `<div class="exam-chat-bubble status">${dots}<span>${esc(m.text)}</span></div>`;
-            }
-            if (m.role === 'bot') {
-                return `<div class="exam-chat-bubble bot"><span class="exam-chat-bot-label">🤖 المساعد</span>${esc(m.text)}</div>`;
-            }
-            if (m.role === 'refused') {
-                return `<div class="exam-chat-bubble refused"><span class="exam-chat-bot-label">🛡️ خارج نطاق المساعدة</span>${esc(m.text)}</div>`;
-            }
-            if (m.role === 'quota') {
-                return `<div class="exam-chat-bubble quota">🔒 ${esc(m.text)}</div>`;
-            }
-            if (m.role === 'error') {
-                const retryBtn = (typeof m.retryId === 'number')
-                    ? `<button class="exam-chat-retry-btn" onclick="_aiChatRetryFromRegistry(${m.retryId})">🔄 إعادة المحاولة (من غير خصم من رصيدك)</button>`
-                    : '';
-                return `<div class="exam-chat-bubble error">⚠️ ${esc(m.text)}${retryBtn}</div>`;
-            }
-            // user
-            return `<div class="exam-chat-bubble user">${esc(m.text)}</div>`;
-        }
-
-        function _renderExamChatBody() {
-            const key = _examChatQKey();
-            if (!key) return;
-            if (!(key in aiChatRemainingByQuestion)) aiChatRemainingByQuestion[key] = AI_CHAT_MAX_PER_QUESTION;
-
-            const history = aiChatHistoryByQuestion[key] || [];
-            const remainingNow = aiChatRemainingByQuestion[key];
-            const emptyStateText = remainingNow <= 0
-                ? `<div class="exam-chat-bubble quota">🔒 وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.</div>`
-                : `<div class="exam-chat-bubble bot"><span class="exam-chat-bot-label">🤖 المساعد</span>أهلاً! اختار من الأزرار تحت أو اكتب سؤالك عن مفهوم السؤال ده (مش هجاوبك على إجابته مباشرة).</div>`;
-            const body = document.getElementById('exam-chat-body');
-            body.innerHTML = history.length
-                ? history.map(_renderAiChatBubble).join('')
-                : emptyStateText;
-            body.scrollTop = body.scrollHeight;
-            _updateExamChatCounterUI();
-        }
-
-        function _updateExamChatCounterUI() {
-            const key = _examChatQKey();
-            const remaining = key !== null && (key in aiChatRemainingByQuestion) ? aiChatRemainingByQuestion[key] : AI_CHAT_MAX_PER_QUESTION;
-            const counterEl = document.getElementById('exam-chat-counter');
-            if (counterEl) counterEl.innerText = `${remaining} من ${AI_CHAT_MAX_PER_QUESTION} رسائل متبقية لهذا السؤال`;
-
-            const disabled = remaining <= 0 || aiChatBusy;
-            document.querySelectorAll('.exam-chat-chip').forEach(b => b.disabled = disabled);
-            const input = document.getElementById('exam-chat-input');
-            const sendBtn = document.getElementById('exam-chat-send-btn');
-            if (input) input.disabled = disabled;
-            if (sendBtn) sendBtn.disabled = disabled;
-        }
-
-        function aiChatSendTemplate(type) {
-            const labels = { rule: '📖 اشرحلي القاعدة العامة', similar: '📝 ادّيني سؤال تدريبي شبيه', concepts: '💡 إيه أهم المفاهيم المرتبطة؟' };
-            _aiChatSend(type, labels[type] || 'سؤال');
-        }
-
-        function aiChatSendCustom() {
-            const input = document.getElementById('exam-chat-input');
-            if (!input) return;
-            const text = input.value.trim();
-            if (!text) return;
-            input.value = '';
-            _aiChatSend('custom', text);
-        }
-
-        // إعادة محاولة نفس الطلب اللي فشل فنياً (مش رفض سياسة) — بدون ما يترتب عليها إرسال رسالة مستخدم جديدة ولا خصم رصيد إضافي عند الفشل
-        function _aiChatRetryFromRegistry(retryId) {
-            const entry = aiChatRetryRegistry[retryId];
-            if (!entry) return;
-            _aiChatSend(entry.actionType, entry.displayText, true);
-        }
-
-        // ينفّذ الإرسال مع إعادة محاولة تلقائية (بدور queue) لو الخدمة مزدحمة (429 مع retryAfterMs)
-        async function _aiChatSend(actionType, displayText, isRetry = false) {
-            const key = _examChatQKey();
-            const activeQ = currentQuestions[qIndex];
-            if (!key || !activeQ || aiChatBusy) return;
-
-            const remaining = (key in aiChatRemainingByQuestion) ? aiChatRemainingByQuestion[key] : AI_CHAT_MAX_PER_QUESTION;
-            if (remaining <= 0) { showToast("وصلت للحد الأقصى من الأسئلة لهذا السؤال", "error"); return; }
-
-            aiChatBusy = true;
-            aiChatHistoryByQuestion[key] = aiChatHistoryByQuestion[key] || [];
-
-            // نجهّز تاريخ المحادثة الفعلي (أدوار حقيقية بس، من غير رسائل الحالة/الأخطاء) قبل إضافة الرسالة الحالية
-            const conversationalRoles = ['user', 'bot', 'refused'];
-            const priorTurns = aiChatHistoryByQuestion[key].filter(m => conversationalRoles.includes(m.role));
-            const historyForApi = priorTurns.slice(-6).map(m => ({ role: m.role === 'user' ? 'user' : 'bot', text: m.text }));
-
-            if (!isRetry) aiChatHistoryByQuestion[key].push({ role: 'user', text: displayText });
-            aiChatHistoryByQuestion[key].push({ role: 'status', text: 'جاري التحضير', dots: true });
-            _renderExamChatBody();
-            _updateExamChatCounterUI();
-
-            let finalReply = null;
-            let finalErrorText = null;
-            let finalErrorCode = null;
-
-            try {
-                const idToken = await firebase.auth().currentUser.getIdToken();
-                const payload = {
-                    subject: activeQ.subject,
-                    questionText: activeQ.question,
-                    questionUid: key,
-                    actionType: actionType,
-                    message: actionType === 'custom' ? displayText : '',
-                    history: historyForApi
-                };
-
-                let attempt = 0;
-                while (attempt < 8) { // سقف أمان (~دقيقتين انتظار كحد أقصى) بدل انتظار بلا نهاية
-                    attempt++;
-                    const response = await fetch('/api/exam-chat', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await response.json().catch(() => ({}));
-
-                    if (response.status === 429 && data.retryAfterMs) {
-                        const waitSec = Math.max(3, Math.ceil(data.retryAfterMs / 1000));
-                        const list = aiChatHistoryByQuestion[key];
-                        list[list.length - 1] = { role: 'status', text: `الخدمة مزدحمة حالياً، إعادة المحاولة خلال ${waitSec} ثانية...`, dots: false };
-                        _renderExamChatBody();
-                        await new Promise(r => setTimeout(r, waitSec * 1000));
-                        continue;
-                    }
-
-                    if (!response.ok) {
-                        finalErrorText = data.error || 'حدث خطأ أثناء التواصل مع المساعد';
-                        finalErrorCode = data.code || 'ERROR';
-                        break;
-                    }
-
-                    finalReply = data.reply;
-                    finalErrorCode = data.code || null; // ممكن ترجع code:'REFUSED' برد 200 سليم
-                    if (typeof data.remaining === 'number') aiChatRemainingByQuestion[key] = data.remaining;
-                    break;
-                }
-
-                if (!finalReply && !finalErrorText) {
-                    finalErrorText = 'الخدمة مزدحمة جداً حالياً، جرّب تاني بعد شوية.';
-                    finalErrorCode = 'ERROR';
-                }
-            } catch (err) {
-                finalErrorText = 'تعذّر الاتصال بالمساعد: ' + err.message;
-                finalErrorCode = 'ERROR';
-            } finally {
-                const list = aiChatHistoryByQuestion[key];
-                if (list && list.length && list[list.length - 1].role === 'status') list.pop();
-
-                if (finalReply && finalErrorCode === 'REFUSED') {
-                    list.push({ role: 'refused', text: finalReply });
-                } else if (finalReply) {
-                    list.push({ role: 'bot', text: finalReply });
-                } else if (finalErrorCode === 'QUOTA_EXCEEDED') {
-                    aiChatRemainingByQuestion[key] = 0; // نصفّر فوراً بالفرونت عشان الأزرار تتعطل ومايتكررش الخطأ
-                    list.push({ role: 'quota', text: 'وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.' });
-                } else {
-                    const retryId = aiChatRetryIdCounter++;
-                    aiChatRetryRegistry[retryId] = { actionType, displayText };
-                    list.push({ role: 'error', text: finalErrorText, retryId });
-                }
-
-                aiChatBusy = false;
-                _renderExamChatBody();
-            }
-        }
         let score = 0;
         let timerInterval;
         let timeRemaining = 30;
@@ -3326,7 +3115,6 @@ html, body {
         }
 
         function loadArenaQuestion(isResumedFirstLoad = false, direction = 'fwd') {
-            if (typeof closeExamChatPanel === 'function') closeExamChatPanel();
             if (qIndex >= currentQuestions.length) { finishQuizSession(); return; }
             
             updateQuestionsNavigationDotsUI();
@@ -3525,6 +3313,204 @@ html, body {
         }
 
         // ✅ [UX-NEW] يبني بطاقات مراجعة الأسئلة داخل صفحة "مراجعة الأسئلة" المستقلة
+        // ══════ مساعد المذاكرة بعد التسليم (بدون قيود — الامتحان اتقيّم فعلاً) ══════
+        let reviewChatOpenIndex = null;    // index السؤال المفتوح حالياً بلوحة الشات
+        let reviewChatHistoryByIndex = {};  // index -> [{role, text, dots?, retryId?}]
+        let reviewChatRemainingByIndex = {};// index -> عدد الرسائل المتبقية
+        let reviewChatRetryRegistry = {};
+        let reviewChatRetryIdCounter = 0;
+        const REVIEW_CHAT_MAX_PER_QUESTION = 4;
+        let reviewChatBusy = false;
+
+        function openReviewChatPanel(i) {
+            const log = userQuizAnswersLog[i];
+            if (!log) return;
+            reviewChatOpenIndex = i;
+            document.getElementById('review-chat-overlay').style.display = 'flex';
+            requestAnimationFrame(() => {
+                document.getElementById('review-chat-panel').classList.add('chat-show');
+            });
+            _renderReviewChatBody();
+        }
+
+        function closeReviewChatPanel() {
+            const panel = document.getElementById('review-chat-panel');
+            const overlay = document.getElementById('review-chat-overlay');
+            if (!panel || !overlay) return;
+            panel.classList.remove('chat-show');
+            setTimeout(() => { overlay.style.display = 'none'; }, 250);
+        }
+
+        function _renderReviewChatBubble(m) {
+            if (m.role === 'status') {
+                const dots = m.dots
+                    ? `<span class="review-chat-typing-dots"><span></span><span></span><span></span></span>`
+                    : '';
+                return `<div class="review-chat-bubble status">${dots}<span>${esc(m.text)}</span></div>`;
+            }
+            if (m.role === 'bot') {
+                return `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🤖 المساعد</span>${esc(m.text)}</div>`;
+            }
+            if (m.role === 'quota') {
+                return `<div class="review-chat-bubble quota">🔒 ${esc(m.text)}</div>`;
+            }
+            if (m.role === 'error') {
+                const retryBtn = (typeof m.retryId === 'number')
+                    ? `<button class="review-chat-retry-btn" onclick="_reviewChatRetryFromRegistry(${m.retryId})">🔄 إعادة المحاولة (من غير خصم من رصيدك)</button>`
+                    : '';
+                return `<div class="review-chat-bubble error">⚠️ ${esc(m.text)}${retryBtn}</div>`;
+            }
+            return `<div class="review-chat-bubble user">${esc(m.text)}</div>`;
+        }
+
+        function _renderReviewChatBody() {
+            const i = reviewChatOpenIndex;
+            if (i === null) return;
+            if (!(i in reviewChatRemainingByIndex)) reviewChatRemainingByIndex[i] = REVIEW_CHAT_MAX_PER_QUESTION;
+
+            const history = reviewChatHistoryByIndex[i] || [];
+            const remainingNow = reviewChatRemainingByIndex[i];
+            const body = document.getElementById('review-chat-body');
+            const emptyStateText = remainingNow <= 0
+                ? `<div class="review-chat-bubble quota">🔒 وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.</div>`
+                : `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🤖 المساعد</span>أهلاً! تقدر تسألني أي حاجة عن السؤال ده — شرح أعمق، ليه إجابتك كانت صح أو غلط، أو سؤال تدريبي شبيه.</div>`;
+            body.innerHTML = history.length ? history.map(_renderReviewChatBubble).join('') : emptyStateText;
+            body.scrollTop = body.scrollHeight;
+            _updateReviewChatCounterUI();
+        }
+
+        function _updateReviewChatCounterUI() {
+            const i = reviewChatOpenIndex;
+            const remaining = (i !== null && (i in reviewChatRemainingByIndex)) ? reviewChatRemainingByIndex[i] : REVIEW_CHAT_MAX_PER_QUESTION;
+            const counterEl = document.getElementById('review-chat-counter');
+            if (counterEl) counterEl.innerText = `${remaining} من ${REVIEW_CHAT_MAX_PER_QUESTION} رسائل متبقية لهذا السؤال`;
+
+            const disabled = remaining <= 0 || reviewChatBusy;
+            document.querySelectorAll('.review-chat-chip').forEach(b => b.disabled = disabled);
+            const input = document.getElementById('review-chat-input');
+            const sendBtn = document.getElementById('review-chat-send-btn');
+            if (input) input.disabled = disabled;
+            if (sendBtn) sendBtn.disabled = disabled;
+        }
+
+        function reviewChatSendTemplate(type) {
+            const labels = { explain: '📖 اشرحلي أكتر', why: '❓ ليه إجابتي كده', similar: '📝 ادّيني سؤال تدريبي شبيه' };
+            _reviewChatSend(type, labels[type] || 'سؤال');
+        }
+
+        function reviewChatSendCustom() {
+            const input = document.getElementById('review-chat-input');
+            if (!input) return;
+            const text = input.value.trim();
+            if (!text) return;
+            input.value = '';
+            _reviewChatSend('custom', text);
+        }
+
+        function _reviewChatRetryFromRegistry(retryId) {
+            const entry = reviewChatRetryRegistry[retryId];
+            if (!entry) return;
+            _reviewChatSend(entry.actionType, entry.displayText, true);
+        }
+
+        // ينفّذ الإرسال مع إعادة محاولة تلقائية لو الخدمة مزدحمة — يمرر سياق السؤال الكامل (السؤال، الخيارات، إجابة الطالب، الإجابة الصحيحة، الشرح)
+        async function _reviewChatSend(actionType, displayText, isRetry = false) {
+            const i = reviewChatOpenIndex;
+            const log = i !== null ? userQuizAnswersLog[i] : null;
+            if (i === null || !log || reviewChatBusy) return;
+
+            const remaining = (i in reviewChatRemainingByIndex) ? reviewChatRemainingByIndex[i] : REVIEW_CHAT_MAX_PER_QUESTION;
+            if (remaining <= 0) { showToast("وصلت للحد الأقصى من الأسئلة لهذا السؤال", "error"); return; }
+
+            reviewChatBusy = true;
+            reviewChatHistoryByIndex[i] = reviewChatHistoryByIndex[i] || [];
+
+            const conversationalRoles = ['user', 'bot'];
+            const priorTurns = reviewChatHistoryByIndex[i].filter(m => conversationalRoles.includes(m.role));
+            const historyForApi = priorTurns.slice(-6).map(m => ({ role: m.role === 'user' ? 'user' : 'bot', text: m.text }));
+
+            if (!isRetry) reviewChatHistoryByIndex[i].push({ role: 'user', text: displayText });
+            reviewChatHistoryByIndex[i].push({ role: 'status', text: 'جاري التحضير', dots: true });
+            _renderReviewChatBody();
+            _updateReviewChatCounterUI();
+
+            let finalReply = null;
+            let finalErrorText = null;
+            let finalErrorCode = null;
+
+            try {
+                const idToken = await firebase.auth().currentUser.getIdToken();
+                const activeQObj = currentQuestions[i] || {};
+                const payload = {
+                    subject: activeQObj.subject,
+                    questionUid: activeQObj.id || `idx-${i}`,
+                    questionText: log.question,
+                    options: Array.isArray(activeQObj.options) ? activeQObj.options : [],
+                    studentAnswer: log.chosen || '(لم يجب - انتهى الوقت)',
+                    correctAnswer: log.correctAnswer,
+                    explanation: log.explanation || '',
+                    actionType: actionType,
+                    message: actionType === 'custom' ? displayText : '',
+                    history: historyForApi
+                };
+
+                let attempt = 0;
+                while (attempt < 8) {
+                    attempt++;
+                    const response = await fetch('/api/review-chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await response.json().catch(() => ({}));
+
+                    if (response.status === 429 && data.retryAfterMs) {
+                        const waitSec = Math.max(3, Math.ceil(data.retryAfterMs / 1000));
+                        const list = reviewChatHistoryByIndex[i];
+                        list[list.length - 1] = { role: 'status', text: `الخدمة مزدحمة حالياً، إعادة المحاولة خلال ${waitSec} ثانية...`, dots: false };
+                        _renderReviewChatBody();
+                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                        continue;
+                    }
+
+                    if (!response.ok) {
+                        finalErrorText = data.error || 'حدث خطأ أثناء التواصل مع المساعد';
+                        finalErrorCode = data.code || 'ERROR';
+                        break;
+                    }
+
+                    finalReply = data.reply;
+                    if (typeof data.remaining === 'number') reviewChatRemainingByIndex[i] = data.remaining;
+                    break;
+                }
+
+                if (!finalReply && !finalErrorText) {
+                    finalErrorText = 'الخدمة مزدحمة جداً حالياً، جرّب تاني بعد شوية.';
+                    finalErrorCode = 'ERROR';
+                }
+            } catch (err) {
+                finalErrorText = 'تعذّر الاتصال بالمساعد: ' + err.message;
+                finalErrorCode = 'ERROR';
+            } finally {
+                const list = reviewChatHistoryByIndex[i];
+                if (list && list.length && list[list.length - 1].role === 'status') list.pop();
+
+                if (finalReply) {
+                    list.push({ role: 'bot', text: finalReply });
+                } else if (finalErrorCode === 'QUOTA_EXCEEDED') {
+                    reviewChatRemainingByIndex[i] = 0;
+                    list.push({ role: 'quota', text: 'وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.' });
+                } else {
+                    const retryId = reviewChatRetryIdCounter++;
+                    reviewChatRetryRegistry[retryId] = { actionType, displayText };
+                    list.push({ role: 'error', text: finalErrorText, retryId });
+                }
+
+                reviewChatBusy = false;
+                _renderReviewChatBody();
+            }
+        }
+
         function renderReviewCards() {
             const container = document.getElementById('review-cards-container');
             if (!container) return;
@@ -3562,6 +3548,9 @@ html, body {
                     <small style="color:var(--text-muted);display:block;margin-top:5px;">
                         💡 ${log.explanation || 'لا يوجد شرح متوفر.'}
                     </small>
+                    <button class="review-chat-open-btn" onclick="openReviewChatPanel(${i})">
+                        <i class="fa-solid fa-robot"></i> اسأل عن السؤال ده
+                    </button>
                 </div>`;
             }
 
