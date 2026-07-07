@@ -1409,7 +1409,7 @@ html, body {
                 .review-chat-header h4 { margin:0; font-size:15px; color:var(--primary); }
                 .review-chat-header small { display:block; color:var(--text-muted); font-size:11px; margin-top:3px; line-height:1.5; }
                 .review-chat-close { background:none; border:none; font-size:18px; color:var(--text-muted); cursor:pointer; padding:4px 8px; flex-shrink:0; }
-                .review-chat-body { flex:1; overflow-y:auto; padding:14px 16px; display:flex; flex-direction:column; gap:10px; min-height:120px; }
+                .review-chat-body { flex:1; overflow-y:auto; overscroll-behavior:contain; padding:14px 16px; display:flex; flex-direction:column; gap:10px; min-height:120px; }
                 .review-chat-bubble { max-width:85%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.7; white-space:pre-wrap; animation: reviewChatFadeIn 0.25s ease; }
                 @keyframes reviewChatFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
                 .review-chat-bubble.user { align-self:flex-end; background:var(--primary); color:#fff; border-bottom-left-radius:4px; }
@@ -3327,6 +3327,7 @@ html, body {
             if (!log) return;
             reviewChatOpenIndex = i;
             document.getElementById('review-chat-overlay').style.display = 'flex';
+            document.body.style.overflow = 'hidden'; // نمنع تمرير الصفحة اللي خلف اللوحة
             requestAnimationFrame(() => {
                 document.getElementById('review-chat-panel').classList.add('chat-show');
             });
@@ -3338,6 +3339,7 @@ html, body {
             const overlay = document.getElementById('review-chat-overlay');
             if (!panel || !overlay) return;
             panel.classList.remove('chat-show');
+            document.body.style.overflow = ''; // نرجّع تمرير الصفحة زي ما كان
             setTimeout(() => { overlay.style.display = 'none'; }, 250);
         }
 
@@ -3548,9 +3550,9 @@ html, body {
                     <small style="color:var(--text-muted);display:block;margin-top:5px;">
                         💡 ${log.explanation || 'لا يوجد شرح متوفر.'}
                     </small>
-                    <button class="review-chat-open-btn" onclick="openReviewChatPanel(${i})">
+                    ${isFlag ? `<button class="review-chat-open-btn" onclick="openReviewChatPanel(${i})">
                         <i class="fa-solid fa-robot"></i> اسأل عن السؤال ده
-                    </button>
+                    </button>` : ''}
                 </div>`;
             }
 
