@@ -1731,6 +1731,41 @@ html, body {
                 <div id="tab-tools" class="admin-tab-content hidden-tab">
                     <h3>⚙️ أدوات الإدارة والصيانة</h3>
 
+                    <!-- ══ لوحة مراقبة استهلاك الذكاء الاصطناعي ══ -->
+                    <div style="border:1.5px solid var(--border); border-radius:12px; padding:16px; margin-bottom:20px; background:var(--card-bg);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
+                            <h4 style="margin:0; font-size:15px;"><i class="fa-solid fa-chart-line" style="color:var(--primary);"></i> استهلاك الذكاء الاصطناعي (آخر 7 أيام)</h4>
+                            <button onclick="loadAiUsageDashboard()" class="ban-btn ban-inactive" style="padding:5px 12px; font-size:11px;">
+                                <i class="fa-solid fa-arrows-rotate"></i> تحديث
+                            </button>
+                        </div>
+
+                        <div id="ai-usage-today-cards" style="display:grid; grid-template-columns:repeat(auto-fit, minmax(130px, 1fr)); gap:10px; margin-bottom:16px;">
+                            <p style="color:var(--text-muted); font-size:12px; grid-column:1/-1;">جاري تحميل بيانات اليوم...</p>
+                        </div>
+
+                        <div id="ai-usage-table-wrap" style="overflow-x:auto;">
+                            <table style="width:100%; border-collapse:collapse; font-size:12px;">
+                                <thead>
+                                    <tr style="border-bottom:2px solid var(--border); text-align:right;">
+                                        <th style="padding:6px 8px;">التاريخ</th>
+                                        <th style="padding:6px 8px;">Gemini</th>
+                                        <th style="padding:6px 8px;">Groq</th>
+                                        <th style="padding:6px 8px;">Cerebras</th>
+                                        <th style="padding:6px 8px; color:var(--danger);">مزدحم</th>
+                                        <th style="padding:6px 8px; font-weight:800;">الإجمالي</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ai-usage-table-body">
+                                    <tr><td colspan="6" style="padding:14px; text-align:center; color:var(--text-muted);">جاري التحميل...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <small style="color:var(--text-muted); display:block; margin-top:10px; line-height:1.6;">
+                            "مزدحم" = عدد المرات اللي كل المزوّدين الثلاثة كانوا مشغولين فيها والطالب استنى. الأرقام دي عدد نداءات ناجحة، مش استهلاك توكنات دقيق — استخدمها كمؤشر اتجاه عام.
+                        </small>
+                    </div>
+
                     <div class="tools-grid">
                         <!-- Backup -->
                         <div class="tool-card">
@@ -4434,6 +4469,7 @@ html, body {
             if (tabId === 'tab-students') loadAdminStudentsList();
             if (tabId === 'tab-logs')     loadAdminLogsList();
             if (tabId === 'tab-upload')   switchQuestionsSubTab('add');
+            if (tabId === 'tab-tools')    loadAiUsageDashboard();
         }
 
         // ✅ تنقل فرعي داخل تبويب "الأسئلة": إضافة أسئلة ↔ إدارة البنك
@@ -5406,6 +5442,100 @@ html, body {
         }
         function handleModalOverlayClick(e) {
             if (e.target === document.getElementById('custom-modal-overlay')) closeModal();
+        }
+
+        // ══ لوحة مراقبة استهلاك الذكاء الاصطناعي (تُقرأ من مجموعة ai_daily_stats — عدادات خفيفة بدون تكلفة قراءة عالية) ══
+        const AI_USAGE_DAILY_REF_LIMITS = { groq: 1000, cerebras: 200 }; // أرقام استرشادية تقريبية للتحذير البصري بس
+
+        function _aiUsageDateStr(d) {
+            return d.toISOString().slice(0, 10); // YYYY-MM-DD
+        }
+
+        async function loadAiUsageDashboard() {
+            const cardsEl = document.getElementById('ai-usage-today-cards');
+            const bodyEl = document.getElementById('ai-usage-table-body');
+            if (!cardsEl || !bodyEl) return;
+
+            cardsEl.innerHTML = `<p style="color:var(--text-muted); font-size:12px; grid-column:1/-1;">⏳ جاري التحميل...</p>`;
+            bodyEl.innerHTML = `<tr><td colspan="6" style="padding:14px; text-align:center; color:var(--text-muted);">⏳ جاري التحميل...</td></tr>`;
+
+            try {
+                const today = new Date();
+                const sevenDaysAgo = new Date(today);
+                sevenDaysAgo.setDate(today.getDate() - 6);
+                const sevenDaysAgoStr = _aiUsageDateStr(sevenDaysAgo);
+
+                const snap = await db.collection('ai_daily_stats').where('date', '>=', sevenDaysAgoStr).get();
+
+                // تجميع: byDate[date][provider] = count
+                const byDate = {};
+                snap.forEach(doc => {
+                    const d = doc.data();
+                    if (!d || !d.date || !d.provider) return;
+                    byDate[d.date] = byDate[d.date] || {};
+                    byDate[d.date][d.provider] = (byDate[d.date][d.provider] || 0) + (d.count || 0);
+                });
+
+                // بناء آخر 7 أيام بالترتيب حتى لو مفيش بيانات ليوم معين (نعرضه صفر)
+                const days = [];
+                for (let i = 0; i < 7; i++) {
+                    const d = new Date(today);
+                    d.setDate(today.getDate() - i);
+                    days.push(_aiUsageDateStr(d));
+                }
+
+                const todayStr = days[0];
+                const todayData = byDate[todayStr] || {};
+                const todayTotal = (todayData.gemini || 0) + (todayData.groq || 0) + (todayData.cerebras || 0);
+
+                function usageBar(label, count, refLimit) {
+                    const pct = refLimit ? Math.min(100, Math.round((count / refLimit) * 100)) : null;
+                    const barColor = pct === null ? 'var(--primary)' : (pct >= 90 ? 'var(--danger)' : (pct >= 60 ? 'var(--warning)' : 'var(--success)'));
+                    return `
+                        <div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;">
+                            <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold; color:var(--text-muted); margin-bottom:6px;">
+                                <span>${label}</span>
+                                <span>${count}${refLimit ? ` / ~${refLimit}` : ''}</span>
+                            </div>
+                            ${pct !== null ? `
+                                <div style="background:var(--bg-gradient); border-radius:99px; height:6px; overflow:hidden;">
+                                    <div style="width:${pct}%; height:100%; background:${barColor};"></div>
+                                </div>` : `<div style="font-size:10px; color:var(--text-muted);">حد غير معلن رسمياً</div>`}
+                        </div>`;
+                }
+
+                cardsEl.innerHTML = `
+                    <div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--primary-light);">
+                        <div style="font-size:11px; font-weight:bold; color:var(--text-muted);">إجمالي اليوم</div>
+                        <div style="font-size:20px; font-weight:900; color:var(--primary);">${todayTotal}</div>
+                    </div>
+                    ${usageBar('Gemini', todayData.gemini || 0, null)}
+                    ${usageBar('Groq', todayData.groq || 0, AI_USAGE_DAILY_REF_LIMITS.groq)}
+                    ${usageBar('Cerebras', todayData.cerebras || 0, AI_USAGE_DAILY_REF_LIMITS.cerebras)}
+                    <div style="border:1px solid var(--border); border-radius:10px; padding:10px 12px;">
+                        <div style="font-size:11px; font-weight:bold; color:var(--text-muted);">مزدحم اليوم</div>
+                        <div style="font-size:20px; font-weight:900; color:var(--danger);">${todayData.busy || 0}</div>
+                    </div>
+                `;
+
+                bodyEl.innerHTML = days.map(day => {
+                    const d = byDate[day] || {};
+                    const total = (d.gemini || 0) + (d.groq || 0) + (d.cerebras || 0);
+                    return `
+                        <tr style="border-bottom:1px solid var(--border);">
+                            <td style="padding:6px 8px;">${day}${day === todayStr ? ' (اليوم)' : ''}</td>
+                            <td style="padding:6px 8px;">${d.gemini || 0}</td>
+                            <td style="padding:6px 8px;">${d.groq || 0}</td>
+                            <td style="padding:6px 8px;">${d.cerebras || 0}</td>
+                            <td style="padding:6px 8px; color:var(--danger);">${d.busy || 0}</td>
+                            <td style="padding:6px 8px; font-weight:800;">${total}</td>
+                        </tr>`;
+                }).join('');
+
+            } catch (err) {
+                cardsEl.innerHTML = `<p style="color:var(--danger); font-size:12px; grid-column:1/-1;">فشل تحميل البيانات: ${esc(err.message)}</p>`;
+                bodyEl.innerHTML = '';
+            }
         }
 
         function loadAdminLogsList() {
