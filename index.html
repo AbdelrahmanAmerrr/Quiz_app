@@ -396,7 +396,7 @@ html, body {
         /* شريط التقدم */
         .arena-progress-wrapper {
             width: 100%; background: var(--border);
-            height: 4px; border-radius: 99px; overflow: hidden; margin-bottom: 18px;
+            height: 4px; border-radius: 99px; overflow: hidden; margin-bottom: 12px;
         }
         .arena-progress-fill {
             height: 100%; width: 0%;
@@ -407,7 +407,7 @@ html, body {
         /* رأس الامتحان: عداد + مؤقت */
         .arena-header {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .arena-counter-pill {
             background: var(--bg-gradient); border: 1px solid var(--border);
@@ -444,11 +444,11 @@ html, body {
 
         /* شريط الإجراءات — أيقونات فقط، مدمج ومنظم حتى مع 5 أزرار */
         .arena-actions {
-            display: flex; gap: 8px; margin-bottom: 14px;
+            display: flex; gap: 8px; margin-bottom: 10px;
         }
         .arena-action-btn {
             flex: 1; display: flex; align-items: center; justify-content: center;
-            padding: 11px 0; border: 1px solid var(--border);
+            padding: 9px 0; border: 1px solid var(--border);
             border-radius: 10px; background: var(--card-bg);
             font-size: 16px; color: var(--text-muted);
             cursor: pointer; transition: all 0.15s;
@@ -601,20 +601,21 @@ html, body {
 
         /* نص السؤال */
         .arena-question-text {
-            font-size: 17px; font-weight: 700; line-height: 1.6;
-            margin-bottom: 16px; color: var(--text-main);
+            font-size: 17px; font-weight: 700; line-height: 1.5;
+            margin-bottom: 10px; color: var(--text-main);
             word-break: break-word;
         }
 
         /* الخيارات */
         .option-node {
             background: var(--card-bg); border: 1.5px solid var(--border);
-            padding: 12px 14px; border-radius: var(--radius-sm);
-            margin: 8px 0; text-align: right; width: 100%; cursor: pointer;
+            padding: 10px 14px; border-radius: var(--radius-sm);
+            margin: 5px 0; text-align: right; width: 100%; cursor: pointer;
             font-size: 15px; display: flex; justify-content: space-between;
             align-items: center; transition: all 0.15s; box-sizing: border-box;
             word-break: break-word; color: var(--text-main);
         }
+        .option-node i { flex-shrink: 0; margin-right: 10px; }
         .option-node:hover:not(:disabled) {
             border-color: var(--primary); background: var(--primary-light);
             color: var(--text-main);
@@ -1003,9 +1004,7 @@ html, body {
             .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .subject-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
             .option-node { width: 100% !important;
-                margin: 8px 0 !important; font-size: 15px; padding: 12px;
-                flex-direction: column; align-items: flex-start; gap: 8px; text-align: right; }
-            .option-node i { align-self: flex-end; }
+                margin: 5px 0 !important; font-size: 15px; padding: 10px 14px; }
             .nav-tab-link { padding: 9px 12px; font-size: 12px; }
             .admin-header-box { flex-direction: column; align-items: flex-start; gap: 10px;
                 }
@@ -1015,7 +1014,7 @@ html, body {
                 }
             body { overflow-x: hidden;
                 }
-            #arena-question-text { font-size: 18px;
+            #arena-question-text { font-size: 17px;
                 }
         }
 
