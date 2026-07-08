@@ -396,7 +396,7 @@ html, body {
         /* شريط التقدم */
         .arena-progress-wrapper {
             width: 100%; background: var(--border);
-            height: 4px; border-radius: 99px; overflow: hidden; margin-bottom: 12px;
+            height: 4px; border-radius: 99px; overflow: hidden; margin-bottom: 14px;
         }
         .arena-progress-fill {
             height: 100%; width: 0%;
@@ -407,7 +407,7 @@ html, body {
         /* رأس الامتحان: عداد + مؤقت */
         .arena-header {
             display: flex; justify-content: space-between; align-items: center;
-            margin-bottom: 12px;
+            margin-bottom: 14px;
         }
         .arena-counter-pill {
             background: var(--bg-gradient); border: 1px solid var(--border);
@@ -444,11 +444,11 @@ html, body {
 
         /* شريط الإجراءات — أيقونات فقط، مدمج ومنظم حتى مع 5 أزرار */
         .arena-actions {
-            display: flex; gap: 8px; margin-bottom: 10px;
+            display: flex; gap: 8px; margin-bottom: 12px;
         }
         .arena-action-btn {
             flex: 1; display: flex; align-items: center; justify-content: center;
-            padding: 9px 0; border: 1px solid var(--border);
+            padding: 10px 0; border: 1px solid var(--border);
             border-radius: 10px; background: var(--card-bg);
             font-size: 16px; color: var(--text-muted);
             cursor: pointer; transition: all 0.15s;
@@ -601,16 +601,16 @@ html, body {
 
         /* نص السؤال */
         .arena-question-text {
-            font-size: 17px; font-weight: 700; line-height: 1.5;
-            margin-bottom: 10px; color: var(--text-main);
+            font-size: 17px; font-weight: 700; line-height: 1.55;
+            margin-bottom: 13px; color: var(--text-main);
             word-break: break-word;
         }
 
         /* الخيارات */
         .option-node {
             background: var(--card-bg); border: 1.5px solid var(--border);
-            padding: 10px 14px; border-radius: var(--radius-sm);
-            margin: 5px 0; text-align: right; width: 100%; cursor: pointer;
+            padding: 11px 14px; border-radius: var(--radius-sm);
+            margin: 6px 0; text-align: right; width: 100%; cursor: pointer;
             font-size: 15px; display: flex; justify-content: space-between;
             align-items: center; transition: all 0.15s; box-sizing: border-box;
             word-break: break-word; color: var(--text-main);
@@ -1020,6 +1020,25 @@ html, body {
 
         @media (max-width: 900px) and (min-width: 769px) { .app-layout { grid-template-columns: 1fr;
             } }
+
+        /* ✅ [Responsive] موبايل بالعرض / تابلت / كمبيوتر — استغلال أفضل للعرض المتاح */
+        @media (min-width: 620px) {
+            /* خيارات الامتحان: شبكة عمودين بدل عمود طويل واحد — تقلل الحاجة للسكرول جداً */
+            #arena-options-box {
+                display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            }
+            .option-node { margin: 0; }
+
+            /* المؤقت الدائري وأزرار الإجراءات أوضح شوية على شاشة أوسع */
+            .circular-timer, .circular-timer svg { width: 56px; height: 56px; }
+            .arena-action-btn { padding: 12px 0; font-size: 17px; }
+        }
+
+        /* تابلت وكمبيوتر: حاوية أعرض شوية بدل ما تفضل بعرض الموبايل بالظبط */
+        @media (min-width: 900px) {
+            .app-layout { max-width: 1000px !important; padding: 0 30px !important; }
+            #view-arena.card { padding: 32px; }
+        }
     </style>
 
 </head>
