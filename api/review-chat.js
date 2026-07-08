@@ -154,6 +154,30 @@ function _logDailyAiUsage(provider) {
     }, { merge: true }).catch(() => {});
 }
 
+// خط دفاع ثاني بعد البرومبت — حتى لو النموذج خالف التعليمات:
+// (أ) يشيل أي رموز Markdown متسربة (** # -) لأن واجهتنا بتعرض نص عادي بس
+// (ب) لو الرد اتقطع في نص جملة، يقصّه عند آخر علامة نهاية جملة كاملة بدل ما يسيب جملة معلّقة
+function _sanitizeAssistantText(text) {
+    if (!text) return text;
+    let cleaned = text
+        .replace(/\*\*/g, '')
+        .replace(/^#{1,6}\s*/gm, '')
+        .replace(/^[-•]\s*/gm, '');
+
+    cleaned = cleaned.trim();
+    const enders = ['.', '؟', '!', '؛'];
+    if (!enders.some(e => cleaned.endsWith(e)) && !cleaned.endsWith('\n')) {
+        let lastIdx = -1;
+        for (const e of enders) {
+            const idx = cleaned.lastIndexOf(e);
+            if (idx > lastIdx) lastIdx = idx;
+        }
+        // نقص بس لو هيفضل جزء معقول من الرد (مش هنبتره لحجم صغير جداً)
+        if (lastIdx > 40) cleaned = cleaned.slice(0, lastIdx + 1);
+    }
+    return cleaned;
+}
+
 async function getAssistantReply(systemText, userText, history) {
     const geminiSlot = await acquireProviderSlot('gemini', GEMINI_MAX_PER_MINUTE);
     if (geminiSlot.allowed) {
@@ -216,7 +240,9 @@ ${optionsList || '(سؤال صح/خطأ أو بدون خيارات متعددة 
 - الامتحان خلص والدرجة اتسجلت، فمن المقبول تماماً تناقش الإجابة الصحيحة بالتفصيل وتقول ليه إجابة الطالب كانت صح أو غلط.
 - هدفك تعليمي بحت: افهيمه المفهوم كويس، وضّح أي لبس، واقترح أمثلة أو أسئلة تدريبية بإجاباتها كاملة لو طلب.
 - ممنوع منعاً باتاً أي مقدمة أو عبارة تمهيدية قبل المحتوى الفعلي — لا تبدأ الرد بعبارات زي: "سأوضح لك"، "إليك سؤال تدريبي جديد"، "تمام"، "بالتأكيد"، "حسناً"، "إليك الشرح"، أو أي صيغة مشابهة. ابدأ من أول كلمة بالمحتوى المطلوب نفسه مباشرة (مثال: لو المطلوب شرح ليه الإجابة غلط، ابدأ فوراً بـ"الإجابة الصحيحة هي كذا لأن..." من غير أي تمهيد قبلها).
-- اكتب بالعربية، بوضوح وبإيجاز مناسب — لكن لازم تكمل فكرتك للنهاية بجملة كاملة، ممنوع تقطع الرد في نص الجملة حتى لو قصّرت المحتوى عشان كده.
+- ممنوع منعاً باتاً أي تنسيق Markdown إطلاقاً: لا نجوم ** للخط العريض، لا علامات # للعناوين، لا شرطات - أو أرقام للنقاط الفرعية، لا فتح أقسام منفصلة زي "أولاً:" أو "لفهم السؤال:". اكتب فقرة نصية عادية متصلة بس، حتى لو المحتوى فيه أكتر من فكرة.
+- الرد كله (مهما كان نوع الطلب) في حدود 70-90 كلمة بالمظبوط تقريباً، مش أكتر. لو حسيت إنك قربت من الحد وسط فكرة، اختصر فوراً واقفل الجملة، ولا تفتح فكرة جديدة أو مثال إضافي.
+- اكتب بالعربية، وأكمل فكرتك للنهاية بجملة كاملة دايماً — ممنوع تقطع في نص الجملة.
 - لو في محادثة سابقة معروضة تحت، اعتبرها سياق حقيقي مستمر وجاوب على أساسها.`;
 
     const userTextByAction = {
@@ -293,6 +319,7 @@ module.exports = async (req, res) => {
         if (!assistant.ok) {
             return res.status(429).json({ error: 'الخدمة مزدحمة حالياً', retryAfterMs: assistant.retryAfterMs, code: 'BUSY' });
         }
+        assistant.text = _sanitizeAssistantText(assistant.text);
 
         const remaining = await incrementStudentQuota(decoded.uid, questionUid);
 
