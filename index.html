@@ -1415,6 +1415,10 @@ html, body {
                 .review-chat-bubble.user { align-self:flex-end; background:var(--primary); color:#fff; border-bottom-left-radius:4px; }
                 .review-chat-bubble.bot { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); border-bottom-right-radius:4px; }
                 .review-chat-bubble.bot .review-chat-bot-label { display:block; font-size:10.5px; font-weight:bold; color:var(--primary); margin-bottom:4px; opacity:0.85; }
+                .review-chat-feedback { display:flex; gap:8px; margin-top:8px; }
+                .review-chat-feedback button { background:none; border:1px solid var(--border); border-radius:8px; padding:3px 9px; font-size:13px; cursor:pointer; opacity:0.7; }
+                .review-chat-feedback button:hover { opacity:1; }
+                .review-chat-feedback.voted { font-size:11px; color:var(--text-muted); font-style:italic; margin-top:8px; }
                 .review-chat-bubble.status { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-muted); font-size:12.5px; display:flex; align-items:center; gap:8px; border-bottom-right-radius:4px; }
                 .review-chat-typing-dots { display:inline-flex; gap:3px; }
                 .review-chat-typing-dots span { width:5px; height:5px; border-radius:50%; background:var(--text-muted); animation: reviewChatBlink 1.2s infinite ease-in-out; }
@@ -3396,7 +3400,7 @@ html, body {
             setTimeout(() => { overlay.style.display = 'none'; }, 250);
         }
 
-        function _renderReviewChatBubble(m) {
+        function _renderReviewChatBubble(m, idx) {
             if (m.role === 'status') {
                 const dots = m.dots
                     ? `<span class="review-chat-typing-dots"><span></span><span></span><span></span></span>`
@@ -3404,7 +3408,13 @@ html, body {
                 return `<div class="review-chat-bubble status">${dots}<span>${esc(m.text)}</span></div>`;
             }
             if (m.role === 'bot') {
-                return `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🤖 المساعد</span>${esc(m.text)}</div>`;
+                const feedback = m.voted
+                    ? `<div class="review-chat-feedback voted">${m.voted === 'up' ? '👍 شكراً على رأيك' : '👎 هنراجع الرد ده'}</div>`
+                    : `<div class="review-chat-feedback">
+                        <button onclick="_reviewChatSendFeedback(${idx}, 'up')" title="رد مفيد">👍</button>
+                        <button onclick="_reviewChatSendFeedback(${idx}, 'down')" title="رد مش كويس">👎</button>
+                       </div>`;
+                return `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🤖 المساعد</span>${esc(m.text)}${feedback}</div>`;
             }
             if (m.role === 'quota') {
                 return `<div class="review-chat-bubble quota">🔒 ${esc(m.text)}</div>`;
@@ -3418,6 +3428,29 @@ html, body {
             return `<div class="review-chat-bubble user">${esc(m.text)}</div>`;
         }
 
+        // يسجّل رأي الطالب في رد معين مباشرة بـFirestore (كتابة وحيدة، بدون فانكشن سيرفر منفصلة)
+        async function _reviewChatSendFeedback(msgIndex, rating) {
+            const i = reviewChatOpenIndex;
+            const list = i !== null ? reviewChatHistoryByIndex[i] : null;
+            const msg = list ? list[msgIndex] : null;
+            if (!msg || msg.role !== 'bot' || msg.voted) return;
+
+            msg.voted = rating;
+            _renderReviewChatBody();
+
+            try {
+                const activeQObj = currentQuestions[i] || {};
+                await db.collection('review_chat_feedback').add({
+                    uid: firebase.auth().currentUser.uid,
+                    subject: activeQObj.subject || null,
+                    questionUid: activeQObj.id || `idx-${i}`,
+                    reply: msg.text,
+                    rating: rating,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            } catch (e) { /* صامت — تجربة المستخدم أهم من ضمان وصول التقييم */ }
+        }
+
         function _renderReviewChatBody() {
             const i = reviewChatOpenIndex;
             if (i === null) return;
@@ -3429,7 +3462,7 @@ html, body {
             const emptyStateText = remainingNow <= 0
                 ? `<div class="review-chat-bubble quota">🔒 وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.</div>`
                 : `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🤖 المساعد</span>أهلاً! تقدر تسألني أي حاجة عن السؤال ده — شرح أعمق، ليه إجابتك كانت صح أو غلط، أو سؤال تدريبي شبيه.</div>`;
-            body.innerHTML = history.length ? history.map(_renderReviewChatBubble).join('') : emptyStateText;
+            body.innerHTML = history.length ? history.map((m, idx) => _renderReviewChatBubble(m, idx)).join('') : emptyStateText;
             body.scrollTop = body.scrollHeight;
             _updateReviewChatCounterUI();
         }
