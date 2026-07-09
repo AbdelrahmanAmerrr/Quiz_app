@@ -1418,53 +1418,166 @@ html, body {
 
             <!-- ══════ مساعد المذاكرة بعد التسليم — بدون أي قيود، السؤال اتقيّم فعلاً ══════ -->
             <style>
-                .review-chat-open-btn { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; margin-top:10px; padding:8px 0; background:none; border:1.5px solid var(--primary); color:var(--primary); font-size:12px; font-weight:bold; border-radius:8px; cursor:pointer; }
-                #review-chat-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:9998; display:none; align-items:flex-end; justify-content:center; }
-                #review-chat-panel { width:100%; max-width:480px; background:var(--card-bg); border-radius:20px 20px 0 0; max-height:82vh; display:flex; flex-direction:column; box-shadow:0 -8px 30px rgba(0,0,0,0.25); transform:translateY(100%); transition:transform .28s cubic-bezier(.22,1,.36,1); }
+                .review-chat-open-btn {
+                    display:flex; align-items:center; justify-content:center; gap:7px; width:100%;
+                    margin-top:12px; padding:10px 0; background:none;
+                    border:1.5px solid var(--primary); color:var(--primary-dark);
+                    font-size:12.5px; font-weight:700; border-radius:10px; cursor:pointer;
+                    transition:background .15s, transform .1s;
+                }
+                .review-chat-open-btn:hover { background:rgba(197,160,89,0.1); }
+                .review-chat-open-btn:active { transform:scale(0.97); }
+
+                #review-chat-overlay {
+                    position:fixed; inset:0; background:rgba(15,26,44,0.55);
+                    backdrop-filter:blur(5px) saturate(1.1); -webkit-backdrop-filter:blur(5px) saturate(1.1);
+                    z-index:9998; display:none; align-items:flex-end; justify-content:center;
+                }
+                #review-chat-panel {
+                    width:100%; max-width:480px; background:var(--card-bg);
+                    border-radius:26px 26px 0 0; max-height:85vh; display:flex; flex-direction:column;
+                    box-shadow: 0 -18px 50px rgba(15,26,44,0.28), 0 -2px 10px rgba(15,26,44,0.10);
+                    transform:translateY(100%); transition:transform .32s cubic-bezier(.22,1,.36,1);
+                }
                 #review-chat-panel.chat-show { transform:translateY(0); }
-                .review-chat-drag-handle { width:40px; height:4px; border-radius:99px; background:var(--border); margin:8px auto 0; }
-                .review-chat-header { display:flex; align-items:flex-start; justify-content:space-between; padding:14px 16px; border-bottom:1px solid var(--border); }
-                .review-chat-header h4 { margin:0; font-size:15px; color:var(--primary); }
-                .review-chat-header small { display:block; color:var(--text-muted); font-size:11px; margin-top:3px; line-height:1.5; }
-                .review-chat-close { background:none; border:none; font-size:18px; color:var(--text-muted); cursor:pointer; padding:4px 8px; flex-shrink:0; }
-                .review-chat-body { flex:1; overflow-y:auto; overscroll-behavior:contain; padding:14px 16px; display:flex; flex-direction:column; gap:10px; min-height:120px; }
-                .review-chat-bubble { max-width:85%; padding:10px 14px; border-radius:14px; font-size:13px; line-height:1.7; white-space:pre-wrap; animation: reviewChatFadeIn 0.25s ease; }
-                @keyframes reviewChatFadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
-                .review-chat-bubble.user { align-self:flex-end; background:var(--primary); color:#fff; border-bottom-left-radius:4px; }
-                .review-chat-bubble.bot { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); border-bottom-right-radius:4px; }
-                .review-chat-bubble.bot .review-chat-bot-label { display:block; font-size:10.5px; font-weight:bold; color:var(--primary); margin-bottom:4px; opacity:0.85; }
-                .review-chat-feedback { display:flex; gap:8px; margin-top:8px; }
-                .review-chat-feedback button { background:none; border:1px solid var(--border); border-radius:8px; padding:3px 9px; font-size:13px; cursor:pointer; opacity:0.7; }
-                .review-chat-feedback button:hover { opacity:1; }
-                .review-chat-feedback.voted { font-size:11px; color:var(--text-muted); font-style:italic; margin-top:8px; }
-                .review-chat-bubble.status { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-muted); font-size:12.5px; display:flex; align-items:center; gap:8px; border-bottom-right-radius:4px; }
-                .review-chat-typing-dots { display:inline-flex; gap:3px; }
-                .review-chat-typing-dots span { width:5px; height:5px; border-radius:50%; background:var(--text-muted); animation: reviewChatBlink 1.2s infinite ease-in-out; }
+                .review-chat-drag-handle { width:38px; height:4px; border-radius:99px; background:var(--border); margin:10px auto 2px; }
+
+                .review-chat-header {
+                    display:flex; align-items:center; gap:11px; justify-content:space-between;
+                    padding:14px 18px 16px; border-bottom:1px solid var(--border);
+                }
+                .review-chat-header-inner { display:flex; align-items:center; gap:11px; }
+                .review-chat-avatar {
+                    width:38px; height:38px; flex-shrink:0; border-radius:50%;
+                    background:linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 100%);
+                    display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;
+                    box-shadow: 0 3px 10px rgba(168,133,61,0.4), inset 0 1px 1px rgba(255,255,255,0.35);
+                }
+                .review-chat-header h4 {
+                    margin:0; font-size:16.5px; font-weight:700; color:var(--text-main);
+                    font-family:'Playfair Display', serif; letter-spacing:0.2px;
+                }
+                .review-chat-header small { display:block; color:var(--text-muted); font-size:11px; margin-top:2px; line-height:1.5; }
+                .review-chat-close {
+                    background:none; border:none; font-size:16px; color:var(--text-muted); cursor:pointer;
+                    width:30px; height:30px; border-radius:50%; flex-shrink:0; transition:background .15s;
+                }
+                .review-chat-close:hover { background:rgba(120,120,120,0.12); }
+
+                .review-chat-body { flex:1; overflow-y:auto; overscroll-behavior:contain; padding:16px 18px; display:flex; flex-direction:column; gap:12px; min-height:140px; }
+
+                .review-chat-bubble {
+                    max-width:86%; padding:11px 15px; border-radius:16px; font-size:13.5px;
+                    line-height:1.75; white-space:pre-wrap; box-shadow:0 1px 2px rgba(15,26,44,0.06);
+                    animation: reviewChatFadeIn 0.3s cubic-bezier(.22,1,.36,1);
+                }
+                @keyframes reviewChatFadeIn { from { opacity:0; transform:translateY(8px) scale(0.98); } to { opacity:1; transform:translateY(0) scale(1); } }
+
+                .review-chat-bubble.user {
+                    align-self:flex-end; color:#fff; border-bottom-left-radius:5px;
+                    background:linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+                }
+                .review-chat-bubble.bot {
+                    align-self:flex-start; background:var(--bg-gradient); color:var(--text-main);
+                    border:1px solid var(--border); border-bottom-right-radius:5px;
+                }
+                .review-chat-bubble.bot .review-chat-bot-label {
+                    display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800;
+                    color:var(--primary-dark); margin-bottom:5px; letter-spacing:0.2px;
+                }
+
+                .review-chat-feedback { display:flex; gap:8px; margin-top:10px; }
+                .review-chat-feedback button {
+                    background:var(--card-bg); border:1px solid var(--border); border-radius:99px;
+                    width:28px; height:28px; font-size:13px; cursor:pointer; opacity:0.75;
+                    transition:all .15s; display:flex; align-items:center; justify-content:center;
+                }
+                .review-chat-feedback button:hover { opacity:1; transform:translateY(-1px); box-shadow:0 3px 8px rgba(15,26,44,0.12); }
+                .review-chat-feedback.voted { font-size:11px; color:var(--text-muted); font-style:italic; margin-top:9px; }
+
+                .review-chat-bubble.status {
+                    align-self:flex-start; background:var(--bg-gradient); border:1px solid var(--border);
+                    color:var(--text-muted); font-size:12.5px; display:flex; align-items:center; gap:9px;
+                    border-bottom-right-radius:5px;
+                }
+                .review-chat-typing-dots { display:inline-flex; gap:4px; }
+                .review-chat-typing-dots span {
+                    width:6px; height:6px; border-radius:50%; background:var(--primary);
+                    animation: reviewChatBlink 1.2s infinite ease-in-out;
+                }
                 .review-chat-typing-dots span:nth-child(2) { animation-delay:0.2s; }
                 .review-chat-typing-dots span:nth-child(3) { animation-delay:0.4s; }
-                @keyframes reviewChatBlink { 0%, 80%, 100% { opacity:0.25; } 40% { opacity:1; } }
-                .review-chat-bubble.quota { align-self:flex-start; background:rgba(120,120,120,0.1); color:var(--text-muted); font-size:12.5px; font-style:italic; }
-                .review-chat-bubble.error { align-self:flex-start; background:rgba(120,120,120,0.12); color:var(--text-main); font-size:12.5px; }
-                .review-chat-bubble.error .review-chat-retry-btn { display:block; margin-top:8px; background:none; border:1.5px solid var(--text-muted); color:var(--text-main); font-size:11px; font-weight:bold; padding:5px 12px; border-radius:99px; cursor:pointer; }
-                .review-chat-templates { display:flex; gap:8px; flex-wrap:wrap; padding:0 16px 10px; }
-                .review-chat-chip { background:none; border:1.5px solid var(--primary); color:var(--primary); font-size:11px; font-weight:bold; padding:6px 12px; border-radius:99px; cursor:pointer; white-space:nowrap; }
-                .review-chat-chip:disabled { opacity:0.4; cursor:not-allowed; }
-                .review-chat-counter { text-align:center; font-size:10.5px; color:var(--text-muted); padding-bottom:6px; }
-                .review-chat-footer { display:flex; align-items:center; gap:8px; padding:12px 16px; border-top:1px solid var(--border); }
-                .review-chat-input { flex:1; border:2px solid var(--border); border-radius:12px; padding:10px 12px; font-size:13px; background:var(--card-bg); color:var(--text-main); resize:none; font-family:inherit; }
-                .review-chat-send { background:var(--primary); color:#fff; border:none; border-radius:12px; width:42px; height:42px; flex-shrink:0; cursor:pointer; font-size:15px; }
-                .review-chat-send:disabled { opacity:0.4; cursor:not-allowed; }
+                @keyframes reviewChatBlink { 0%, 80%, 100% { opacity:0.3; transform:scale(0.85); } 40% { opacity:1; transform:scale(1.1); } }
+
+                .review-chat-bubble.quota { align-self:flex-start; background:var(--bg-gradient); border:1px solid var(--border); color:var(--text-muted); font-size:12.5px; font-style:italic; }
+                .review-chat-bubble.error { align-self:flex-start; background:var(--bg-gradient); border:1px solid var(--danger); color:var(--text-main); font-size:12.5px; }
+                .review-chat-bubble.error .review-chat-retry-btn {
+                    display:block; margin-top:9px; background:none; border:1.5px solid var(--text-muted);
+                    color:var(--text-main); font-size:11px; font-weight:700; padding:6px 13px;
+                    border-radius:99px; cursor:pointer; transition:background .15s;
+                }
+                .review-chat-bubble.error .review-chat-retry-btn:hover { background:rgba(120,120,120,0.1); }
+
+                .review-chat-templates { display:flex; gap:8px; flex-wrap:wrap; padding:2px 18px 12px; }
+                .review-chat-chip {
+                    background:var(--card-bg); border:1.5px solid var(--primary); color:var(--primary-dark);
+                    font-size:11.5px; font-weight:700; padding:7px 14px; border-radius:99px; cursor:pointer;
+                    white-space:nowrap; transition:all .15s;
+                }
+                .review-chat-chip:hover:not(:disabled) { background:rgba(197,160,89,0.12); transform:translateY(-1px); }
+                .review-chat-chip:active:not(:disabled) { transform:translateY(0) scale(0.97); }
+                .review-chat-chip:disabled { opacity:0.35; cursor:not-allowed; }
+
+                .review-chat-counter { text-align:center; font-size:10.5px; color:var(--text-muted); padding-bottom:8px; }
+
+                .review-chat-footer { display:flex; align-items:center; gap:9px; padding:12px 18px 18px; border-top:1px solid var(--border); }
+                .review-chat-input {
+                    flex:1; border:1.5px solid var(--border); border-radius:22px; padding:11px 17px;
+                    font-size:13.5px; background:var(--bg-gradient); color:var(--text-main);
+                    resize:none; font-family:inherit; transition:border-color .15s;
+                }
+                .review-chat-input:focus { outline:none; border-color:var(--primary); }
+                .review-chat-send {
+                    background:linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 100%);
+                    color:#fff; border:none; border-radius:50%; width:44px; height:44px; flex-shrink:0;
+                    cursor:pointer; font-size:15px; box-shadow:0 3px 10px rgba(168,133,61,0.4);
+                    transition:transform .12s;
+                }
+                .review-chat-send:hover:not(:disabled) { transform:scale(1.06); }
+                .review-chat-send:active:not(:disabled) { transform:scale(0.95); }
+                .review-chat-send:disabled { opacity:0.4; cursor:not-allowed; box-shadow:none; }
+
+                /* معايير جودة أساسية: إطار تركيز واضح لدواعي إتاحة الوصول */
+                .review-chat-close:focus-visible,
+                .review-chat-send:focus-visible,
+                .review-chat-chip:focus-visible,
+                .review-chat-open-btn:focus-visible,
+                .review-chat-retry-btn:focus-visible,
+                .review-chat-feedback button:focus-visible {
+                    outline:2px solid var(--primary); outline-offset:2px;
+                }
+
+                /* احترام تفضيل تقليل الحركة */
+                @media (prefers-reduced-motion: reduce) {
+                    .review-chat-bubble, .review-chat-typing-dots span, #review-chat-panel,
+                    .review-chat-chip, .review-chat-send, .review-chat-open-btn {
+                        animation: none !important; transition: none !important;
+                    }
+                }
             </style>
 
             <div id="review-chat-overlay" onclick="if(event.target===this) closeReviewChatPanel();">
                 <div id="review-chat-panel">
                     <div class="review-chat-drag-handle"></div>
                     <div class="review-chat-header">
-                        <div>
-                            <h4>🤖 مساعد المذاكرة</h4>
-                            <small id="review-chat-subtitle">اسأل براحتك — الامتحان خلص وانحسبت درجتك بالفعل</small>
+                        <div class="review-chat-header-inner">
+                            <div class="review-chat-avatar"><i class="fa-solid fa-graduation-cap"></i></div>
+                            <div>
+                                <h4>مساعد المذاكرة</h4>
+                                <small id="review-chat-subtitle">اسأل عن أي تفصيلة في السؤال ده — النتيجة اتسجلت خلاص</small>
+                            </div>
                         </div>
-                        <button class="review-chat-close" onclick="closeReviewChatPanel()"><i class="fa-solid fa-xmark"></i></button>
+                        <button class="review-chat-close" onclick="closeReviewChatPanel()" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
                     </div>
                     <div class="review-chat-body" id="review-chat-body"></div>
                     <div class="review-chat-templates" id="review-chat-templates">
