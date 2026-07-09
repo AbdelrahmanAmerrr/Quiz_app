@@ -1412,6 +1412,9 @@ html, body {
                     <h2 style="margin:10px 0 4px 0; font-size:21px;">مراجعة الأسئلة</h2>
                     <p style="color:var(--text-muted); font-size:13.5px; margin:0;">راجع إجاباتك بالتفصيل، وبعدين كمّل للإحصائيات</p>
                 </div>
+                <button id="review-summary-open-btn" class="btn-launch" style="background:linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); margin-bottom:16px;" onclick="openReviewSummaryPanel()">
+                    <i class="fa-solid fa-brain"></i> حلل أداءي في الامتحان ده
+                </button>
                 <div id="review-cards-container" style="max-height: 55vh; overflow-y:auto; border:1.5px solid var(--border); padding:14px; border-radius:10px; margin-bottom:20px; background:var(--bg-gradient);"></div>
                 <button class="btn-launch" onclick="goToResultStatsPage()"><i class="fa-solid fa-arrow-left"></i> التالي: عرض الإحصائيات</button>
             </div>
@@ -1485,6 +1488,31 @@ html, body {
                     display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800;
                     color:var(--primary-dark); margin-bottom:5px; letter-spacing:0.2px;
                 }
+
+                /* كارد السؤال التدريبي التفاعلي */
+                .review-quiz-card { max-width:94% !important; }
+                .review-quiz-question { font-size:13.5px; font-weight:700; margin:2px 0 10px; line-height:1.6; }
+                .review-quiz-options { display:flex; flex-direction:column; gap:7px; }
+                .review-quiz-opt {
+                    text-align:right; padding:10px 13px; border-radius:11px; border:1.5px solid var(--border);
+                    background:var(--card-bg); color:var(--text-main); font-size:13px; cursor:pointer;
+                    transition:all .15s; font-family:inherit;
+                }
+                .review-quiz-opt:hover:not(:disabled) { border-color:var(--primary); background:rgba(197,160,89,0.08); }
+                .review-quiz-opt:disabled { cursor:default; }
+                .review-quiz-opt.correct { background:rgba(16,185,129,0.12); border-color:var(--success); color:var(--success); font-weight:700; }
+                .review-quiz-opt.wrong { background:rgba(239,68,68,0.1); border-color:var(--danger); color:var(--danger); font-weight:700; }
+                .review-quiz-explanation {
+                    margin-top:11px; padding-top:11px; border-top:1px dashed var(--border);
+                    font-size:12.5px; color:var(--text-muted); line-height:1.7;
+                }
+                .review-quiz-retry-btn {
+                    display:flex; align-items:center; justify-content:center; gap:6px; width:100%;
+                    margin-top:10px; padding:9px 0; background:none; border:1.5px solid var(--primary);
+                    color:var(--primary-dark); font-size:12px; font-weight:700; border-radius:10px; cursor:pointer;
+                    transition:background .15s;
+                }
+                .review-quiz-retry-btn:hover { background:rgba(197,160,89,0.1); }
 
                 .review-chat-feedback { display:flex; gap:8px; margin-top:10px; }
                 .review-chat-feedback button {
@@ -1590,6 +1618,77 @@ html, body {
                         <textarea id="review-chat-input" class="review-chat-input" rows="1" placeholder="اكتب سؤالك هنا..." onkeydown="if(event.key==='Enter' && !event.shiftKey){ event.preventDefault(); reviewChatSendCustom(); }"></textarea>
                         <button class="review-chat-send" id="review-chat-send-btn" onclick="reviewChatSendCustom()"><i class="fa-solid fa-paper-plane"></i></button>
                     </div>
+                </div>
+            </div>
+
+            <!-- ══════ لوحة ملخص أضعف النقاط — تحليل شامل لكل الأخطاء بنداء واحد ══════ -->
+            <style>
+                #review-summary-overlay {
+                    position:fixed; inset:0; background:rgba(15,26,44,0.55);
+                    backdrop-filter:blur(5px) saturate(1.1); -webkit-backdrop-filter:blur(5px) saturate(1.1);
+                    z-index:9998; display:none; align-items:flex-end; justify-content:center;
+                }
+                #review-summary-panel {
+                    width:100%; max-width:480px; background:var(--card-bg);
+                    border-radius:26px 26px 0 0; max-height:82vh; display:flex; flex-direction:column;
+                    box-shadow: 0 -18px 50px rgba(15,26,44,0.28), 0 -2px 10px rgba(15,26,44,0.10);
+                    transform:translateY(100%); transition:transform .32s cubic-bezier(.22,1,.36,1);
+                }
+                #review-summary-panel.chat-show { transform:translateY(0); }
+                .review-summary-header {
+                    display:flex; align-items:center; gap:11px; justify-content:space-between;
+                    padding:18px 18px 16px; border-bottom:1px solid var(--border);
+                }
+                .review-summary-header-inner { display:flex; align-items:center; gap:11px; }
+                .review-summary-avatar {
+                    width:38px; height:38px; flex-shrink:0; border-radius:50%;
+                    background:linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 100%);
+                    display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;
+                    box-shadow: 0 3px 10px rgba(168,133,61,0.4), inset 0 1px 1px rgba(255,255,255,0.35);
+                }
+                .review-summary-header h4 {
+                    margin:0; font-size:16.5px; font-weight:700; color:var(--text-main);
+                    font-family:'Playfair Display', serif;
+                }
+                .review-summary-header small { display:block; color:var(--text-muted); font-size:11px; margin-top:2px; }
+                .review-summary-close {
+                    background:none; border:none; font-size:16px; color:var(--text-muted); cursor:pointer;
+                    width:30px; height:30px; border-radius:50%; transition:background .15s;
+                }
+                .review-summary-close:hover { background:rgba(120,120,120,0.12); }
+                .review-summary-body { flex:1; overflow-y:auto; overscroll-behavior:contain; padding:20px 22px; }
+                .review-summary-topic {
+                    display:flex; align-items:center; gap:10px; padding:12px 14px; margin-bottom:9px;
+                    background:var(--bg-gradient); border:1px solid var(--border); border-radius:12px;
+                    font-size:13.5px; font-weight:600; color:var(--text-main); animation:reviewChatFadeIn .3s;
+                }
+                .review-summary-topic i { color:var(--primary-dark); flex-shrink:0; }
+                .review-summary-recommendation {
+                    margin-top:16px; padding:15px 16px; border-radius:14px;
+                    background:linear-gradient(135deg, rgba(197,160,89,0.12) 0%, rgba(168,133,61,0.06) 100%);
+                    border:1px solid var(--primary); font-size:13px; line-height:1.8; color:var(--text-main);
+                }
+                .review-summary-recommendation b { color:var(--primary-dark); font-family:'Playfair Display', serif; }
+                #review-summary-loading, #review-summary-error { text-align:center; padding:30px 10px; color:var(--text-muted); font-size:13px; }
+                @media (prefers-reduced-motion: reduce) {
+                    #review-summary-panel, .review-summary-topic { animation:none !important; transition:none !important; }
+                }
+            </style>
+
+            <div id="review-summary-overlay" onclick="if(event.target===this) closeReviewSummaryPanel();">
+                <div id="review-summary-panel">
+                    <div class="review-chat-drag-handle"></div>
+                    <div class="review-summary-header">
+                        <div class="review-summary-header-inner">
+                            <div class="review-summary-avatar"><i class="fa-solid fa-brain"></i></div>
+                            <div>
+                                <h4>تحليل أدائك</h4>
+                                <small>أهم المفاهيم اللي محتاجة تركيز أكتر</small>
+                            </div>
+                        </div>
+                        <button class="review-summary-close" onclick="closeReviewSummaryPanel()" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="review-summary-body" id="review-summary-body"></div>
                 </div>
             </div>
 
@@ -3531,7 +3630,7 @@ html, body {
             setTimeout(() => { overlay.style.display = 'none'; }, 250);
         }
 
-        function _renderReviewChatBubble(m, idx) {
+        function _renderReviewChatBubble(m, idx, isLast) {
             if (m.role === 'status') {
                 const dots = m.dots
                     ? `<span class="review-chat-typing-dots"><span></span><span></span><span></span></span>`
@@ -3545,7 +3644,32 @@ html, body {
                         <button onclick="_reviewChatSendFeedback(${idx}, 'up')" title="رد مفيد">👍</button>
                         <button onclick="_reviewChatSendFeedback(${idx}, 'down')" title="رد مش كويس">👎</button>
                        </div>`;
-                return `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🤖 المساعد</span>${esc(m.text)}${feedback}</div>`;
+                // آخر رد جديد لسه ما اتكتبش: نعرضه فاضي وبعدين نكتبه بالتدريج (typewriter)
+                const bodyContent = (isLast && !m.typed)
+                    ? `<span id="review-chat-typewriter-${idx}"></span>`
+                    : esc(m.text);
+                return `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🎓 المساعد</span>${bodyContent}${feedback}</div>`;
+            }
+            if (m.role === 'quiz') {
+                const q = m.quiz;
+                const optsHtml = q.options.map((opt, oi) => {
+                    let cls = 'review-quiz-opt';
+                    if (m.chosen) {
+                        if (opt === q.answer) cls += ' correct';
+                        else if (opt === m.chosen) cls += ' wrong';
+                    }
+                    return `<button class="${cls}" ${m.chosen ? 'disabled' : ''} onclick="_reviewQuizChoose(${idx}, ${oi})">${esc(opt)}</button>`;
+                }).join('');
+                const footer = m.chosen
+                    ? `<div class="review-quiz-explanation">💡 ${esc(q.explanation || '')}</div>
+                       <button class="review-quiz-retry-btn" onclick="reviewChatSendTemplate('similar')"><i class="fa-solid fa-arrows-rotate"></i> سؤال تاني</button>`
+                    : '';
+                return `<div class="review-chat-bubble bot review-quiz-card">
+                    <span class="review-chat-bot-label">📝 سؤال تدريبي</span>
+                    <div class="review-quiz-question">${esc(q.question)}</div>
+                    <div class="review-quiz-options">${optsHtml}</div>
+                    ${footer}
+                </div>`;
             }
             if (m.role === 'quota') {
                 return `<div class="review-chat-bubble quota">🔒 ${esc(m.text)}</div>`;
@@ -3557,6 +3681,45 @@ html, body {
                 return `<div class="review-chat-bubble error">⚠️ ${esc(m.text)}${retryBtn}</div>`;
             }
             return `<div class="review-chat-bubble user">${esc(m.text)}</div>`;
+        }
+
+        // يختار الطالب إجابة بكارد السؤال التدريبي — يقفل الاختيار ويظهر الصح/الغلط والشرح
+        function _reviewQuizChoose(idx, optionIndex) {
+            const i = reviewChatOpenIndex;
+            const list = i !== null ? reviewChatHistoryByIndex[i] : null;
+            const msg = list ? list[idx] : null;
+            if (!msg || msg.role !== 'quiz' || msg.chosen) return;
+            msg.chosen = msg.quiz.options[optionIndex];
+            _renderReviewChatBody();
+        }
+
+        // كتابة تدريجية (typewriter) لآخر رد نصي جديد — بيحترم تفضيل تقليل الحركة تلقائياً
+        function _startTypewriter(i, idx, text) {
+            const el = document.getElementById(`review-chat-typewriter-${idx}`);
+            const list = reviewChatHistoryByIndex[i];
+            const msg = list && list[idx];
+            if (!el || !msg) return;
+
+            const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            if (prefersReducedMotion) {
+                el.textContent = text;
+                msg.typed = true;
+                return;
+            }
+
+            let pos = 0;
+            const step = () => {
+                pos += 2;
+                el.textContent = text.slice(0, pos);
+                const body = document.getElementById('review-chat-body');
+                if (body) body.scrollTop = body.scrollHeight;
+                if (pos < text.length) {
+                    setTimeout(step, 12);
+                } else {
+                    msg.typed = true;
+                }
+            };
+            step();
         }
 
         // يسجّل رأي الطالب في رد معين مباشرة بـFirestore (كتابة وحيدة، بدون فانكشن سيرفر منفصلة)
@@ -3592,10 +3755,18 @@ html, body {
             const body = document.getElementById('review-chat-body');
             const emptyStateText = remainingNow <= 0
                 ? `<div class="review-chat-bubble quota">🔒 وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.</div>`
-                : `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🤖 المساعد</span>أهلاً! تقدر تسألني أي حاجة عن السؤال ده — شرح أعمق، ليه إجابتك كانت صح أو غلط، أو سؤال تدريبي شبيه.</div>`;
-            body.innerHTML = history.length ? history.map((m, idx) => _renderReviewChatBubble(m, idx)).join('') : emptyStateText;
+                : `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🎓 المساعد</span>أهلاً! تقدر تسألني أي حاجة عن السؤال ده — شرح أعمق، ليه إجابتك كانت صح أو غلط، أو سؤال تدريبي شبيه.</div>`;
+            body.innerHTML = history.length
+                ? history.map((m, idx) => _renderReviewChatBubble(m, idx, idx === history.length - 1)).join('')
+                : emptyStateText;
             body.scrollTop = body.scrollHeight;
             _updateReviewChatCounterUI();
+
+            const lastIdx = history.length - 1;
+            const lastMsg = history[lastIdx];
+            if (lastMsg && lastMsg.role === 'bot' && !lastMsg.typed) {
+                _startTypewriter(i, lastIdx, lastMsg.text);
+            }
         }
 
         function _updateReviewChatCounterUI() {
@@ -3654,6 +3825,7 @@ html, body {
             _updateReviewChatCounterUI();
 
             let finalReply = null;
+            let finalQuiz = null;
             let finalErrorText = null;
             let finalErrorCode = null;
 
@@ -3698,12 +3870,13 @@ html, body {
                         break;
                     }
 
-                    finalReply = data.reply;
+                    finalReply = data.reply || null;
+                    finalQuiz = data.quiz || null;
                     if (typeof data.remaining === 'number') reviewChatRemainingByIndex[i] = data.remaining;
                     break;
                 }
 
-                if (!finalReply && !finalErrorText) {
+                if (!finalReply && !finalQuiz && !finalErrorText) {
                     finalErrorText = 'الخدمة مزدحمة جداً حالياً، جرّب تاني بعد شوية.';
                     finalErrorCode = 'ERROR';
                 }
@@ -3714,8 +3887,10 @@ html, body {
                 const list = reviewChatHistoryByIndex[i];
                 if (list && list.length && list[list.length - 1].role === 'status') list.pop();
 
-                if (finalReply) {
-                    list.push({ role: 'bot', text: finalReply });
+                if (finalQuiz) {
+                    list.push({ role: 'quiz', quiz: finalQuiz, chosen: null });
+                } else if (finalReply) {
+                    list.push({ role: 'bot', text: finalReply, typed: false });
                 } else if (finalErrorCode === 'QUOTA_EXCEEDED') {
                     reviewChatRemainingByIndex[i] = 0;
                     list.push({ role: 'quota', text: 'وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.' });
@@ -3727,6 +3902,85 @@ html, body {
 
                 reviewChatBusy = false;
                 _renderReviewChatBody();
+            }
+        }
+
+        // ══════ ملخص أضعف النقاط بعد المراجعة (تحليل شامل بنداء واحد) ══════
+        function openReviewSummaryPanel() {
+            document.getElementById('review-summary-overlay').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            requestAnimationFrame(() => {
+                document.getElementById('review-summary-panel').classList.add('chat-show');
+            });
+            _loadReviewSummary();
+        }
+
+        function closeReviewSummaryPanel() {
+            const panel = document.getElementById('review-summary-panel');
+            const overlay = document.getElementById('review-summary-overlay');
+            if (!panel || !overlay) return;
+            panel.classList.remove('chat-show');
+            document.body.style.overflow = '';
+            setTimeout(() => { overlay.style.display = 'none'; }, 250);
+        }
+
+        async function _loadReviewSummary() {
+            const body = document.getElementById('review-summary-body');
+            body.innerHTML = `<div id="review-summary-loading"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحليل إجاباتك...</div>`;
+
+            const wrongQuestions = (userQuizAnswersLog || [])
+                .filter(log => log && !log.isCorrect)
+                .map(log => ({ question: log.question, studentAnswer: log.chosen || '(لم يجب)', correctAnswer: log.correctAnswer }));
+
+            if (wrongQuestions.length === 0) {
+                body.innerHTML = `<div id="review-summary-loading">🎉 ملهوش لزوم! جاوبت صح على كل الأسئلة في الامتحان ده.</div>`;
+                return;
+            }
+
+            const activeQObj = currentQuestions[0] || {};
+            const subject = activeQObj.subject;
+
+            try {
+                const idToken = await firebase.auth().currentUser.getIdToken();
+                let attempt = 0;
+                let summary = null;
+                let errorText = null;
+
+                while (attempt < 5) {
+                    attempt++;
+                    const response = await fetch('/api/review-summary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                        body: JSON.stringify({ subject, wrongQuestions })
+                    });
+                    const data = await response.json().catch(() => ({}));
+
+                    if (response.status === 429 && data.retryAfterMs) {
+                        const waitSec = Math.max(3, Math.ceil(data.retryAfterMs / 1000));
+                        body.innerHTML = `<div id="review-summary-loading">⏳ الخدمة مزدحمة حالياً، إعادة المحاولة خلال ${waitSec} ثانية...</div>`;
+                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                        continue;
+                    }
+                    if (!response.ok) { errorText = data.error || 'حدث خطأ أثناء التحليل'; break; }
+                    summary = data.summary;
+                    break;
+                }
+
+                if (!summary) {
+                    body.innerHTML = `<div id="review-summary-error">⚠️ ${esc(errorText || 'الخدمة مزدحمة، جرّب تاني بعد شوية')}</div>`;
+                    return;
+                }
+
+                const topicsHtml = summary.weakTopics.map(t =>
+                    `<div class="review-summary-topic"><i class="fa-solid fa-circle-exclamation"></i> ${esc(t)}</div>`
+                ).join('');
+
+                body.innerHTML = `
+                    ${topicsHtml}
+                    <div class="review-summary-recommendation"><b>💡 التوصية:</b><br>${esc(summary.recommendation)}</div>
+                `;
+            } catch (err) {
+                body.innerHTML = `<div id="review-summary-error">⚠️ تعذّر الاتصال: ${esc(err.message)}</div>`;
             }
         }
 
