@@ -55,7 +55,7 @@ async function acquireProviderSlot(providerKey, maxPerMinute) {
     });
 }
 
-async function callGemini(systemText, userText, history) {
+async function callGemini(systemText, userText, history, temperature) {
     const contents = [
         ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.text }] })),
         { role: 'user', parts: [{ text: userText }] }
@@ -68,7 +68,7 @@ async function callGemini(systemText, userText, history) {
             body: JSON.stringify({
                 system_instruction: { parts: [{ text: systemText }] },
                 contents,
-                generationConfig: { temperature: 0.6, maxOutputTokens: 600 }
+                generationConfig: { temperature, maxOutputTokens: 600 }
             })
         }
     );
@@ -87,7 +87,7 @@ async function callGemini(systemText, userText, history) {
     return text ? { ok: true, text, truncated } : { ok: false, quotaExhausted: false };
 }
 
-async function callGroq(systemText, userText, history) {
+async function callGroq(systemText, userText, history, temperature) {
     if (!process.env.GROQ_API_KEY) return { ok: false, quotaExhausted: false };
     const messages = [
         { role: 'system', content: systemText },
@@ -103,7 +103,7 @@ async function callGroq(systemText, userText, history) {
         body: JSON.stringify({
             model: 'llama-3.3-70b-versatile',
             messages,
-            temperature: 0.6,
+            temperature,
             max_tokens: 600
         })
     });
@@ -119,7 +119,7 @@ async function callGroq(systemText, userText, history) {
 
 // مزوّد ثالث احتياطي — Cerebras (متوافق مع OpenAI). حصته اليومية كبيرة (مليون توكن) لكن معدلها بالدقيقة صغير،
 // فبييجي كخط دفاع ثالث بعد Gemini وGroq مش بديل أساسي عنهم.
-async function callCerebras(systemText, userText, history) {
+async function callCerebras(systemText, userText, history, temperature) {
     if (!process.env.CEREBRAS_API_KEY) return { ok: false, quotaExhausted: false };
     const messages = [
         { role: 'system', content: systemText },
@@ -135,7 +135,7 @@ async function callCerebras(systemText, userText, history) {
         body: JSON.stringify({
             model: 'gpt-oss-120b',
             messages,
-            temperature: 0.6,
+            temperature,
             max_tokens: 600
         })
     });
@@ -151,12 +151,12 @@ async function callCerebras(systemText, userText, history) {
 
 // لو أول محاولة اتقطعت فعلياً (مش تخمين — finishReason حقيقي من المزوّد نفسه)،
 // نعيد نداء واحد بس لنفس المزوّد بطلب أقصر جداً عشان نضمن جملة كاملة بدل جملة مبتورة
-async function _callWithTruncationRetry(callFn, systemText, userText, history) {
-    const first = await callFn(systemText, userText, history);
+async function _callWithTruncationRetry(callFn, systemText, userText, history, temperature) {
+    const first = await callFn(systemText, userText, history, temperature);
     if (!first.ok || !first.truncated) return first;
 
     const stricterUserText = userText + '\n\n(تنبيه: ردك السابق كان طويل قوي واتقطع. اختصر جداً جداً هذه المرة — جملة واحدة بس فيها أهم نقطة، من غير أي تفاصيل إضافية.)';
-    const retry = await callFn(systemText, stricterUserText, history);
+    const retry = await callFn(systemText, stricterUserText, history, temperature);
     return (retry.ok) ? retry : first;
 }
 
@@ -195,22 +195,22 @@ function _sanitizeAssistantText(text) {
     return cleaned;
 }
 
-async function getAssistantReply(systemText, userText, history) {
+async function getAssistantReply(systemText, userText, history, temperature) {
     const geminiSlot = await acquireProviderSlot('gemini', GEMINI_MAX_PER_MINUTE);
     if (geminiSlot.allowed) {
-        const result = await _callWithTruncationRetry(callGemini, systemText, userText, history);
+        const result = await _callWithTruncationRetry(callGemini, systemText, userText, history, temperature);
         if (result.ok) { _logDailyAiUsage('gemini'); return { ok: true, text: result.text, provider: 'gemini' }; }
     }
 
     const groqSlot = await acquireProviderSlot('groq', GROQ_MAX_PER_MINUTE);
     if (groqSlot.allowed) {
-        const result = await _callWithTruncationRetry(callGroq, systemText, userText, history);
+        const result = await _callWithTruncationRetry(callGroq, systemText, userText, history, temperature);
         if (result.ok) { _logDailyAiUsage('groq'); return { ok: true, text: result.text, provider: 'groq' }; }
     }
 
     const cerebrasSlot = await acquireProviderSlot('cerebras', CEREBRAS_MAX_PER_MINUTE);
     if (cerebrasSlot.allowed) {
-        const result = await _callWithTruncationRetry(callCerebras, systemText, userText, history);
+        const result = await _callWithTruncationRetry(callCerebras, systemText, userText, history, temperature);
         if (result.ok) { _logDailyAiUsage('cerebras'); return { ok: true, text: result.text, provider: 'cerebras' }; }
     }
 
@@ -261,13 +261,19 @@ ${optionsList || '(سؤال صح/خطأ أو بدون خيارات متعددة 
 - ممنوع منعاً باتاً أي تنسيق Markdown إطلاقاً: لا نجوم ** للخط العريض، لا علامات # للعناوين، لا شرطات - أو أرقام للنقاط الفرعية، لا فتح أقسام منفصلة زي "أولاً:" أو "لفهم السؤال:". اكتب فقرة نصية عادية متصلة بس، حتى لو المحتوى فيه أكتر من فكرة.
 - الرد كله في حدود 3-4 جمل قصار بالمظبوط (تقريباً 50-70 كلمة)، مش أكتر خالص. لو حسيت إنك قربت من الحد وسط فكرة، اختصر فوراً واقفل الجملة، ولا تفتح فكرة جديدة أو مثال إضافي.
 - اكتب بالعربية، وأكمل فكرتك للنهاية بجملة كاملة دايماً — ممنوع تقطع في نص الجملة.
+- مهم جداً: ممنوع تختلق أي معلومة أو رقم أو قاعدة مش متأكد منها بثقة. لو مش متأكد 100% من تفصيلة معينة، قول بصراحة "مش متأكد من التفصيلة دي بالظبط" بدل ما تختلق إجابة تبان واثقة وهي غلط — الدقة أهم من الثقة الظاهرية.
 - لو في محادثة سابقة معروضة تحت، اعتبرها سياق حقيقي مستمر وجاوب على أساسها.
 
-مثال على الأسلوب المطلوب بالظبط (لاحظ: بدون مقدمة، بدون تنسيق، جمل قصار مباشرة):
-لو الطالب سأل "ليه إجابتي غلط؟" وكانت إجابته "التخزين المؤقت" والصحيحة "الذاكرة الافتراضية"، رد مثالي يكون:
+أمثلة على الأسلوب المطلوب بالظبط لكل نوع طلب (بدون مقدمة، بدون تنسيق، جمل قصار مباشرة — دي أمثلة أسلوب بس، لا تكررها حرفياً):
+
+مثال لطلب "ليه إجابتي غلط": لو الطالب اختار "التخزين المؤقت" والصحيحة "الذاكرة الافتراضية"، رد مثالي:
 "الإجابة الصحيحة هي الذاكرة الافتراضية لأنها الآلية اللي بتسمح للنظام يستخدم جزء من القرص الصلب كامتداد للرام وقت الحاجة. التخزين المؤقت (Cache) وظيفته مختلف تماماً — بيسرّع الوصول لبيانات مستخدمة كتير، مش بيوسّع سعة الذاكرة."
 
-هذا مجرد مثال أسلوب فقط — لا تكرره حرفياً، طبّق نفس الأسلوب (مباشر، بدون مقدمة، جمل قصيرة، بدون تنسيق) على السؤال الفعلي المطلوب منك.`;
+مثال لطلب "اشرحلي أكتر": لو السؤال عن الفرق بين التشفير المتماثل وغير المتماثل، رد مثالي:
+"التشفير المتماثل بيستخدم نفس المفتاح للتشفير وفك التشفير، وده بيخليه أسرع بس أقل أماناً في مشاركة المفتاح. التشفير غير المتماثل بيستخدم زوج مفاتيح (عام وخاص)، فمفيش حاجة تتبعت من غير تشفير حتى المفتاح نفسه، لكنه أبطأ في المعالجة."
+
+مثال لطلب "سؤال تدريبي شبيه": لو الأصلي عن حساب مساحة مستطيل، رد مثالي:
+"سؤال تدريبي: مستطيل طوله 12 متر وعرضه 5 أمتار، ما مساحته؟ الإجابة: 60 متر مربع، لأن مساحة المستطيل = الطول × العرض = 12 × 5."`;
 
     const userTextByAction = {
         explain: 'اشرحلي هذا السؤال بالتفصيل أكتر من الشرح المختصر المتاح — وضّح المفهوم كامل.',
@@ -339,7 +345,11 @@ module.exports = async (req, res) => {
             safeMessage
         );
 
-        const assistant = await getAssistantReply(systemText, userText, safeHistory);
+        // دقة أعلى (حرارة أقل) للشرح والتصحيح الواقعي، تنوع أكتر (حرارة أعلى) للأسئلة التدريبية الجديدة
+        const temperatureByAction = { explain: 0.4, why: 0.35, similar: 0.7, custom: 0.5 };
+        const temperature = temperatureByAction[safeActionType] ?? 0.5;
+
+        const assistant = await getAssistantReply(systemText, userText, safeHistory, temperature);
         if (!assistant.ok) {
             return res.status(429).json({ error: 'الخدمة مزدحمة حالياً', retryAfterMs: assistant.retryAfterMs, code: 'BUSY' });
         }
