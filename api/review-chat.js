@@ -195,6 +195,28 @@ function _sanitizeAssistantText(text) {
     return cleaned;
 }
 
+// يحاول تحليل رد النموذج كـJSON سؤال تدريبي صالح — يرجع null لو الشكل مش سليم (يتعامل معاه كنص عادي وقتها)
+function _parseQuizJson(rawText) {
+    try {
+        const cleaned = String(rawText || '').replace(/```json|```/g, '').trim();
+        const q = JSON.parse(cleaned);
+        if (
+            q && typeof q.question === 'string' && q.question.trim() &&
+            Array.isArray(q.options) && q.options.length >= 2 && q.options.length <= 4 &&
+            typeof q.answer === 'string' &&
+            q.options.map(o => String(o).trim()).includes(q.answer.trim())
+        ) {
+            return {
+                question: q.question.trim().slice(0, 500),
+                options: q.options.map(o => String(o).trim().slice(0, 200)),
+                answer: q.answer.trim(),
+                explanation: typeof q.explanation === 'string' ? q.explanation.trim().slice(0, 400) : ''
+            };
+        }
+    } catch (e) { /* رد مش JSON صالح — نرجع null ونتعامل معاه كنص عادي */ }
+    return null;
+}
+
 async function getAssistantReply(systemText, userText, history, temperature) {
     const geminiSlot = await acquireProviderSlot('gemini', GEMINI_MAX_PER_MINUTE);
     if (geminiSlot.allowed) {
@@ -243,6 +265,32 @@ async function incrementStudentQuota(uid, questionKey) {
 
 // يبني تعليمات مساعد غير مقيّد — عنده كل السياق (السؤال، الخيارات، إجابة الطالب، الإجابة الصحيحة، الشرح)
 function buildPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage) {
+    if (actionType === 'similar') {
+        return _buildSimilarQuestionPrompt(subjectLabel, questionText, options);
+    }
+    return _buildConversationPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage);
+}
+
+// برومبت مخصص لتوليد سؤال تدريبي واحد كـJSON منظم — عشان يتعرض ككارد تفاعلي حقيقي بدل نص عادي
+function _buildSimilarQuestionPrompt(subjectLabel, questionText, options) {
+    const isTrueFalse = Array.isArray(options) && options.length === 2;
+    const systemText = `أنت مساعد توليد أسئلة تدريبية لمادة: ${subjectLabel}.
+السؤال الأصلي (للسياق فقط — اعمل سؤال مختلف تماماً بيقيس نفس المفهوم، بدون أي علاقة نصية مباشرة به): "${questionText}"
+
+القواعد الإلزامية:
+- اعمل سؤال تدريبي واحد بس، جديد ومختلف تماماً (سيناريو/أرقام/تفاصيل مختلفة كلياً) عن السؤال الأصلي، لكن بيقيس نفس المفهوم العام بالظبط.
+${isTrueFalse
+    ? '- ده سؤال صح/خطأ: أعطِ بالضبط خيارين لا غير: ["صح", "خطأ"].'
+    : '- أعطِ بالضبط 4 خيارات، واحد منهم صحيح فقط، والباقي معقولة وقريبة الطول من الصحيح.'}
+- answer يجب أن يطابق نص أحد الخيارات حرفياً تماماً (نفس الحروف والمسافات).
+- explanation: شرح مختصر جداً (جملة أو اتنين) لسبب صحة الإجابة.
+- أعد الإجابة بصيغة JSON فقط، بدون أي نص أو شرح قبله أو بعده، وبدون علامات backticks ولا كلمة json، بالضبط بهذا الشكل:
+{"question":"...","options":["...","..."],"answer":"...","explanation":"..."}`;
+
+    return { systemText, userText: 'ولّد السؤال التدريبي الآن.' };
+}
+
+function _buildConversationPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage) {
     const optionsList = (options || []).map((o, idx) => `${idx + 1}. ${o}`).join('\n');
 
     const systemText = `أنت مساعد مذاكرة تعليمي لطالب جامعي في مادة: ${subjectLabel}، في صفحة مراجعة الأسئلة **بعد** تسليم الامتحان وتسجيل الدرجة نهائياً.
@@ -278,7 +326,6 @@ ${optionsList || '(سؤال صح/خطأ أو بدون خيارات متعددة 
     const userTextByAction = {
         explain: 'اشرحلي هذا السؤال بالتفصيل أكتر من الشرح المختصر المتاح — وضّح المفهوم كامل.',
         why: 'ليه إجابتي كانت صح أو غلط بالتحديد؟ اشرحلي منطق الإجابة الصحيحة مقارنة باللي اخترته.',
-        similar: 'ادّيني سؤال تدريبي واحد جديد ومختلف (بسيناريو/أرقام مختلفة) بيقيس نفس المفهوم، مع إجابته الصحيحة وشرح مختصر.',
         custom: (customMessage || '').slice(0, MAX_MESSAGE_LENGTH)
     };
 
@@ -346,14 +393,24 @@ module.exports = async (req, res) => {
         );
 
         // دقة أعلى (حرارة أقل) للشرح والتصحيح الواقعي، تنوع أكتر (حرارة أعلى) للأسئلة التدريبية الجديدة
-        const temperatureByAction = { explain: 0.4, why: 0.35, similar: 0.7, custom: 0.5 };
+        const temperatureByAction = { explain: 0.4, why: 0.35, similar: 0.75, custom: 0.5 };
         const temperature = temperatureByAction[safeActionType] ?? 0.5;
 
-        const assistant = await getAssistantReply(systemText, userText, safeHistory, temperature);
+        // مهمة توليد JSON منفصلة تماماً عن سياق المحادثة النصية — تمرير المحادثة السابقة هنا هيلخبط الموديل
+        const historyForThisCall = safeActionType === 'similar' ? [] : safeHistory;
+
+        const assistant = await getAssistantReply(systemText, userText, historyForThisCall, temperature);
         if (!assistant.ok) {
             return res.status(429).json({ error: 'الخدمة مزدحمة حالياً', retryAfterMs: assistant.retryAfterMs, code: 'BUSY' });
         }
-        assistant.text = _sanitizeAssistantText(assistant.text);
+
+        let responsePayload;
+        if (safeActionType === 'similar') {
+            const quiz = _parseQuizJson(assistant.text);
+            responsePayload = quiz ? { quiz } : { reply: _sanitizeAssistantText(assistant.text) };
+        } else {
+            responsePayload = { reply: _sanitizeAssistantText(assistant.text) };
+        }
 
         const remaining = await incrementStudentQuota(decoded.uid, questionUid);
 
@@ -363,12 +420,12 @@ module.exports = async (req, res) => {
             questionUid,
             actionType: safeActionType,
             message: safeMessage,
-            reply: assistant.text,
+            reply: responsePayload.quiz ? JSON.stringify(responsePayload.quiz) : responsePayload.reply,
             provider: assistant.provider,
             createdAt: admin.firestore.FieldValue.serverTimestamp()
         }).catch(() => {});
 
-        return res.status(200).json({ reply: assistant.text, remaining });
+        return res.status(200).json({ ...responsePayload, remaining });
 
     } catch (err) {
         return res.status(500).json({ error: 'خطأ داخلي في الخادم: ' + err.message });
