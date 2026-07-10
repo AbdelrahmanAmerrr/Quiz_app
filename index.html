@@ -3240,6 +3240,16 @@ html, body {
             userQuizAnswersLog = new Array(currentQuestions.length).fill(null);
             pendingQuestionStats = {}; // ✅ [OPT-11] تصفير مصفوفة الإحصائيات المؤجلة
 
+            // ✅ [FIX] تصفير حالة شات المراجعة بالكامل — كانت متبقية من الامتحان السابق (نفس المادة أو مادة تانية)
+            // ولأن reviewChatHistoryByIndex كانت مبنية على index السؤال (مش معرّف فريد)، امتحان جديد بنفس الـindex
+            // كان بيورّث شات قديم بالغلط. زيادة _reviewChatSessionGen بتلغي أي typewriter قديم لسه شغال في الخلفية فوراً.
+            reviewChatHistoryByIndex   = {};
+            reviewChatRemainingByIndex = {};
+            reviewChatRetryRegistry    = {};
+            reviewChatRetryIdCounter   = 0;
+            reviewChatOpenIndex        = null;
+            _reviewChatSessionGen++;
+
             // ✅ [OPT-12] تحميل الأسئلة المفضلة مرة واحدة قبل بدء الاختبار
             starredQuestionsCache = null;
             if (currentUser) {
@@ -3673,6 +3683,7 @@ html, body {
         // ✅ [UX-NEW] يبني بطاقات مراجعة الأسئلة داخل صفحة "مراجعة الأسئلة" المستقلة
         // ══════ مساعد المذاكرة بعد التسليم (بدون قيود — الامتحان اتقيّم فعلاً) ══════
         let reviewChatOpenIndex = null;    // index السؤال المفتوح حالياً بلوحة الشات
+        let _reviewChatSessionGen = 0;     // ✅ [FIX] يزيد مع كل امتحان جديد — يلغي فوراً أي typewriter قديم لسه شغال في الخلفية
         let reviewChatHistoryByIndex = {};  // index -> [{role, text, dots?, retryId?}]
         let reviewChatRemainingByIndex = {};// index -> عدد الرسائل المتبقية
         let reviewChatRetryRegistry = {};
@@ -3771,6 +3782,8 @@ html, body {
             const msg = list && list[idx];
             if (!el || !msg) return;
 
+            const myGen = _reviewChatSessionGen; // ✅ [FIX] بصمة الجلسة الحالية وقت بدء الكتابة
+
             const prefersReducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             if (prefersReducedMotion) {
                 el.textContent = text;
@@ -3780,6 +3793,7 @@ html, body {
 
             let pos = 0;
             const step = () => {
+                if (myGen !== _reviewChatSessionGen) return; // ✅ [FIX] جلسة قديمة اتلغت (بدأ امتحان جديد) — نوقف فوراً
                 pos += 2;
                 el.textContent = text.slice(0, pos);
                 const body = document.getElementById('review-chat-body');
