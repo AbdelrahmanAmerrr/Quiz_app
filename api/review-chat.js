@@ -34,6 +34,10 @@ const MAX_MESSAGES_PER_QUESTION = 4;
 const MAX_MESSAGE_LENGTH = 300;
 const MAX_QUESTION_TEXT_LENGTH = 800;
 const MAX_OPTION_LENGTH = 200;
+// ✅ [FIX] الـJSON بتاع السؤال التدريبي (سؤال + 4 خيارات + شرح) أطول من رد نصي عادي —
+// كان بياخد نفس حد الـ600 توكن بتاع المحادثة العادية فبيتقطع أحياناً قبل ما يقفل الـJSON صح
+const CONVERSATION_MAX_TOKENS = 600;
+const SIMILAR_QUESTION_MAX_TOKENS = 1000;
 
 const db = admin.firestore();
 
@@ -55,7 +59,7 @@ async function acquireProviderSlot(providerKey, maxPerMinute) {
     });
 }
 
-async function callGemini(systemText, userText, history, temperature) {
+async function callGemini(systemText, userText, history, temperature, maxTokens) {
     const contents = [
         ...history.map(h => ({ role: h.role === 'user' ? 'user' : 'model', parts: [{ text: h.text }] })),
         { role: 'user', parts: [{ text: userText }] }
@@ -68,7 +72,7 @@ async function callGemini(systemText, userText, history, temperature) {
             body: JSON.stringify({
                 system_instruction: { parts: [{ text: systemText }] },
                 contents,
-                generationConfig: { temperature, maxOutputTokens: 600 }
+                generationConfig: { temperature, maxOutputTokens: maxTokens }
             })
         }
     );
@@ -87,7 +91,7 @@ async function callGemini(systemText, userText, history, temperature) {
     return text ? { ok: true, text, truncated } : { ok: false, quotaExhausted: false };
 }
 
-async function callGroq(systemText, userText, history, temperature) {
+async function callGroq(systemText, userText, history, temperature, maxTokens) {
     if (!process.env.GROQ_API_KEY) return { ok: false, quotaExhausted: false };
     const messages = [
         { role: 'system', content: systemText },
@@ -104,7 +108,7 @@ async function callGroq(systemText, userText, history, temperature) {
             model: 'llama-3.3-70b-versatile',
             messages,
             temperature,
-            max_tokens: 600
+            max_tokens: maxTokens
         })
     });
     if (!response.ok) {
@@ -119,7 +123,7 @@ async function callGroq(systemText, userText, history, temperature) {
 
 // مزوّد ثالث احتياطي — Cerebras (متوافق مع OpenAI). حصته اليومية كبيرة (مليون توكن) لكن معدلها بالدقيقة صغير،
 // فبييجي كخط دفاع ثالث بعد Gemini وGroq مش بديل أساسي عنهم.
-async function callCerebras(systemText, userText, history, temperature) {
+async function callCerebras(systemText, userText, history, temperature, maxTokens) {
     if (!process.env.CEREBRAS_API_KEY) return { ok: false, quotaExhausted: false };
     const messages = [
         { role: 'system', content: systemText },
@@ -136,7 +140,7 @@ async function callCerebras(systemText, userText, history, temperature) {
             model: 'gpt-oss-120b',
             messages,
             temperature,
-            max_tokens: 600
+            max_tokens: maxTokens
         })
     });
     if (!response.ok) {
@@ -150,13 +154,17 @@ async function callCerebras(systemText, userText, history, temperature) {
 }
 
 // لو أول محاولة اتقطعت فعلياً (مش تخمين — finishReason حقيقي من المزوّد نفسه)،
-// نعيد نداء واحد بس لنفس المزوّد بطلب أقصر جداً عشان نضمن جملة كاملة بدل جملة مبتورة
-async function _callWithTruncationRetry(callFn, systemText, userText, history, temperature) {
-    const first = await callFn(systemText, userText, history, temperature);
+// نعيد نداء واحد بس لنفس المزوّد بطلب أقصر جداً عشان نضمن جملة كاملة بدل جملة مبتورة.
+// ✅ [FIX] لما يكون المطلوب JSON (سؤال تدريبي)، ممنوع نطلب "اختصر لجملة واحدة" لأن ده بيكسر صيغة الـJSON —
+// بدل كده نطلب تقصير حقول الـJSON نفسها مع الحفاظ على إغلاقه صح بالكامل.
+async function _callWithTruncationRetry(callFn, systemText, userText, history, temperature, maxTokens, isJsonMode) {
+    const first = await callFn(systemText, userText, history, temperature, maxTokens);
     if (!first.ok || !first.truncated) return first;
 
-    const stricterUserText = userText + '\n\n(تنبيه: ردك السابق كان طويل قوي واتقطع. اختصر جداً جداً هذه المرة — جملة واحدة بس فيها أهم نقطة، من غير أي تفاصيل إضافية.)';
-    const retry = await callFn(systemText, stricterUserText, history, temperature);
+    const stricterUserText = isJsonMode
+        ? userText + '\n\n(تنبيه: ردك السابق اتقطع قبل ما يكتمل الـJSON. أعد نفس الطلب بالظبط، لكن اجعل نص السؤال والشرح أقصر ما يمكن (أقل عدد كلمات ممكن)، مع الحفاظ التام على صيغة JSON صحيحة وكاملة ومغلقة بالكامل بلا أي قطع أو نص إضافي حواليها.)'
+        : userText + '\n\n(تنبيه: ردك السابق كان طويل قوي واتقطع. اختصر جداً جداً هذه المرة — جملة واحدة بس فيها أهم نقطة، من غير أي تفاصيل إضافية.)';
+    const retry = await callFn(systemText, stricterUserText, history, temperature, maxTokens);
     return (retry.ok) ? retry : first;
 }
 
@@ -217,22 +225,22 @@ function _parseQuizJson(rawText) {
     return null;
 }
 
-async function getAssistantReply(systemText, userText, history, temperature) {
+async function getAssistantReply(systemText, userText, history, temperature, maxTokens, isJsonMode) {
     const geminiSlot = await acquireProviderSlot('gemini', GEMINI_MAX_PER_MINUTE);
     if (geminiSlot.allowed) {
-        const result = await _callWithTruncationRetry(callGemini, systemText, userText, history, temperature);
+        const result = await _callWithTruncationRetry(callGemini, systemText, userText, history, temperature, maxTokens, isJsonMode);
         if (result.ok) { _logDailyAiUsage('gemini'); return { ok: true, text: result.text, provider: 'gemini' }; }
     }
 
     const groqSlot = await acquireProviderSlot('groq', GROQ_MAX_PER_MINUTE);
     if (groqSlot.allowed) {
-        const result = await _callWithTruncationRetry(callGroq, systemText, userText, history, temperature);
+        const result = await _callWithTruncationRetry(callGroq, systemText, userText, history, temperature, maxTokens, isJsonMode);
         if (result.ok) { _logDailyAiUsage('groq'); return { ok: true, text: result.text, provider: 'groq' }; }
     }
 
     const cerebrasSlot = await acquireProviderSlot('cerebras', CEREBRAS_MAX_PER_MINUTE);
     if (cerebrasSlot.allowed) {
-        const result = await _callWithTruncationRetry(callCerebras, systemText, userText, history, temperature);
+        const result = await _callWithTruncationRetry(callCerebras, systemText, userText, history, temperature, maxTokens, isJsonMode);
         if (result.ok) { _logDailyAiUsage('cerebras'); return { ok: true, text: result.text, provider: 'cerebras' }; }
     }
 
@@ -398,8 +406,10 @@ module.exports = async (req, res) => {
 
         // مهمة توليد JSON منفصلة تماماً عن سياق المحادثة النصية — تمرير المحادثة السابقة هنا هيلخبط الموديل
         const historyForThisCall = safeActionType === 'similar' ? [] : safeHistory;
+        const isJsonMode = safeActionType === 'similar';
+        const maxTokens = isJsonMode ? SIMILAR_QUESTION_MAX_TOKENS : CONVERSATION_MAX_TOKENS;
 
-        const assistant = await getAssistantReply(systemText, userText, historyForThisCall, temperature);
+        const assistant = await getAssistantReply(systemText, userText, historyForThisCall, temperature, maxTokens, isJsonMode);
         if (!assistant.ok) {
             return res.status(429).json({ error: 'الخدمة مزدحمة حالياً', retryAfterMs: assistant.retryAfterMs, code: 'BUSY' });
         }
@@ -407,7 +417,11 @@ module.exports = async (req, res) => {
         let responsePayload;
         if (safeActionType === 'similar') {
             const quiz = _parseQuizJson(assistant.text);
-            responsePayload = quiz ? { quiz } : { reply: _sanitizeAssistantText(assistant.text) };
+            // ✅ [FIX] شبكة أمان: لو تعذّر تحليل الـJSON (حتى بعد رفع حد التوكنات وإعادة المحاولة)،
+            // ممنوع منعاً باتاً إرسال النص الخام كـ"رد عادي" — كان ده سبب ظهور JSON خام للطالب في الشات.
+            responsePayload = quiz
+                ? { quiz }
+                : { reply: 'تعذّر توليد سؤال تدريبي منظم هذه المرة، جرّب تضغط الزرار تاني.' };
         } else {
             responsePayload = { reply: _sanitizeAssistantText(assistant.text) };
         }
