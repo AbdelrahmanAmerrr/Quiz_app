@@ -1885,6 +1885,17 @@ html, body {
                     <!-- ══════ فرعي: إدارة البنك ══════ -->
                     <div id="qsub-manage" class="qsub-content hidden-tab">
 
+                    <!-- ── ✅ [أداء] كاش القراءة الموحّد للطلاب ── -->
+                    <div style="background:rgba(197,160,89,0.08); border:1px solid var(--primary); border-radius:8px; padding:14px; margin-bottom:16px;">
+                        <h4 style="margin:0 0 6px 0; color:var(--primary-dark);"><i class="fa-solid fa-bolt"></i> كاش القراءة الموحّد</h4>
+                        <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 10px 0; line-height:1.7;">
+                            بيتحدّث تلقائياً مع أي إضافة/تعديل/حذف سؤال. استخدم الزرار ده يدوياً بس لو محتاج تبني الكاش لأول مرة، أو لو شاكك إنه مش متزامن.
+                        </p>
+                        <button class="ban-btn" style="background:var(--primary); color:#fff; width:100%;" onclick="rebuildAllQuestionsCaches()">
+                            <i class="fa-solid fa-rotate"></i> بناء/تحديث كاش كل المواد الآن
+                        </button>
+                    </div>
+
                     <!-- ── حذف الأسئلة ── -->
                     <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:8px; padding:14px; margin-bottom:16px;">
                         <h4 style="margin:0 0 12px 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> حذف الأسئلة</h4>
@@ -3041,7 +3052,12 @@ html, body {
 
                 // ✅ [OPT-35] خلط حقيقي من كامل بنك الأسئلة — يضمن تنويع الأسئلة في كل جلسة
                 // حتى لو حل الطالب 100 سؤال سابقاً، سيحصل على 100 مختلفة في الجلسة الجديدة
-                pendingQuestions = [...questions].sort(() => Math.random() - 0.5);
+                // ✅ [تحسين] خوارزمية Fisher-Yates بدل sort(Math.random) — توزيع عشوائي متساوي فعلياً بدون انحياز
+                pendingQuestions = [...questions];
+                for (let k = pendingQuestions.length - 1; k > 0; k--) {
+                    const j = Math.floor(Math.random() * (k + 1));
+                    [pendingQuestions[k], pendingQuestions[j]] = [pendingQuestions[j], pendingQuestions[k]];
+                }
 
                 // إعداد شاشة اختيار عدد الأسئلة
                 const total = pendingQuestions.length;
@@ -3078,19 +3094,13 @@ html, body {
             }
 
             // جلب من Firestore (أول تشغيل أو انتهت صلاحية الكاش)
-            // ✅ [OPT-36] رفع الحد إلى 300 سؤال — يُخزَّن محلياً فور جلبه
-            db.collection("questions")
-              .where("subject", "==", activeCategory)
-              .limit(300)
-              .get()
-              .then((snapshot) => {
-                const questions = [];
-                snapshot.forEach(doc => {
-                    if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
-                    let data = doc.data();
-                    data.id = doc.id;
-                    questions.push(data);
-                });
+            // ✅ [أداء القراءة] قراءة مستند واحد بس من questionsCache بدل query على 300 مستند فردي —
+            // نفس فكرة الكاش المحلي والـTTL وفحص النسخة فوق، اتغيّر بس مصدر البيانات نفسه.
+            db.collection("questionsCache").doc(activeCategory).get()
+              .then((docSnap) => {
+                const questions = (docSnap.exists && Array.isArray(docSnap.data().items))
+                    ? docSnap.data().items
+                    : [];
                 // حفظ في localStorage للجلسات القادمة
                 try {
                     localStorage.setItem(cacheKey, JSON.stringify(questions));
@@ -3209,17 +3219,55 @@ html, body {
         // هنا لا يوصل لأي طالب آخر. لهذا كل نقطة حذف/تعديل تستدعي أيضاً
         // bumpQuestionVersion() لرفع "نسخة" المادة في مستند --metadata-- على السيرفر،
         // وهو ما يخلي كل طالب (حتى لو عنده كاش لسه صالح TTL) يكتشف التغيير ويحدّث فوراً.
+        // ✅ [أداء القراءة] يبني/يحدّث مستند "questionsCache/{subject}" اللي الطلاب بيقروا منه
+        // بدل ما كل طالب يعمل query لغاية 300 قراءة، الكل بيقرا مستند واحد بس.
+        // نداء إداري بس (عبدالرحمن)، فتكلفة الاستعلام الكامل هنا مقبولة تماماً (نادر ورخيص).
+        function rebuildQuestionsCacheForSubject(subject) {
+            if (!subject || !fixedSubjects[subject]) return Promise.resolve();
+            return db.collection("questions").where("subject", "==", subject).get().then(snap => {
+                const items = [];
+                snap.forEach(doc => {
+                    if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
+                    const d = doc.data();
+                    items.push({
+                        id: doc.id,
+                        question: d.question,
+                        options: d.options,
+                        answer: d.answer,
+                        explanation: d.explanation || ''
+                    });
+                });
+                return db.collection("questionsCache").doc(subject).set({
+                    items,
+                    count: items.length,
+                    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+            }).catch(err => console.warn("rebuildQuestionsCacheForSubject error:", subject, err));
+        }
+
+        // ✅ زرار الأدمن اليدوي — بناء كاش كل المواد الخمسة دفعة واحدة (أول تشغيل بعد الترقية، أو لو الشك في التزامن)
+        function rebuildAllQuestionsCaches() {
+            showToast("⏳ جاري بناء الكاش لكل المواد...");
+            const subjects = Object.keys(fixedSubjects);
+            Promise.all(subjects.map(sub => rebuildQuestionsCacheForSubject(sub))).then(() => {
+                showToast("✅ تم بناء كاش القراءة لكل المواد بنجاح!");
+                logAdminAction("بناء كاش القراءة", `تحديث ${subjects.length} مادة`);
+            }).catch(err => showToast("❌ حصل خطأ أثناء البناء: " + err.message, "error"));
+        }
+
         function _invalidateQuestionCache(subject) {
             if (subject) {
                 localStorage.removeItem(`aq_q_${subject}`);
                 localStorage.removeItem(`aq_q_ts_${subject}`);
                 bumpQuestionVersion(subject);
+                rebuildQuestionsCacheForSubject(subject); // ✅ يحدّث كاش القراءة الموحّد فوراً
             } else {
                 // مسح كاش كل المواد (للحذف الشامل والاستيراد)
                 ['databases','structured_programming','corporate_accounting','operations_management','economics_english'].forEach(sub => {
                     localStorage.removeItem(`aq_q_${sub}`);
                     localStorage.removeItem(`aq_q_ts_${sub}`);
                     bumpQuestionVersion(sub);
+                    rebuildQuestionsCacheForSubject(sub); // ✅ يحدّث كاش القراءة الموحّد فوراً
                 });
             }
         }
