@@ -36,8 +36,12 @@ const MAX_QUESTION_TEXT_LENGTH = 800;
 const MAX_OPTION_LENGTH = 200;
 // ✅ [FIX] الـJSON بتاع السؤال التدريبي (سؤال + 4 خيارات + شرح) أطول من رد نصي عادي —
 // كان بياخد نفس حد الـ600 توكن بتاع المحادثة العادية فبيتقطع أحياناً قبل ما يقفل الـJSON صح
-const CONVERSATION_MAX_TOKENS = 600;
+const CONVERSATION_MAX_TOKENS = 800; // ✅ [FIX] رفعناها من 600 لتقليل احتمال القطع من الأساس
 const SIMILAR_QUESTION_MAX_TOKENS = 1000;
+// ✅ [FIX] إعادة المحاولة النصية (مش JSON) كانت بتاخد نفس سقف الـ800 توكن الأصلي —
+// يعني حتى لو النموذج ما التزمش بطلب "جملة واحدة"، كان لسه ممكن يتقطع تاني عند نفس السقف الكبير.
+// سقف منخفض هنا بيجبر رد قصير فعلياً بغض النظر عن مدى التزام النموذج بالتعليمة النصية.
+const RETRY_TEXT_MAX_TOKENS = 180;
 
 const db = admin.firestore();
 
@@ -163,8 +167,11 @@ async function _callWithTruncationRetry(callFn, systemText, userText, history, t
 
     const stricterUserText = isJsonMode
         ? userText + '\n\n(تنبيه: ردك السابق اتقطع قبل ما يكتمل الـJSON. أعد نفس الطلب بالظبط، لكن اجعل نص السؤال والشرح أقصر ما يمكن (أقل عدد كلمات ممكن)، مع الحفاظ التام على صيغة JSON صحيحة وكاملة ومغلقة بالكامل بلا أي قطع أو نص إضافي حواليها.)'
-        : userText + '\n\n(تنبيه: ردك السابق كان طويل قوي واتقطع. اختصر جداً جداً هذه المرة — جملة واحدة بس فيها أهم نقطة، من غير أي تفاصيل إضافية.)';
-    const retry = await callFn(systemText, stricterUserText, history, temperature, maxTokens);
+        : userText + '\n\n(تنبيه: ردك السابق كان طويل قوي واتقطع. اختصر جداً جداً هذه المرة — جملة أو جملتين بالكتير فيهم أهم نقطة بس، واقفلهم بنقطة واضحة.)';
+    // ✅ [FIX] في وضع النص العادي، نفرض سقف توكنات منخفض فعلياً بدل ما نعتمد على التزام النموذج
+    // بتعليمة "اختصر" وهو لسه شغال بنفس السقف الكبير القديم
+    const retryMaxTokens = isJsonMode ? maxTokens : RETRY_TEXT_MAX_TOKENS;
+    const retry = await callFn(systemText, stricterUserText, history, temperature, retryMaxTokens);
     return (retry.ok) ? retry : first;
 }
 
@@ -198,7 +205,17 @@ function _sanitizeAssistantText(text) {
             if (idx > lastIdx) lastIdx = idx;
         }
         // نقص بس لو هيفضل جزء معقول من الرد (مش هنبتره لحجم صغير جداً)
-        if (lastIdx > 40) cleaned = cleaned.slice(0, lastIdx + 1);
+        if (lastIdx > 40) {
+            cleaned = cleaned.slice(0, lastIdx + 1);
+        } else {
+            // ✅ [FIX] مفيش أي علامة ترقيم في الرد كله (جملة واحدة قصيرة اتقطعت وسط الكلام) —
+            // كانت هنا بترجع النص الخام زي ما هو، حتى لو قاطعة كلمة نص حرف (مثال: "التفاعل مع البي" بدل "البيئة").
+            // دلوقتي نقطع عند آخر مسافة (آخر كلمة مكتملة) ونضيف "..." عشان يبقى واضح إنه رد غير مكتمل، مش مقطوع بالغلط.
+            const lastSpace = cleaned.lastIndexOf(' ');
+            if (lastSpace > 20) {
+                cleaned = cleaned.slice(0, lastSpace).trim() + '...';
+            }
+        }
     }
     return cleaned;
 }
