@@ -24,6 +24,9 @@ const GROQ_MAX_PER_MINUTE = 25;
 const CEREBRAS_MAX_PER_MINUTE = 4;
 const MAX_WRONG_QUESTIONS = 30;       // حماية حجم الطلب — نادراً امتحان فيه أكتر من كده غلط
 const MAX_SUMMARIES_PER_DAY = 3;      // لكل طالب لكل مادة يومياً
+// ✅ [جديد] شرح مفهوم منفرد من نتيجة تحليل الأداء — أخف بكتير من التحليل الكامل، حصة يومية أكبر
+const MAX_TOPIC_EXPLANATIONS_PER_DAY = 6;
+const MAX_TOPIC_LABEL_LENGTH = 120;
 
 const db = admin.firestore();
 
@@ -157,6 +160,19 @@ async function checkAndConsumeSummaryQuota(uid, subject) {
     });
 }
 
+// ✅ [جديد] حصة يومية منفصلة لشرح المفاهيم المنفردة — أخف من التحليل الكامل فحصتها أكبر
+async function checkAndConsumeTopicExplainQuota(uid, subject) {
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const ref = db.collection('topic_explain_usage').doc(`${uid}_${subject}_${dateStr}`);
+    return db.runTransaction(async (tx) => {
+        const snap = await tx.get(ref);
+        const current = snap.exists ? (snap.data().count || 0) : 0;
+        if (current >= MAX_TOPIC_EXPLANATIONS_PER_DAY) return { allowed: false };
+        tx.set(ref, { count: current + 1, updatedAt: admin.firestore.FieldValue.serverTimestamp() }, { merge: true });
+        return { allowed: true };
+    });
+}
+
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -172,8 +188,54 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'رمز الدخول غير صالح أو منتهي' });
         }
 
-        const { subject, wrongQuestions } = req.body || {};
-        if (!subject || !SUBJECT_LABELS[subject] || !Array.isArray(wrongQuestions) || wrongQuestions.length === 0) {
+        const { subject, wrongQuestions, mode, topic } = req.body || {};
+        if (!subject || !SUBJECT_LABELS[subject]) {
+            return res.status(400).json({ error: 'بيانات ناقصة — المادة مطلوبة' });
+        }
+
+        const subjectLabel = SUBJECT_LABELS[subject];
+
+        // ✅ [جديد] مسار شرح مفهوم منفرد — مستقل تماماً عن التحليل الكامل، وله حصته اليومية الخاصة
+        if (mode === 'explainTopic') {
+            const safeTopic = typeof topic === 'string' ? topic.trim().slice(0, MAX_TOPIC_LABEL_LENGTH) : '';
+            if (!safeTopic || !Array.isArray(wrongQuestions) || wrongQuestions.length === 0) {
+                return res.status(400).json({ error: 'بيانات ناقصة — المفهوم والأسئلة المرتبطة به مطلوبة' });
+            }
+
+            const quota = await checkAndConsumeTopicExplainQuota(decoded.uid, subject);
+            if (!quota.allowed) {
+                return res.status(403).json({ error: `وصلت للحد الأقصى (${MAX_TOPIC_EXPLANATIONS_PER_DAY} شروحات) لهذه المادة اليوم`, code: 'QUOTA_EXCEEDED' });
+            }
+
+            const safeQuestions = wrongQuestions.slice(0, MAX_WRONG_QUESTIONS).map(q => ({
+                question:      String(q.question || '').slice(0, 300),
+                studentAnswer: String(q.studentAnswer || '').slice(0, 150),
+                correctAnswer: String(q.correctAnswer || '').slice(0, 150)
+            }));
+            const questionsList = safeQuestions.map((q, i) =>
+                `${i + 1}. السؤال: ${q.question} | إجابة الطالب: ${q.studentAnswer} | الصحيحة: ${q.correctAnswer}`
+            ).join('\n');
+
+            const systemText = `أنت مساعد مذاكرة لطالب جامعي في مادة: ${subjectLabel}.
+الطالب غلط في أسئلة تتعلق بمفهوم "${safeTopic}" في امتحان أخير. دي الأسئلة اللي غلط فيها:
+${questionsList}
+
+المطلوب: اشرح مفهوم "${safeTopic}" تحديداً بوضوح ومباشرة، مستخدماً الأسئلة اللي فوق كأمثلة توضيحية لربط الشرح بواقع أخطائه (من غير ما تكرر نص الأسئلة حرفياً).
+- ابدأ من أول كلمة بالشرح مباشرة، من غير أي مقدمة زي "سأشرح لك" أو "بالتأكيد".
+- الرد كله في حدود 5-7 جمل قصار بالمظبوط، مش أكتر.
+- ممنوع أي تنسيق Markdown (لا ** ولا # ولا شرطات).
+- رد نصي عادي بس، من غير أي JSON أو علامات تنسيق.`;
+
+            const assistant = await getAssistantReply(systemText, `اشرح مفهوم "${safeTopic}" الآن.`);
+            if (!assistant.ok) {
+                return res.status(429).json({ error: 'الخدمة مزدحمة حالياً', retryAfterMs: assistant.retryAfterMs, code: 'BUSY' });
+            }
+
+            return res.status(200).json({ explanation: assistant.text.trim() });
+        }
+
+        // ── المسار الأصلي: تحليل شامل لكل الإجابات الخاطئة ──
+        if (!Array.isArray(wrongQuestions) || wrongQuestions.length === 0) {
             return res.status(400).json({ error: 'بيانات ناقصة — محتاج على الأقل سؤال واحد خطأ لتحليله' });
         }
 
@@ -188,7 +250,6 @@ module.exports = async (req, res) => {
             correctAnswer: String(q.correctAnswer || '').slice(0, 150)
         }));
 
-        const subjectLabel = SUBJECT_LABELS[subject];
         const questionsList = safeQuestions.map((q, i) =>
             `${i + 1}. السؤال: ${q.question} | إجابة الطالب: ${q.studentAnswer} | الصحيحة: ${q.correctAnswer}`
         ).join('\n');
