@@ -277,6 +277,40 @@ async function checkStudentQuota(uid, questionKey) {
     return { allowed: current < MAX_MESSAGES_PER_QUESTION, remaining: Math.max(0, MAX_MESSAGES_PER_QUESTION - current) };
 }
 
+// ✅ [تحسين] كاش تلقائي بالكامل للشروحات الشائعة — بدون أي تدخل إداري.
+// السؤال مشترك بين كل الطلاب، فأول رد "اشرحلي"/"ليه إجابتي" بيتخزن، وأي طالب تاني يسأل نفس الشيء
+// ياخد نفس الرد فوراً من غير أي نداء AI جديد ومن غير ما يتخصم من رصيده.
+// الحماية من التسرب لو الأدمن عدّل السؤال بعدين: نقارن questionText/correctAnswer المخزّنين باللي جايين دلوقتي —
+// لو مختلفين، الكاش بيتجاهل نفسه تلقائياً ويتبني من جديد، بدون أي زرار مسح يدوي.
+function _buildExplanationCacheKey(actionType, questionUid, studentAnswer) {
+    if (actionType === 'explain') return `${questionUid}_explain`;
+    if (actionType === 'why') {
+        const normalizedAnswer = String(studentAnswer || 'لم_يجب').trim().slice(0, 100);
+        return `${questionUid}_why_${normalizedAnswer}`;
+    }
+    return null; // similar وcustom مايتخزنوش — لازم يفضلوا متنوعين/شخصيين
+}
+
+async function _getCachedExplanation(cacheKey, questionText, correctAnswer) {
+    if (!cacheKey) return null;
+    try {
+        const snap = await db.collection('aiExplanationCache').doc(cacheKey).get();
+        if (!snap.exists) return null;
+        const data = snap.data();
+        // فحص التزامن الذاتي: لو السؤال اتعدّل بعد ما اتخزن الكاش، نتجاهله ونولّد من جديد
+        if (data.questionText !== questionText || data.correctAnswer !== correctAnswer) return null;
+        return data.reply || null;
+    } catch (e) { return null; }
+}
+
+function _saveExplanationToCache(cacheKey, questionText, correctAnswer, reply) {
+    if (!cacheKey) return;
+    db.collection('aiExplanationCache').doc(cacheKey).set({
+        questionText, correctAnswer, reply,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+    }).catch(() => {});
+}
+
 async function incrementStudentQuota(uid, questionKey) {
     const ref = db.collection('review_chat_usage').doc(`${uid}_${questionKey}`);
     return db.runTransaction(async (tx) => {
@@ -372,6 +406,31 @@ module.exports = async (req, res) => {
             return res.status(401).json({ error: 'رمز الدخول غير صالح أو منتهي' });
         }
 
+        // ✅ [تحسين] مسار التقييم (👍/👎) — منفصل تماماً عن مسار توليد الردود.
+        // بيسجّل التقييم، ولو سلبي على رد كان مخزّن في الكاش المشترك، يمسحه فوراً عشان محدش تاني ياخد نفس الرد الضعيف.
+        if (req.body && req.body.mode === 'feedback') {
+            const { subject: fbSubject, questionUid: fbQuestionUid, actionType: fbActionType, studentAnswer: fbStudentAnswer, rating, replyText } = req.body;
+            const safeRating = rating === 'up' ? 'up' : 'down';
+
+            await db.collection('review_chat_feedback').add({
+                uid: decoded.uid,
+                subject: fbSubject || null,
+                questionUid: fbQuestionUid || null,
+                reply: String(replyText || '').slice(0, 1000),
+                rating: safeRating,
+                createdAt: admin.firestore.FieldValue.serverTimestamp()
+            }).catch(() => {});
+
+            if (safeRating === 'down' && fbQuestionUid) {
+                const cacheKey = _buildExplanationCacheKey(fbActionType, fbQuestionUid, String(fbStudentAnswer || '').slice(0, 100));
+                if (cacheKey) {
+                    await db.collection('aiExplanationCache').doc(cacheKey).delete().catch(() => {});
+                }
+            }
+
+            return res.status(200).json({ ok: true });
+        }
+
         const {
             subject, questionUid, questionText, options,
             studentAnswer, correctAnswer, explanation,
@@ -400,6 +459,20 @@ module.exports = async (req, res) => {
             })).filter(h => h.text)
             : [];
 
+        const safeQuestionText  = String(questionText).slice(0, MAX_QUESTION_TEXT_LENGTH);
+        const safeCorrectAnswer = String(correctAnswer).slice(0, MAX_OPTION_LENGTH);
+        const safeStudentAnswer = String(studentAnswer || '').slice(0, MAX_OPTION_LENGTH);
+
+        // ✅ [تحسين] فحص الكاش الأول — قبل حتى فحص رصيد الرسائل، عشان لو فيه رد جاهز
+        // الطالب ياخده فوراً حتى لو خلّص رصيده اليومي على السؤال ده (مش نداء AI حقيقي، مايستهلكش رصيد)
+        // بس لو أول رسالة على السؤال ده (من غير سياق محادثة سابقة) — رد جوه محادثة متعددة الأدوار شخصي، مش قابل لإعادة الاستخدام
+        const cacheKey = (safeHistory.length === 0) ? _buildExplanationCacheKey(safeActionType, questionUid, safeStudentAnswer) : null;
+        const cachedReply = await _getCachedExplanation(cacheKey, safeQuestionText, safeCorrectAnswer);
+        if (cachedReply) {
+            const quotaNow = await checkStudentQuota(decoded.uid, questionUid);
+            return res.status(200).json({ reply: cachedReply, remaining: quotaNow.remaining, cached: true });
+        }
+
         // تحقق من رصيد الطالب لهذا السؤال (بدون خصم بعد)
         const quotaCheck = await checkStudentQuota(decoded.uid, questionUid);
         if (!quotaCheck.allowed) {
@@ -419,10 +492,10 @@ module.exports = async (req, res) => {
 
         const { systemText, userText } = buildPrompt(
             subjectLabel,
-            String(questionText).slice(0, MAX_QUESTION_TEXT_LENGTH),
+            safeQuestionText,
             safeOptions,
-            String(studentAnswer || '').slice(0, MAX_OPTION_LENGTH),
-            String(correctAnswer).slice(0, MAX_OPTION_LENGTH),
+            safeStudentAnswer,
+            safeCorrectAnswer,
             String(explanation || '').slice(0, 500),
             safeActionType,
             safeMessage,
@@ -453,6 +526,8 @@ module.exports = async (req, res) => {
                 : { reply: 'تعذّر توليد سؤال تدريبي منظم هذه المرة، جرّب تضغط الزرار تاني.' };
         } else {
             responsePayload = { reply: _sanitizeAssistantText(assistant.text) };
+            // ✅ [تحسين] تخزين الرد في الكاش المشترك — أي طالب تاني يسأل نفس السؤال بنفس الطريقة ياخده فوراً
+            if (cacheKey) _saveExplanationToCache(cacheKey, safeQuestionText, safeCorrectAnswer, responsePayload.reply);
         }
 
         const remaining = await incrementStudentQuota(decoded.uid, questionUid);
