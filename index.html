@@ -1559,6 +1559,10 @@ html, body {
                     display:flex; align-items:center; gap:5px; font-size:10.5px; font-weight:800;
                     color:var(--primary-dark); margin-bottom:5px; letter-spacing:0.2px;
                 }
+                .review-chat-cached-badge {
+                    background:rgba(197,160,89,0.15); color:var(--primary-dark); border-radius:99px;
+                    padding:2px 8px; font-size:9.5px; font-weight:700;
+                }
 
                 /* كارد السؤال التدريبي التفاعلي */
                 .review-quiz-card { max-width:94% !important; }
@@ -3796,7 +3800,8 @@ html, body {
                 const bodyContent = (isLast && !m.typed)
                     ? `<span id="review-chat-typewriter-${idx}"></span>`
                     : esc(m.text);
-                return `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🎓 المساعد</span>${bodyContent}${feedback}</div>`;
+                const cachedBadge = m.cached ? `<span class="review-chat-cached-badge">⚡ رد فوري</span>` : '';
+                return `<div class="review-chat-bubble bot"><span class="review-chat-bot-label">🎓 المساعد${cachedBadge}</span>${bodyContent}${feedback}</div>`;
             }
             if (m.role === 'quiz') {
                 const q = m.quiz;
@@ -3873,11 +3878,13 @@ html, body {
             step();
         }
 
-        // يسجّل رأي الطالب في رد معين مباشرة بـFirestore (كتابة وحيدة، بدون فانكشن سيرفر منفصلة)
+        // ✅ [تحسين] بقت تعدّي على السيرفر بدل الكتابة المباشرة — عشان لو التقييم سلبي على رد مخزّن (كاش)،
+        // نقدر نمسح الكاش فوراً ومحدش تاني ياخد نفس الرد الضعيف
         async function _reviewChatSendFeedback(msgIndex, rating) {
             const i = reviewChatOpenIndex;
             const list = i !== null ? reviewChatHistoryByIndex[i] : null;
             const msg = list ? list[msgIndex] : null;
+            const log = i !== null ? userQuizAnswersLog[i] : null;
             if (!msg || msg.role !== 'bot' || msg.voted) return;
 
             msg.voted = rating;
@@ -3885,13 +3892,19 @@ html, body {
 
             try {
                 const activeQObj = currentQuestions[i] || {};
-                await db.collection('review_chat_feedback').add({
-                    uid: firebase.auth().currentUser.uid,
-                    subject: activeCategory, // ✅ [FIX] كان بيعتمد على activeQObj.subject اللي اتشالت من كاش القراءة الجديد
-                    questionUid: activeQObj.id || `idx-${i}`,
-                    reply: msg.text,
-                    rating: rating,
-                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                const idToken = await firebase.auth().currentUser.getIdToken();
+                await fetch('/api/review-chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                    body: JSON.stringify({
+                        mode: 'feedback',
+                        subject: activeCategory,
+                        questionUid: activeQObj.id || `idx-${i}`,
+                        actionType: msg.actionType || 'custom',
+                        studentAnswer: log ? log.chosen : null,
+                        rating: rating,
+                        replyText: msg.text
+                    })
                 });
             } catch (e) { /* صامت — تجربة المستخدم أهم من ضمان وصول التقييم */ }
         }
@@ -4029,6 +4042,7 @@ html, body {
             let finalQuiz = null;
             let finalErrorText = null;
             let finalErrorCode = null;
+            let finalCached = false;
 
             try {
                 const idToken = await firebase.auth().currentUser.getIdToken();
@@ -4076,6 +4090,7 @@ html, body {
 
                     finalReply = data.reply || null;
                     finalQuiz = data.quiz || null;
+                    finalCached = !!data.cached;
                     if (typeof data.remaining === 'number') reviewChatRemainingByIndex[i] = data.remaining;
                     break;
                 }
@@ -4094,7 +4109,9 @@ html, body {
                 if (finalQuiz) {
                     list.push({ role: 'quiz', quiz: finalQuiz, chosen: null });
                 } else if (finalReply) {
-                    list.push({ role: 'bot', text: finalReply, typed: false });
+                    // ✅ [تحسين] الرد المخزّن (كاش) بيوصل فوري — نعرضه على طول من غير كتابة تدريجية وهمية،
+                    // ونحط شارة صغيرة توضح إنه رد فوري (شفافية، مش خداع بصري)
+                    list.push({ role: 'bot', text: finalReply, typed: !!finalCached, cached: !!finalCached, actionType });
                 } else if (finalErrorCode === 'QUOTA_EXCEEDED') {
                     reviewChatRemainingByIndex[i] = 0;
                     list.push({ role: 'quota', text: 'وصلت للحد الأقصى من الأسئلة المسموحة لهذا السؤال.' });
