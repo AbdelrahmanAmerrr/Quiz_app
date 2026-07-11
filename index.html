@@ -3869,7 +3869,7 @@ html, body {
                 const activeQObj = currentQuestions[i] || {};
                 await db.collection('review_chat_feedback').add({
                     uid: firebase.auth().currentUser.uid,
-                    subject: activeQObj.subject || null,
+                    subject: activeCategory, // ✅ [FIX] كان بيعتمد على activeQObj.subject اللي اتشالت من كاش القراءة الجديد
                     questionUid: activeQObj.id || `idx-${i}`,
                     reply: msg.text,
                     rating: rating,
@@ -3966,7 +3966,7 @@ html, body {
                 const idToken = await firebase.auth().currentUser.getIdToken();
                 const activeQObj = currentQuestions[i] || {};
                 const payload = {
-                    subject: activeQObj.subject,
+                    subject: activeCategory, // ✅ [FIX] كان بيعتمد على activeQObj.subject اللي اتشالت من كاش القراءة الجديد
                     questionUid: activeQObj.id || `idx-${i}`,
                     questionText: log.question,
                     options: Array.isArray(activeQObj.options) ? activeQObj.options : [],
@@ -4071,7 +4071,7 @@ html, body {
             }
 
             const activeQObj = currentQuestions[0] || {};
-            const subject = activeQObj.subject;
+            const subject = activeCategory; // ✅ [FIX] كان بيعتمد على activeQObj.subject اللي اتشالت من كاش القراءة الجديد
 
             try {
                 const idToken = await firebase.auth().currentUser.getIdToken();
