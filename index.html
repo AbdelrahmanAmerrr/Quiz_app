@@ -1797,6 +1797,16 @@ html, body {
                 </div>
 
                 <p id="result-xp-status" style="text-align: center; font-weight: bold; font-size: 15px; margin-bottom: 25px;"></p>
+
+                <!-- ✅ [FIX] شريط تنبيه لو فشل حفظ النتيجة على السيرفر (انقطاع نت وقت التسليم) - مخفي افتراضياً -->
+                <div id="save-result-error-banner" style="display:none; background:#fef2f2; border:1.5px solid var(--danger); border-radius:10px; padding:14px; margin-bottom:20px; text-align:center;">
+                    <p style="margin:0 0 10px 0; color:var(--danger); font-weight:700; font-size:14px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> لم يتم حفظ نتيجتك على السيرفر (مشكلة في الاتصال)
+                    </p>
+                    <button class="btn-launch" style="background:var(--danger); margin:0;" onclick="_retrySaveOfficialResult()">
+                        <i class="fa-solid fa-rotate"></i> إعادة محاولة الحفظ
+                    </button>
+                </div>
                 
                 <button class="btn-launch" style="background: var(--success); margin-bottom: 12px;" onclick="showView('view-review')"><i class="fa-solid fa-magnifying-glass"></i> مراجعة الأسئلة تاني</button>
                 <button class="btn-launch btn-back-to-dash" onclick="backToDashboard()"><i class="fa-solid fa-house"></i> العودة للوحة التحكم الرئيسية</button>
@@ -2983,6 +2993,8 @@ html, body {
             const alertBox = document.getElementById('resume-alert');
             if (savedState) {
                 const parsed = JSON.parse(savedState);
+                // ✅ [FIX] لو الامتحان ده خلص فعلاً ولسه مستني تأكيد حفظ على السيرفر، مانعرضش "استئناف" بالغلط
+                if (parsed.completed) { alertBox.style.display = "none"; return; }
                 document.getElementById('resume-subject-name').innerText = fixedSubjects[parsed.subjectId] || parsed.subjectId;
                 alertBox.style.display = "block";
             } else {
@@ -2998,7 +3010,11 @@ html, body {
             const savedRaw = localStorage.getItem(`saved_quiz_${currentUser.uid}`);
             let hasSavedForThisSubject = false;
             if (savedRaw) {
-                try { hasSavedForThisSubject = (JSON.parse(savedRaw).subjectId === activeCategory); } catch(e) {}
+                try {
+                    const parsedSaved = JSON.parse(savedRaw);
+                    // ✅ [FIX] نفس الحماية — نسخة مكتملة مستنية حفظ مش امتحان جاري فعلاً
+                    hasSavedForThisSubject = !parsedSaved.completed && (parsedSaved.subjectId === activeCategory);
+                } catch(e) {}
             }
             if (resumeWrap) resumeWrap.style.display = hasSavedForThisSubject ? 'block' : 'none';
 
@@ -4418,7 +4434,18 @@ html, body {
             saveFlaggedQuestionsIfAny();
             showView('view-review');
 
-            localStorage.removeItem(`saved_quiz_${currentUser.uid}`);
+            // ✅ [FIX] كان بيتمسح هنا فوراً بغض النظر عن نجاح الحفظ على السيرفر من عدمه —
+            // لو النت قطع في اللحظة دي بالظبط، النتيجة كانت بتضيع بصمت بدون أي طريقة لإعادة المحاولة.
+            // دلوقتي بيتمسح بس بعد تأكيد نجاح الحفظ (_saveOfficialAttemptResult) أو فوراً في وضع التدريب (مفيش حفظ أصلاً هناك).
+            // نعلّمها "مكتملة" فوراً عشان لو الطالب رجع الداشبورد قبل ما الحفظ يتأكد، مايتعرضش عليه "استئناف" امتحان خلصه فعلاً.
+            try {
+                const raw = localStorage.getItem(`saved_quiz_${currentUser.uid}`);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    parsed.completed = true;
+                    localStorage.setItem(`saved_quiz_${currentUser.uid}`, JSON.stringify(parsed));
+                }
+            } catch(e) { /* تجاهل بصمت */ }
 
             document.getElementById('result-score').innerText = `${score} / ${currentQuestions.length}`;
             const percentage = currentQuestions.length > 0 ? Math.round((score / currentQuestions.length) * 100) : 0;
@@ -4515,6 +4542,8 @@ html, body {
                     : "هذه جولة تدريبية مكررة.";
                 statusText.innerText = `✨ ${reason} لم يتم إضافة نقاط تماشياً مع معايير المساواة.`;
                 document.getElementById('result-next-level').innerText = currentUser.level || 1;
+                // ✅ وضع تدريبي: مفيش أي كتابة حرجة على السيرفر، آمن نمسح نسخة الحفظ فوراً
+                localStorage.removeItem(`saved_quiz_${currentUser.uid}`);
 
             } else {
                 // ── حساب XP النهائي مع تطبيق سقف المادة ──
@@ -4536,8 +4565,24 @@ html, body {
                 const isFull   = (score === currentQuestions.length && currentQuestions.length > 0);
                 const todayStr = new Date().toLocaleDateString('ar-EG');
 
-                // ── كتابة واحدة فقط إلى Firestore تشمل كل شيء ──
-                db.collection("users").doc(currentUser.uid).update({
+                // ✅ [FIX] الكتابات الحرجة (XP، المحاولات، الميتاداتا) بقت جوه دالة محمية بمعالجة أخطاء حقيقية
+                // + إعادة محاولة يدوية لو فشلت، بدل ما تفشل بصمت والطالب يفتكر إن نتيجته اتسجلت
+                _lastFailedResultSave = { finalXPGained, nextXp, nextLevel, isFull, todayStr };
+                _saveOfficialAttemptResult(finalXPGained, nextXp, nextLevel, isFull, todayStr);
+            }
+        }
+
+        // ✅ [FIX] الكتابات الحرجة الثلاثة لنتيجة الامتحان الرسمي — بمعالجة أخطاء حقيقية:
+        // لو فشلت، نسخة الحفظ المحلية بتفضل موجودة وبيظهر شريط تنبيه بزرار "إعادة المحاولة"،
+        // بدل ما الطالب يفتكر إن نتيجته اتسجلت وهي ضاعت بصمت.
+        let _lastFailedResultSave = null;
+        async function _saveOfficialAttemptResult(finalXPGained, nextXp, nextLevel, isFull, todayStr) {
+            const banner = document.getElementById('save-result-error-banner');
+            const currentSubjectXP = (currentUser.subjectXP || {})[activeCategory] || 0;
+            const currentAttempts  = (currentUser.subjectAttemptsCount || {})[activeCategory] || 0;
+
+            try {
+                await db.collection("users").doc(currentUser.uid).update({
                     xp:             firebase.firestore.FieldValue.increment(finalXPGained),
                     level:          nextLevel,
                     completedCount: firebase.firestore.FieldValue.increment(1),
@@ -4553,24 +4598,24 @@ html, body {
                         total:  currentQuestions.length,
                         date:   todayStr
                     },
-                    // ✅ [FIX] وقت خادم موثوق لفلتر "الشهر الحالي" في لوحة الأوائل — بديل عن date النصي المحلي غير القابل للتحليل
                     lastActivityAt: firebase.firestore.FieldValue.serverTimestamp()
-                }).then(() => {
-                    currentUser.xp    = nextXp;
-                    currentUser.level = nextLevel;
-                    if (!currentUser.subjectXP)            currentUser.subjectXP = {};
-                    if (!currentUser.subjectAttemptsCount) currentUser.subjectAttemptsCount = {};
-                    currentUser.subjectXP[activeCategory]           = currentSubjectXP + finalXPGained;
-                    currentUser.subjectAttemptsCount[activeCategory] = currentAttempts + 1;
-                    subjectAttemptCache[activeCategory] = true;
-                    cachedLeaderboardUsers = null;
                 });
 
-                // ── تحديث عدادات الميتاداتا ──
+                currentUser.xp    = nextXp;
+                currentUser.level = nextLevel;
+                if (!currentUser.subjectXP)            currentUser.subjectXP = {};
+                if (!currentUser.subjectAttemptsCount) currentUser.subjectAttemptsCount = {};
+                currentUser.subjectXP[activeCategory]           = currentSubjectXP + finalXPGained;
+                currentUser.subjectAttemptsCount[activeCategory] = currentAttempts + 1;
+                subjectAttemptCache[activeCategory] = true;
+                cachedLeaderboardUsers = null;
+
+                // الكتابتين دول أقل أهمية (عداد عام + سجل محاولة) — نحاولهم بعد الكتابة الأساسية،
+                // لكن فشلهم لوحده ما يمنعش مسح نسخة الحفظ (النقاط والمستوى، الأهم، اتأكد نجاحهم فوق)
                 db.collection("questions").doc("--metadata--").set(
                     { totalAttempts: firebase.firestore.FieldValue.increment(1) },
                     { merge: true }
-                );
+                ).catch(err => console.warn("metadata counter write failed:", err));
 
                 db.collection("users").doc(currentUser.uid).collection("attempts")
                   .doc(activeCategory).set({
@@ -4581,8 +4626,26 @@ html, body {
                     xpEarned:       finalXPGained,
                     attemptNo:      currentAttempts + 1,
                     date:           firebase.firestore.FieldValue.serverTimestamp()
-                });
+                }).catch(err => console.warn("attempts doc write failed:", err));
+
+                // ✅ نجحت الكتابة الأساسية — دلوقتي بس آمن نمسح نسخة الحفظ المحلية ونخفي شريط التنبيه لو ظاهر
+                localStorage.removeItem(`saved_quiz_${currentUser.uid}`);
+                _lastFailedResultSave = null;
+                if (banner) banner.style.display = 'none';
+
+            } catch (err) {
+                console.warn("_saveOfficialAttemptResult failed:", err);
+                // ✅ فشلت الكتابة الأساسية — نسيب نسخة الحفظ المحلية زي ما هي ونوريله شريط تنبيه واضح بزرار إعادة محاولة
+                if (banner) banner.style.display = 'block';
             }
+        }
+
+        // زرار "إعادة محاولة الحفظ" بشريط التنبيه
+        function _retrySaveOfficialResult() {
+            if (!_lastFailedResultSave) return;
+            const { finalXPGained, nextXp, nextLevel, isFull, todayStr } = _lastFailedResultSave;
+            showToast("⏳ جاري إعادة المحاولة...");
+            _saveOfficialAttemptResult(finalXPGained, nextXp, nextLevel, isFull, todayStr);
         }
 
         function toggleLeaderboardFilter(filterType) {
@@ -4741,7 +4804,10 @@ html, body {
                 img.onerror = () => resolve(null);
                 img.onload  = () => {
                     try {
-                        const SIZE    = 100; // رُفع من 60 → 100 لجودة مقبولة بعد الضغط المزدوج
+                        // ✅ [تحسين جودة] رُفعت من 100 → 130 — أوضح على شاشات الموبايل عالية الكثافة (Retina)
+                        // خصوصاً صورة المركز الأول اللي بتتعرض بحجم 70px، مع مراعاة عدم تخطي حد مستند الـ1MB
+                        // (كل صورة بعد كده بتبقى ~8-12KB بدل ~4-6KB، فرق آمن حتى مع مئات الطلاب)
+                        const SIZE    = 130;
                         const HALF    = SIZE / 2;
                         const canvas  = document.createElement('canvas');
                         canvas.width  = SIZE;
@@ -4757,7 +4823,14 @@ html, body {
                         ctx.arc(HALF, HALF, HALF, 0, Math.PI * 2);
                         ctx.clip();
                         ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
-                        resolve(canvas.toDataURL('image/jpeg', 0.70)); // رُفعت من 50% → 70%
+                        let result = canvas.toDataURL('image/jpeg', 0.78); // ✅ رُفعت من 70% → 78%
+
+                        // ✅ [حماية] صمام أمان: لو الصورة طلعت أكبر من المتوقع (محتوى معقد/ألوان كتير)،
+                        // نرجعها لجودة أقل بدل ما نخاطر بحجم مستند leaderboard-cache الإجمالي
+                        if (result.length > 18000) {
+                            result = canvas.toDataURL('image/jpeg', 0.6);
+                        }
+                        resolve(result);
                     } catch(e) { resolve(null); }
                 };
                 img.src = base64;
@@ -4806,7 +4879,7 @@ html, body {
 
                 btn.disabled  = false;
                 btn.innerHTML = originalText;
-                showToast(`✅ تم تحديث كاش الأوائل! (${compressedUsers.length} طالب — الصور مضغوطة 40×40)`);
+                showToast(`✅ تم تحديث كاش الأوائل! (${compressedUsers.length} طالب — الصور مضغوطة 130×130)`);
                 logAdminAction("تحديث كاش اللوحة", `تجميع ${compressedUsers.length} طالب مع ضغط الصور في questions/leaderboard-cache`);
 
             } catch(err) {
