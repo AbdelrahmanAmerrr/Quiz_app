@@ -289,11 +289,11 @@ async function incrementStudentQuota(uid, questionKey) {
 }
 
 // يبني تعليمات مساعد غير مقيّد — عنده كل السياق (السؤال، الخيارات، إجابة الطالب، الإجابة الصحيحة، الشرح)
-function buildPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage) {
+function buildPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage, socialContext) {
     if (actionType === 'similar') {
         return _buildSimilarQuestionPrompt(subjectLabel, questionText, options);
     }
-    return _buildConversationPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage);
+    return _buildConversationPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage, socialContext);
 }
 
 // برومبت مخصص لتوليد سؤال تدريبي واحد كـJSON منظم — عشان يتعرض ككارد تفاعلي حقيقي بدل نص عادي
@@ -315,7 +315,7 @@ ${isTrueFalse
     return { systemText, userText: 'ولّد السؤال التدريبي الآن.' };
 }
 
-function _buildConversationPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage) {
+function _buildConversationPrompt(subjectLabel, questionText, options, studentAnswer, correctAnswer, explanation, actionType, customMessage, socialContext) {
     const optionsList = (options || []).map((o, idx) => `${idx + 1}. ${o}`).join('\n');
 
     const systemText = `أنت مساعد مذاكرة تعليمي لطالب جامعي في مادة: ${subjectLabel}، في صفحة مراجعة الأسئلة **بعد** تسليم الامتحان وتسجيل الدرجة نهائياً.
@@ -325,7 +325,7 @@ ${optionsList || '(سؤال صح/خطأ أو بدون خيارات متعددة 
 إجابة الطالب: "${studentAnswer}"
 الإجابة الصحيحة: "${correctAnswer}"
 الشرح المتوفر بالنظام: "${explanation || 'لا يوجد شرح مسجّل'}"
-
+${socialContext ? `\n${socialContext}\n` : ''}
 تعليمات:
 - الامتحان خلص والدرجة اتسجلت، فمن المقبول تماماً تناقش الإجابة الصحيحة بالتفصيل وتقول ليه إجابة الطالب كانت صح أو غلط.
 - هدفك تعليمي بحت: افهيمه المفهوم كويس، وضّح أي لبس، واقترح أمثلة أو أسئلة تدريبية بإجاباتها كاملة لو طلب.
@@ -375,7 +375,8 @@ module.exports = async (req, res) => {
         const {
             subject, questionUid, questionText, options,
             studentAnswer, correctAnswer, explanation,
-            actionType, message, history
+            actionType, message, history,
+            correctCount, wrongCount
         } = req.body || {};
 
         if (!subject || !SUBJECT_LABELS[subject] || !questionText || !questionUid || !correctAnswer) {
@@ -406,6 +407,16 @@ module.exports = async (req, res) => {
         }
 
         const subjectLabel = SUBJECT_LABELS[subject];
+        // ✅ [تحسين] سياق اجتماعي — نديه للنموذج بس لو العيّنة كافية (5 محاولات فأكتر) ونسبة الخطأ عالية فعلاً (40%+)
+        // عشان نتجنب جملة غريبة زي "أغلب زمايلك غلطوا" في سؤال كل الناس عارفاه أو عيّنة صغيرة مش دالة
+        const safeCorrectCount = Math.max(0, parseInt(correctCount, 10) || 0);
+        const safeWrongCount   = Math.max(0, parseInt(wrongCount, 10) || 0);
+        const totalAttempts    = safeCorrectCount + safeWrongCount;
+        const wrongRate         = totalAttempts > 0 ? (safeWrongCount / totalAttempts) : 0;
+        const socialContext = (totalAttempts >= 5 && wrongRate >= 0.4)
+            ? `ملاحظة سياقية (استخدمها بس لو مناسبة طبيعياً، متقولهاش زي جملة منفصلة قسرية): حوالي ${Math.round(wrongRate * 100)}% من الطلاب اللي حلوا السؤال ده غلطوا فيه برضه — يعني السؤال فعلاً بيلخبط كتير، ومش عيب إن الطالب غلط فيه.`
+            : '';
+
         const { systemText, userText } = buildPrompt(
             subjectLabel,
             String(questionText).slice(0, MAX_QUESTION_TEXT_LENGTH),
@@ -414,7 +425,8 @@ module.exports = async (req, res) => {
             String(correctAnswer).slice(0, MAX_OPTION_LENGTH),
             String(explanation || '').slice(0, 500),
             safeActionType,
-            safeMessage
+            safeMessage,
+            socialContext
         );
 
         // دقة أعلى (حرارة أقل) للشرح والتصحيح الواقعي، تنوع أكتر (حرارة أعلى) للأسئلة التدريبية الجديدة
