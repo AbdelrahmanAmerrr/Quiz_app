@@ -1592,7 +1592,10 @@ html, body {
                     transition:all .15s; display:flex; align-items:center; justify-content:center;
                 }
                 .review-chat-feedback button:hover { opacity:1; transform:translateY(-1px); box-shadow:0 3px 8px rgba(15,26,44,0.12); }
-                .review-chat-feedback.voted { font-size:11px; color:var(--text-muted); font-style:italic; margin-top:9px; }
+                .review-chat-feedback button.save-note-btn {
+                    width:auto; padding:0 10px; font-size:11px; font-weight:700; color:var(--primary-dark);
+                }
+                .review-chat-voted-label { font-size:11px; color:var(--text-muted); font-style:italic; }
 
                 .review-chat-bubble.status {
                     align-self:flex-start; background:var(--bg-gradient); border:1px solid var(--border);
@@ -1729,11 +1732,21 @@ html, body {
                 .review-summary-close:hover { background:rgba(120,120,120,0.12); }
                 .review-summary-body { flex:1; overflow-y:auto; overscroll-behavior:contain; padding:20px 22px; }
                 .review-summary-topic {
-                    display:flex; align-items:center; gap:10px; padding:12px 14px; margin-bottom:9px;
+                    padding:12px 14px; margin-bottom:9px;
                     background:var(--bg-gradient); border:1px solid var(--border); border-radius:12px;
                     font-size:13.5px; font-weight:600; color:var(--text-main); animation:reviewChatFadeIn .3s;
                 }
                 .review-summary-topic i { color:var(--primary-dark); flex-shrink:0; }
+                .review-summary-explain-btn {
+                    background:linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color:#fff;
+                    border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:700;
+                    cursor:pointer; white-space:nowrap; flex-shrink:0;
+                }
+                .review-summary-explain-btn:disabled { opacity:0.7; cursor:default; }
+                .review-summary-topic-explanation {
+                    margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);
+                    font-size:12.5px; font-weight:400; line-height:1.8; color:var(--text-main);
+                }
                 .review-summary-recommendation {
                     margin-top:16px; padding:15px 16px; border-radius:14px;
                     background:linear-gradient(135deg, rgba(197,160,89,0.12) 0%, rgba(168,133,61,0.06) 100%);
@@ -3234,7 +3247,10 @@ html, body {
                         question: d.question,
                         options: d.options,
                         answer: d.answer,
-                        explanation: d.explanation || ''
+                        explanation: d.explanation || '',
+                        // ✅ [تحسين] عشان نقدر نديله سياق اجتماعي في شات المراجعة ("أغلب زمايلك غلطوا فيه")
+                        correctCount: d.correctCount || 0,
+                        wrongCount: d.wrongCount || 0
                     });
                 });
                 return db.collection("questionsCache").doc(subject).set({
@@ -3768,12 +3784,14 @@ html, body {
                 return `<div class="review-chat-bubble status">${dots}<span>${esc(m.text)}</span></div>`;
             }
             if (m.role === 'bot') {
-                const feedback = m.voted
-                    ? `<div class="review-chat-feedback voted">${m.voted === 'up' ? '👍 شكراً على رأيك' : '👎 هنراجع الرد ده'}</div>`
-                    : `<div class="review-chat-feedback">
-                        <button onclick="_reviewChatSendFeedback(${idx}, 'up')" title="رد مفيد">👍</button>
-                        <button onclick="_reviewChatSendFeedback(${idx}, 'down')" title="رد مش كويس">👎</button>
-                       </div>`;
+                const voteBlock = m.voted
+                    ? `<span class="review-chat-voted-label">${m.voted === 'up' ? '👍 شكراً على رأيك' : '👎 هنراجع الرد ده'}</span>`
+                    : `<button onclick="_reviewChatSendFeedback(${idx}, 'up')" title="رد مفيد">👍</button>
+                       <button onclick="_reviewChatSendFeedback(${idx}, 'down')" title="رد مش كويس">👎</button>`;
+                const saveBlock = m.noteSaved
+                    ? `<span class="review-chat-voted-label">✅ اتحفظ</span>`
+                    : `<button class="save-note-btn" onclick="_saveAiNoteToFlagged(${idx})" title="احفظ الشرح مع السؤال في أسئلتي المميزة">📌 احفظ</button>`;
+                const feedback = `<div class="review-chat-feedback">${voteBlock}${saveBlock}</div>`;
                 // آخر رد جديد لسه ما اتكتبش: نعرضه فاضي وبعدين نكتبه بالتدريج (typewriter)
                 const bodyContent = (isLast && !m.typed)
                     ? `<span id="review-chat-typewriter-${idx}"></span>`
@@ -3878,6 +3896,56 @@ html, body {
             } catch (e) { /* صامت — تجربة المستخدم أهم من ضمان وصول التقييم */ }
         }
 
+        // ✅ [تحسين] حفظ رد الشات الحالي مع السؤال بشكل دائم في "أسئلتي المميزة" —
+        // يشتغل حتى لو السؤال لسه مش متعلّم (📌) — بيعلّمه تلقائياً كنتيجة جانبية للحفظ
+        async function _saveAiNoteToFlagged(msgIndex) {
+            const i = reviewChatOpenIndex;
+            const list = i !== null ? reviewChatHistoryByIndex[i] : null;
+            const msg = list ? list[msgIndex] : null;
+            const log = i !== null ? userQuizAnswersLog[i] : null;
+            if (!msg || msg.role !== 'bot' || msg.noteSaved || !log || !currentUser || !activeCategory) return;
+
+            try {
+                const ref = db.collection("users").doc(currentUser.uid).collection("flaggedQuestions").doc(activeCategory);
+                const snap = await ref.get();
+                const data = snap.exists ? snap.data() : {};
+                let items = Array.isArray(data.items) ? data.items : [];
+
+                const existingIdx = items.findIndex(it => it.question === log.question);
+                const itemPayload = {
+                    question:      log.question || '',
+                    correctAnswer: log.correctAnswer || '',
+                    chosen:        log.chosen || null,
+                    isCorrect:     !!log.isCorrect,
+                    explanation:   log.explanation || '',
+                    aiNote:        msg.text // ✅ الشرح المحفوظ من الشات
+                };
+
+                if (existingIdx >= 0) {
+                    items[existingIdx] = { ...items[existingIdx], ...itemPayload };
+                } else {
+                    items.unshift(itemPayload);
+                }
+                items = items.slice(0, 20);
+
+                await ref.set({
+                    subjectId:    activeCategory,
+                    subjectLabel: fixedSubjects[activeCategory] || activeCategory,
+                    items:        items,
+                    updatedAt:    firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                // نعلّم السؤال محلياً كمان عشان يفضل شكله متسق لو رجع لصفحة المراجعة
+                if (currentQuestions[i]) currentQuestions[i].isFlagged = true;
+
+                msg.noteSaved = true;
+                _renderReviewChatBody();
+                showToast("📌 اتحفظ الشرح مع السؤال في «أسئلتي المميزة»");
+            } catch (err) {
+                showToast("❌ تعذّر حفظ الشرح: " + err.message, "error");
+            }
+        }
+
         function _renderReviewChatBody() {
             const i = reviewChatOpenIndex;
             if (i === null) return;
@@ -3973,6 +4041,9 @@ html, body {
                     studentAnswer: log.chosen || '(لم يجب - انتهى الوقت)',
                     correctAnswer: log.correctAnswer,
                     explanation: log.explanation || '',
+                    // ✅ [تحسين] سياق اجتماعي — يخلي الباك إند يقدر يقول "أغلب زمايلك غلطوا فيه" لو النسبة عالية
+                    correctCount: activeQObj.correctCount || 0,
+                    wrongCount: activeQObj.wrongCount || 0,
                     actionType: actionType,
                     message: actionType === 'custom' ? displayText : '',
                     history: historyForApi
@@ -4104,8 +4175,18 @@ html, body {
                     return;
                 }
 
-                const topicsHtml = summary.weakTopics.map(t =>
-                    `<div class="review-summary-topic"><i class="fa-solid fa-circle-exclamation"></i> ${esc(t)}</div>`
+                // ✅ [تحسين] زرار "اشرحلي المفهوم ده" لكل مفهوم ضعيف — نداء واحد شامل بدل ما الطالب يفتح كل سؤال لوحده
+                window._reviewSummaryWrongQuestions = wrongQuestions; // نخزّنها عشان زرار الشرح يستخدمها بعدين
+                const topicsHtml = summary.weakTopics.map((t, ti) =>
+                    `<div class="review-summary-topic" id="review-summary-topic-${ti}">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
+                            <span><i class="fa-solid fa-circle-exclamation"></i> ${esc(t)}</span>
+                            <button class="review-summary-explain-btn" onclick="_explainWeakTopic(${ti}, '${esc(t).replace(/'/g, "\\'")}')">
+                                <i class="fa-solid fa-graduation-cap"></i> اشرحلي
+                            </button>
+                        </div>
+                        <div class="review-summary-topic-explanation" id="review-summary-explanation-${ti}" style="display:none;"></div>
+                    </div>`
                 ).join('');
 
                 body.innerHTML = `
@@ -4114,6 +4195,59 @@ html, body {
                 `;
             } catch (err) {
                 body.innerHTML = `<div id="review-summary-error">⚠️ تعذّر الاتصال: ${esc(err.message)}</div>`;
+            }
+        }
+
+        // ✅ [تحسين] شرح مفهوم ضعيف واحد بنداء AI واحد شامل — بيستخدم كل الأسئلة الغلط المرتبطة بيه دفعة واحدة
+        async function _explainWeakTopic(topicIndex, topicLabel) {
+            const btn = document.querySelector(`#review-summary-topic-${topicIndex} .review-summary-explain-btn`);
+            const box = document.getElementById(`review-summary-explanation-${topicIndex}`);
+            if (!btn || !box) return;
+            if (btn.disabled) return; // منع الضغط المتكرر أثناء التحميل
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري الشرح...`;
+            box.style.display = 'block';
+            box.innerHTML = '';
+
+            try {
+                const idToken = await firebase.auth().currentUser.getIdToken();
+                const wrongQuestions = window._reviewSummaryWrongQuestions || [];
+                let attempt = 0, explanation = null, errorText = null;
+
+                while (attempt < 5) {
+                    attempt++;
+                    const response = await fetch('/api/review-summary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                        body: JSON.stringify({ subject: activeCategory, wrongQuestions, mode: 'explainTopic', topic: topicLabel })
+                    });
+                    const data = await response.json().catch(() => ({}));
+
+                    if (response.status === 429 && data.retryAfterMs) {
+                        const waitSec = Math.max(3, Math.ceil(data.retryAfterMs / 1000));
+                        box.innerHTML = `⏳ الخدمة مزدحمة، إعادة المحاولة خلال ${waitSec} ثانية...`;
+                        await new Promise(r => setTimeout(r, waitSec * 1000));
+                        continue;
+                    }
+                    if (!response.ok) { errorText = data.error || 'تعذّر توليد الشرح'; break; }
+                    explanation = data.explanation;
+                    break;
+                }
+
+                if (!explanation) {
+                    box.innerHTML = `⚠️ ${esc(errorText || 'تعذّر توليد الشرح، جرّب تاني')}`;
+                    btn.disabled = false;
+                    btn.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> اشرحلي`;
+                    return;
+                }
+
+                box.innerHTML = esc(explanation);
+                btn.style.display = 'none'; // اتشرح مرة، مفيش داعي تتكرر
+            } catch (err) {
+                box.innerHTML = `⚠️ تعذّر الاتصال: ${esc(err.message)}`;
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> اشرحلي`;
             }
         }
 
@@ -4765,6 +4899,11 @@ html, body {
                                 ✔ الإجابة الصحيحة: <strong>${esc(q.correctAnswer)}</strong>
                             </p>
                             <small style="color:var(--text-muted);display:block;margin-top:5px;">💡 ${esc(q.explanation) || 'لا يوجد شرح متوفر.'}</small>
+                            ${q.aiNote ? `
+                            <div style="margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);">
+                                <span style="font-size:11px; font-weight:700; color:var(--primary-dark);"><i class="fa-solid fa-graduation-cap"></i> شرح محفوظ من مساعد المذاكرة</span>
+                                <p style="margin:5px 0 0 0; font-size:12.5px; line-height:1.7; color:var(--text-main);">${esc(q.aiNote)}</p>
+                            </div>` : ''}
                         </div>`;
                     });
                 });
