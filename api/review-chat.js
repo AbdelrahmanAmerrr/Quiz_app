@@ -42,6 +42,10 @@ const SIMILAR_QUESTION_MAX_TOKENS = 1000;
 // يعني حتى لو النموذج ما التزمش بطلب "جملة واحدة"، كان لسه ممكن يتقطع تاني عند نفس السقف الكبير.
 // سقف منخفض هنا بيجبر رد قصير فعلياً بغض النظر عن مدى التزام النموذج بالتعليمة النصية.
 const RETRY_TEXT_MAX_TOKENS = 180;
+// ✅ [FIX] رد قصير جداً بشكل مريب لموضوع نصي عادي (زي "إجابة الطالب صحي") غالباً فشل صامت —
+// النموذج بيقفل عادي (finishReason مايقولش "قطع") لكن المحتوى نفسه ناقص/مبتور فعلياً.
+// نتعامل معاه كقطع حتى لو الإشارة الرسمية ماجتش، عشان نديله فرصة إعادة محاولة بدل ما نسيبه يعدي زي ما هو.
+const MIN_VALID_TEXT_LENGTH = 35;
 
 const db = admin.firestore();
 
@@ -163,11 +167,15 @@ async function callCerebras(systemText, userText, history, temperature, maxToken
 // بدل كده نطلب تقصير حقول الـJSON نفسها مع الحفاظ على إغلاقه صح بالكامل.
 async function _callWithTruncationRetry(callFn, systemText, userText, history, temperature, maxTokens, isJsonMode) {
     const first = await callFn(systemText, userText, history, temperature, maxTokens);
-    if (!first.ok || !first.truncated) return first;
+    if (!first.ok) return first;
+
+    // ✅ [FIX] رد قصير جداً بشكل مريب لرد نصي عادي = فشل صامت، حتى لو finishReason مقالش "قطع" رسمياً
+    const looksSuspiciouslyShort = !isJsonMode && first.text && first.text.trim().length < MIN_VALID_TEXT_LENGTH;
+    if (!first.truncated && !looksSuspiciouslyShort) return first;
 
     const stricterUserText = isJsonMode
         ? userText + '\n\n(تنبيه: ردك السابق اتقطع قبل ما يكتمل الـJSON. أعد نفس الطلب بالظبط، لكن اجعل نص السؤال والشرح أقصر ما يمكن (أقل عدد كلمات ممكن)، مع الحفاظ التام على صيغة JSON صحيحة وكاملة ومغلقة بالكامل بلا أي قطع أو نص إضافي حواليها.)'
-        : userText + '\n\n(تنبيه: ردك السابق كان طويل قوي واتقطع. اختصر جداً جداً هذه المرة — جملة أو جملتين بالكتير فيهم أهم نقطة بس، واقفلهم بنقطة واضحة.)';
+        : userText + '\n\n(تنبيه: ردك السابق كان ناقص أو قصير جداً بشكل غير مفيد. أعد المحاولة برد كامل ومفيد هذه المرة — جملة أو جملتين واضحتين على الأقل، تخلّص فكرة كاملة وتقفلها بنقطة.)';
     // ✅ [FIX] في وضع النص العادي، نفرض سقف توكنات منخفض فعلياً بدل ما نعتمد على التزام النموذج
     // بتعليمة "اختصر" وهو لسه شغال بنفس السقف الكبير القديم
     const retryMaxTokens = isJsonMode ? maxTokens : RETRY_TEXT_MAX_TOKENS;
@@ -189,8 +197,11 @@ function _logDailyAiUsage(provider) {
 // خط دفاع ثاني بعد البرومبت — حتى لو النموذج خالف التعليمات:
 // (أ) يشيل أي رموز Markdown متسربة (** # -) لأن واجهتنا بتعرض نص عادي بس
 // (ب) لو الرد اتقطع في نص جملة، يقصّه عند آخر علامة نهاية جملة كاملة بدل ما يسيب جملة معلّقة
+// (ج) [FIX] لو بعد كل ده الرد فضل قصير جداً (قطع مبكر جداً، مش مجرد جملة أخيرة ناقصة)، نرفضه تماماً
+// بدل ما نسيب جزء بلا معنى زي "إجابة الطالب صحي" يوصل للطالب أو يتخزن في الكاش المشترك
+const MIN_VALID_REPLY_LENGTH = 30; // بالحروف تقريباً — أقل من كده يبقى الرد مش مفيد أصلاً
 function _sanitizeAssistantText(text) {
-    if (!text) return text;
+    if (!text) return null;
     let cleaned = text
         .replace(/\*\*/g, '')
         .replace(/^#{1,6}\s*/gm, '')
@@ -208,15 +219,17 @@ function _sanitizeAssistantText(text) {
         if (lastIdx > 40) {
             cleaned = cleaned.slice(0, lastIdx + 1);
         } else {
-            // ✅ [FIX] مفيش أي علامة ترقيم في الرد كله (جملة واحدة قصيرة اتقطعت وسط الكلام) —
-            // كانت هنا بترجع النص الخام زي ما هو، حتى لو قاطعة كلمة نص حرف (مثال: "التفاعل مع البي" بدل "البيئة").
-            // دلوقتي نقطع عند آخر مسافة (آخر كلمة مكتملة) ونضيف "..." عشان يبقى واضح إنه رد غير مكتمل، مش مقطوع بالغلط.
+            // مفيش أي علامة ترقيم في الرد كله — نقطع عند آخر مسافة (آخر كلمة مكتملة) ونضيف "..."
             const lastSpace = cleaned.lastIndexOf(' ');
             if (lastSpace > 20) {
                 cleaned = cleaned.slice(0, lastSpace).trim() + '...';
             }
         }
     }
+
+    // ✅ [FIX] رد قصير جداً بعد كل المعالجة = فشل توليد حقيقي، مش رد صالح مختصر — نرفضه بدل ما نعرضه
+    if (cleaned.replace(/\.\.\.$/, '').trim().length < MIN_VALID_REPLY_LENGTH) return null;
+
     return cleaned;
 }
 
@@ -431,6 +444,25 @@ module.exports = async (req, res) => {
             return res.status(200).json({ ok: true });
         }
 
+        // ✅ [تحسين] مسح كامل لكاش الشروحات المشترك — أداة أمان يدوية للأدمن،
+        // مفيدة لو فيه شك في ردود قديمة اتخزنت قبل تقوية فلتر الجودة
+        if (req.body && req.body.mode === 'clearExplanationCache') {
+            const adminDoc = await db.collection('admins').doc(decoded.uid).get();
+            if (!adminDoc.exists) return res.status(403).json({ error: 'هذا الحساب لا يملك صلاحية أدمن' });
+
+            const snap = await db.collection('aiExplanationCache').get();
+            let docs = snap.docs;
+            let deleted = 0;
+            while (docs.length) {
+                const chunk = docs.splice(0, 400);
+                const batch = db.batch();
+                chunk.forEach(d => batch.delete(d.ref));
+                await batch.commit();
+                deleted += chunk.length;
+            }
+            return res.status(200).json({ ok: true, deleted });
+        }
+
         const {
             subject, questionUid, questionText, options,
             studentAnswer, correctAnswer, explanation,
@@ -525,9 +557,12 @@ module.exports = async (req, res) => {
                 ? { quiz }
                 : { reply: 'تعذّر توليد سؤال تدريبي منظم هذه المرة، جرّب تضغط الزرار تاني.' };
         } else {
-            responsePayload = { reply: _sanitizeAssistantText(assistant.text) };
+            const sanitized = _sanitizeAssistantText(assistant.text);
+            // ✅ [FIX] لو الرد اتقطع بدري جداً وفضل قصير جداً حتى بعد كل المعالجة، نرفضه برسالة ودية
+            // بدل ما نعرض جزء بلا معنى — ومهم جداً: منعاً باتاً نخزّنه في الكاش المشترك
+            responsePayload = { reply: sanitized || 'الرد طلع قصير وغير مكتمل هذه المرة، جرّب تضغط الزرار تاني.' };
             // ✅ [تحسين] تخزين الرد في الكاش المشترك — أي طالب تاني يسأل نفس السؤال بنفس الطريقة ياخده فوراً
-            if (cacheKey) _saveExplanationToCache(cacheKey, safeQuestionText, safeCorrectAnswer, responsePayload.reply);
+            if (cacheKey && sanitized) _saveExplanationToCache(cacheKey, safeQuestionText, safeCorrectAnswer, sanitized);
         }
 
         const remaining = await incrementStudentQuota(decoded.uid, questionUid);
