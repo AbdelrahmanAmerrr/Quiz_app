@@ -549,23 +549,35 @@ module.exports = async (req, res) => {
         }
 
         let responsePayload;
+        let generationSucceeded = false; // ✅ [FIX] يتحدد true بس لو فعلاً استلمنا رد حقيقي صالح
         if (safeActionType === 'similar') {
             const quiz = _parseQuizJson(assistant.text);
             // ✅ [FIX] شبكة أمان: لو تعذّر تحليل الـJSON (حتى بعد رفع حد التوكنات وإعادة المحاولة)،
             // ممنوع منعاً باتاً إرسال النص الخام كـ"رد عادي" — كان ده سبب ظهور JSON خام للطالب في الشات.
-            responsePayload = quiz
-                ? { quiz }
-                : { reply: 'تعذّر توليد سؤال تدريبي منظم هذه المرة، جرّب تضغط الزرار تاني.' };
+            if (quiz) {
+                responsePayload = { quiz };
+                generationSucceeded = true;
+            } else {
+                responsePayload = { reply: 'تعذّر توليد سؤال تدريبي منظم هذه المرة، جرّب تضغط الزرار تاني.' };
+            }
         } else {
             const sanitized = _sanitizeAssistantText(assistant.text);
             // ✅ [FIX] لو الرد اتقطع بدري جداً وفضل قصير جداً حتى بعد كل المعالجة، نرفضه برسالة ودية
             // بدل ما نعرض جزء بلا معنى — ومهم جداً: منعاً باتاً نخزّنه في الكاش المشترك
-            responsePayload = { reply: sanitized || 'الرد طلع قصير وغير مكتمل هذه المرة، جرّب تضغط الزرار تاني.' };
-            // ✅ [تحسين] تخزين الرد في الكاش المشترك — أي طالب تاني يسأل نفس السؤال بنفس الطريقة ياخده فوراً
-            if (cacheKey && sanitized) _saveExplanationToCache(cacheKey, safeQuestionText, safeCorrectAnswer, sanitized);
+            if (sanitized) {
+                responsePayload = { reply: sanitized };
+                generationSucceeded = true;
+                // ✅ [تحسين] تخزين الرد في الكاش المشترك — أي طالب تاني يسأل نفس السؤال بنفس الطريقة ياخده فوراً
+                if (cacheKey) _saveExplanationToCache(cacheKey, safeQuestionText, safeCorrectAnswer, sanitized);
+            } else {
+                responsePayload = { reply: 'الرد طلع قصير وغير مكتمل هذه المرة، جرّب تضغط الزرار تاني.' };
+            }
         }
 
-        const remaining = await incrementStudentQuota(decoded.uid, questionUid);
+        // ✅ [FIX] الخصم من رصيد الطالب بس لو فعلاً استلم رد حقيقي — فشل تقني (قطع/JSON معطوب) ميكلفوش من رصيده
+        const remaining = generationSucceeded
+            ? await incrementStudentQuota(decoded.uid, questionUid)
+            : (await checkStudentQuota(decoded.uid, questionUid)).remaining;
 
         db.collection('review_chat_logs').add({
             uid: decoded.uid,
