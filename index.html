@@ -519,11 +519,7 @@ html, body {
             opacity: 0; transform: scale(0.6);
             animation: logoFadeScale 0.65s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
         }
-        .loading-logo-icon {
-            font-size: 38px;
-            background: linear-gradient(135deg, #C5A059, #A8853D);
-            -webkit-background-clip: text; background-clip: text;
-            -webkit-text-fill-color: transparent;
+        .loading-logo-icon-pulse {
             animation: logoIconPulse 2s ease-in-out 0.65s infinite;
         }
         .loading-logo-text {
@@ -1117,7 +1113,7 @@ html, body {
             <!-- شاشة تحميل أثناء استعادة الجلسة — أنيميشن شعار AmerQuiz -->
             <div id="view-loading" style="display:none; min-height:70vh; align-items:center; justify-content:center; flex-direction:column;">
                 <div class="loading-logo-wrap">
-                    <span class="loading-logo-icon" style="font-family:'Playfair Display', serif; font-weight:900;">A</span>
+                    <div class="logo-badge loading-logo-icon-pulse" style="width:46px; height:46px; font-size:22px;">A</div>
                     <span class="loading-logo-text">AmerQuiz</span>
                 </div>
                 <p class="loading-sub-text">جاري التحقق من هويتك...</p>
