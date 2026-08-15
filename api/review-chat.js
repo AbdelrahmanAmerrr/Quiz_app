@@ -255,23 +255,33 @@ function _parseQuizJson(rawText) {
     return null;
 }
 
+// ✅ [FIX] الجذر الحقيقي للمشكلة: كنا بنقبل أي رد من أول مزوّد طالما مش فاضي (result.ok)،
+// حتى لو كان قصير/فاشل الفحص بعد إعادة المحاولة بتاعته هو. ده كان بيوقف السلسلة كاملة
+// من غير ما نجرّب Groq أو Cerebras خالص لو Gemini (المزوّد الأول) بيرجّع ردود قصيرة باستمرار.
+// دلوقتي بنتأكد إن الرد عدّى فحص الجودة الأساسي قبل ما نقبله كنهائي — لو لأ، ننتقل للمزوّد اللي بعده فوراً.
+function _isAcceptableResult(result, isJsonMode) {
+    if (!result.ok) return false;
+    if (isJsonMode) return true; // الـJSON بيتفحص لاحقاً بمحلل مخصص (_parseQuizJson)
+    return !!(result.text && result.text.trim().length >= MIN_VALID_TEXT_LENGTH);
+}
+
 async function getAssistantReply(systemText, userText, history, temperature, maxTokens, isJsonMode) {
     const geminiSlot = await acquireProviderSlot('gemini', GEMINI_MAX_PER_MINUTE);
     if (geminiSlot.allowed) {
         const result = await _callWithTruncationRetry(callGemini, systemText, userText, history, temperature, maxTokens, isJsonMode);
-        if (result.ok) { _logDailyAiUsage('gemini'); return { ok: true, text: result.text, provider: 'gemini' }; }
+        if (_isAcceptableResult(result, isJsonMode)) { _logDailyAiUsage('gemini'); return { ok: true, text: result.text, provider: 'gemini' }; }
     }
 
     const groqSlot = await acquireProviderSlot('groq', GROQ_MAX_PER_MINUTE);
     if (groqSlot.allowed) {
         const result = await _callWithTruncationRetry(callGroq, systemText, userText, history, temperature, maxTokens, isJsonMode);
-        if (result.ok) { _logDailyAiUsage('groq'); return { ok: true, text: result.text, provider: 'groq' }; }
+        if (_isAcceptableResult(result, isJsonMode)) { _logDailyAiUsage('groq'); return { ok: true, text: result.text, provider: 'groq' }; }
     }
 
     const cerebrasSlot = await acquireProviderSlot('cerebras', CEREBRAS_MAX_PER_MINUTE);
     if (cerebrasSlot.allowed) {
         const result = await _callWithTruncationRetry(callCerebras, systemText, userText, history, temperature, maxTokens, isJsonMode);
-        if (result.ok) { _logDailyAiUsage('cerebras'); return { ok: true, text: result.text, provider: 'cerebras' }; }
+        if (_isAcceptableResult(result, isJsonMode)) { _logDailyAiUsage('cerebras'); return { ok: true, text: result.text, provider: 'cerebras' }; }
     }
 
     _logDailyAiUsage('busy');
