@@ -1492,9 +1492,6 @@ html, body {
                     <h2 style="margin:10px 0 4px 0; font-size:21px;">مراجعة الأسئلة</h2>
                     <p style="color:var(--text-muted); font-size:13.5px; margin:0;">راجع إجاباتك بالتفصيل، وبعدين كمّل للإحصائيات</p>
                 </div>
-                <button id="review-summary-open-btn" class="btn-launch" style="background:linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); margin-bottom:16px;" onclick="openReviewSummaryPanel()">
-                    <i class="fa-solid fa-brain"></i> حلل أداءي في الامتحان ده
-                </button>
                 <div id="review-cards-container" style="max-height: 55vh; overflow-y:auto; border:1.5px solid var(--border); padding:14px; border-radius:10px; margin-bottom:20px; background:var(--bg-gradient);"></div>
                 <button class="btn-launch" onclick="goToResultStatsPage()"><i class="fa-solid fa-arrow-left"></i> التالي: عرض الإحصائيات</button>
             </div>
@@ -1708,86 +1705,6 @@ html, body {
                 </div>
             </div>
 
-            <!-- ══════ لوحة ملخص أضعف النقاط — تحليل شامل لكل الأخطاء بنداء واحد ══════ -->
-            <style>
-                #review-summary-overlay {
-                    position:fixed; inset:0; background:rgba(15,26,44,0.55);
-                    backdrop-filter:blur(5px) saturate(1.1); -webkit-backdrop-filter:blur(5px) saturate(1.1);
-                    z-index:9998; display:none; align-items:flex-end; justify-content:center;
-                }
-                #review-summary-panel {
-                    width:100%; max-width:480px; background:var(--card-bg);
-                    border-radius:26px 26px 0 0; max-height:82vh; display:flex; flex-direction:column;
-                    box-shadow: 0 -18px 50px rgba(15,26,44,0.28), 0 -2px 10px rgba(15,26,44,0.10);
-                    transform:translateY(100%); transition:transform .32s cubic-bezier(.22,1,.36,1);
-                }
-                #review-summary-panel.chat-show { transform:translateY(0); }
-                .review-summary-header {
-                    display:flex; align-items:center; gap:11px; justify-content:space-between;
-                    padding:18px 18px 16px; border-bottom:1px solid var(--border);
-                }
-                .review-summary-header-inner { display:flex; align-items:center; gap:11px; }
-                .review-summary-avatar {
-                    width:38px; height:38px; flex-shrink:0; border-radius:50%;
-                    background:linear-gradient(145deg, var(--primary) 0%, var(--primary-dark) 100%);
-                    display:flex; align-items:center; justify-content:center; color:#fff; font-size:16px;
-                    box-shadow: 0 3px 10px rgba(168,133,61,0.4), inset 0 1px 1px rgba(255,255,255,0.35);
-                }
-                .review-summary-header h4 {
-                    margin:0; font-size:16.5px; font-weight:700; color:var(--text-main);
-                    font-family:'Playfair Display', serif;
-                }
-                .review-summary-header small { display:block; color:var(--text-muted); font-size:11px; margin-top:2px; }
-                .review-summary-close {
-                    background:none; border:none; font-size:16px; color:var(--text-muted); cursor:pointer;
-                    width:30px; height:30px; border-radius:50%; transition:background .15s;
-                }
-                .review-summary-close:hover { background:rgba(120,120,120,0.12); }
-                .review-summary-body { flex:1; overflow-y:auto; overscroll-behavior:contain; padding:20px 22px; }
-                .review-summary-topic {
-                    padding:12px 14px; margin-bottom:9px;
-                    background:var(--bg-gradient); border:1px solid var(--border); border-radius:12px;
-                    font-size:13.5px; font-weight:600; color:var(--text-main); animation:reviewChatFadeIn .3s;
-                }
-                .review-summary-topic i { color:var(--primary-dark); flex-shrink:0; }
-                .review-summary-explain-btn {
-                    background:linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color:#fff;
-                    border:none; border-radius:8px; padding:6px 12px; font-size:11.5px; font-weight:700;
-                    cursor:pointer; white-space:nowrap; flex-shrink:0;
-                }
-                .review-summary-explain-btn:disabled { opacity:0.7; cursor:default; }
-                .review-summary-topic-explanation {
-                    margin-top:10px; padding-top:10px; border-top:1px dashed var(--border);
-                    font-size:12.5px; font-weight:400; line-height:1.8; color:var(--text-main);
-                }
-                .review-summary-recommendation {
-                    margin-top:16px; padding:15px 16px; border-radius:14px;
-                    background:linear-gradient(135deg, rgba(197,160,89,0.12) 0%, rgba(168,133,61,0.06) 100%);
-                    border:1px solid var(--primary); font-size:13px; line-height:1.8; color:var(--text-main);
-                }
-                .review-summary-recommendation b { color:var(--primary-dark); font-family:'Playfair Display', serif; }
-                #review-summary-loading, #review-summary-error { text-align:center; padding:30px 10px; color:var(--text-muted); font-size:13px; }
-                @media (prefers-reduced-motion: reduce) {
-                    #review-summary-panel, .review-summary-topic { animation:none !important; transition:none !important; }
-                }
-            </style>
-
-            <div id="review-summary-overlay" onclick="if(event.target===this) closeReviewSummaryPanel();">
-                <div id="review-summary-panel">
-                    <div class="review-chat-drag-handle"></div>
-                    <div class="review-summary-header">
-                        <div class="review-summary-header-inner">
-                            <div class="review-summary-avatar"><i class="fa-solid fa-brain"></i></div>
-                            <div>
-                                <h4>تحليل أدائك</h4>
-                                <small>أهم المفاهيم اللي محتاجة تركيز أكتر</small>
-                            </div>
-                        </div>
-                        <button class="review-summary-close" onclick="closeReviewSummaryPanel()" aria-label="إغلاق"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <div class="review-summary-body" id="review-summary-body"></div>
-                </div>
-            </div>
 
             <div class="card" id="view-result" style="display: none;">
                 <div style="text-align: center; margin-bottom: 20px;">
@@ -4181,148 +4098,6 @@ html, body {
             }
         }
 
-        // ══════ ملخص أضعف النقاط بعد المراجعة (تحليل شامل بنداء واحد) ══════
-        function openReviewSummaryPanel() {
-            document.getElementById('review-summary-overlay').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-            requestAnimationFrame(() => {
-                document.getElementById('review-summary-panel').classList.add('chat-show');
-            });
-            _loadReviewSummary();
-        }
-
-        function closeReviewSummaryPanel() {
-            const panel = document.getElementById('review-summary-panel');
-            const overlay = document.getElementById('review-summary-overlay');
-            if (!panel || !overlay) return;
-            panel.classList.remove('chat-show');
-            document.body.style.overflow = '';
-            setTimeout(() => { overlay.style.display = 'none'; }, 250);
-        }
-
-        async function _loadReviewSummary() {
-            const body = document.getElementById('review-summary-body');
-            body.innerHTML = `<div id="review-summary-loading"><i class="fa-solid fa-spinner fa-spin"></i> جاري تحليل إجاباتك...</div>`;
-
-            const wrongQuestions = (userQuizAnswersLog || [])
-                .filter(log => log && !log.isCorrect)
-                .map(log => ({ question: log.question, studentAnswer: log.chosen || '(لم يجب)', correctAnswer: log.correctAnswer }));
-
-            if (wrongQuestions.length === 0) {
-                body.innerHTML = `<div id="review-summary-loading">🎉 ملهوش لزوم! جاوبت صح على كل الأسئلة في الامتحان ده.</div>`;
-                return;
-            }
-
-            const activeQObj = currentQuestions[0] || {};
-            const subject = activeCategory; // ✅ [FIX] كان بيعتمد على activeQObj.subject اللي اتشالت من كاش القراءة الجديد
-
-            try {
-                const idToken = await firebase.auth().currentUser.getIdToken();
-                let attempt = 0;
-                let summary = null;
-                let errorText = null;
-
-                while (attempt < 5) {
-                    attempt++;
-                    const response = await fetch('/api/review-summary', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
-                        body: JSON.stringify({ subject, wrongQuestions })
-                    });
-                    const data = await response.json().catch(() => ({}));
-
-                    if (response.status === 429 && data.retryAfterMs) {
-                        const waitSec = Math.max(3, Math.ceil(data.retryAfterMs / 1000));
-                        body.innerHTML = `<div id="review-summary-loading">⏳ الخدمة مزدحمة حالياً، إعادة المحاولة خلال ${waitSec} ثانية...</div>`;
-                        await new Promise(r => setTimeout(r, waitSec * 1000));
-                        continue;
-                    }
-                    if (!response.ok) { errorText = data.error || 'حدث خطأ أثناء التحليل'; break; }
-                    summary = data.summary;
-                    break;
-                }
-
-                if (!summary) {
-                    body.innerHTML = `<div id="review-summary-error">⚠️ ${esc(errorText || 'الخدمة مزدحمة، جرّب تاني بعد شوية')}</div>`;
-                    return;
-                }
-
-                // ✅ [تحسين] زرار "اشرحلي المفهوم ده" لكل مفهوم ضعيف — نداء واحد شامل بدل ما الطالب يفتح كل سؤال لوحده
-                window._reviewSummaryWrongQuestions = wrongQuestions; // نخزّنها عشان زرار الشرح يستخدمها بعدين
-                const topicsHtml = summary.weakTopics.map((t, ti) =>
-                    `<div class="review-summary-topic" id="review-summary-topic-${ti}">
-                        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px;">
-                            <span><i class="fa-solid fa-circle-exclamation"></i> ${esc(t)}</span>
-                            <button class="review-summary-explain-btn" onclick="_explainWeakTopic(${ti}, '${esc(t).replace(/'/g, "\\'")}')">
-                                <i class="fa-solid fa-graduation-cap"></i> اشرحلي
-                            </button>
-                        </div>
-                        <div class="review-summary-topic-explanation" id="review-summary-explanation-${ti}" style="display:none;"></div>
-                    </div>`
-                ).join('');
-
-                body.innerHTML = `
-                    ${topicsHtml}
-                    <div class="review-summary-recommendation"><b>💡 التوصية:</b><br>${esc(summary.recommendation)}</div>
-                `;
-            } catch (err) {
-                body.innerHTML = `<div id="review-summary-error">⚠️ تعذّر الاتصال: ${esc(err.message)}</div>`;
-            }
-        }
-
-        // ✅ [تحسين] شرح مفهوم ضعيف واحد بنداء AI واحد شامل — بيستخدم كل الأسئلة الغلط المرتبطة بيه دفعة واحدة
-        async function _explainWeakTopic(topicIndex, topicLabel) {
-            const btn = document.querySelector(`#review-summary-topic-${topicIndex} .review-summary-explain-btn`);
-            const box = document.getElementById(`review-summary-explanation-${topicIndex}`);
-            if (!btn || !box) return;
-            if (btn.disabled) return; // منع الضغط المتكرر أثناء التحميل
-
-            btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري الشرح...`;
-            box.style.display = 'block';
-            box.innerHTML = '';
-
-            try {
-                const idToken = await firebase.auth().currentUser.getIdToken();
-                const wrongQuestions = window._reviewSummaryWrongQuestions || [];
-                let attempt = 0, explanation = null, errorText = null;
-
-                while (attempt < 5) {
-                    attempt++;
-                    const response = await fetch('/api/review-summary', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
-                        body: JSON.stringify({ subject: activeCategory, wrongQuestions, mode: 'explainTopic', topic: topicLabel })
-                    });
-                    const data = await response.json().catch(() => ({}));
-
-                    if (response.status === 429 && data.retryAfterMs) {
-                        const waitSec = Math.max(3, Math.ceil(data.retryAfterMs / 1000));
-                        box.innerHTML = `⏳ الخدمة مزدحمة، إعادة المحاولة خلال ${waitSec} ثانية...`;
-                        await new Promise(r => setTimeout(r, waitSec * 1000));
-                        continue;
-                    }
-                    if (!response.ok) { errorText = data.error || 'تعذّر توليد الشرح'; break; }
-                    explanation = data.explanation;
-                    break;
-                }
-
-                if (!explanation) {
-                    box.innerHTML = `⚠️ ${esc(errorText || 'تعذّر توليد الشرح، جرّب تاني')}`;
-                    btn.disabled = false;
-                    btn.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> اشرحلي`;
-                    return;
-                }
-
-                box.innerHTML = esc(explanation);
-                btn.style.display = 'none'; // اتشرح مرة، مفيش داعي تتكرر
-            } catch (err) {
-                box.innerHTML = `⚠️ تعذّر الاتصال: ${esc(err.message)}`;
-                btn.disabled = false;
-                btn.innerHTML = `<i class="fa-solid fa-graduation-cap"></i> اشرحلي`;
-            }
-        }
-
         function renderReviewCards() {
             const container = document.getElementById('review-cards-container');
             if (!container) return;
@@ -6106,6 +5881,82 @@ html, body {
             });
         }
 
+        // ✅ [أداة دعم فني] تشخيص طالب معيّن — بيقارن عدد المحاولات المسجلة في بروفايله
+        // بالمستندات الفعلية المحفوظة في attempts، عشان يكشف حالات فشل الحفظ الصامت
+        // (زي اللي كانت ممكن تحصل قبل إصلاح مقاومة انقطاع النت وقت تسليم الامتحان)
+        async function viewStudentDiagnostics(uid, name) {
+            const overlay = document.getElementById('student-diagnostics-overlay');
+            const body    = document.getElementById('student-diag-body');
+            const title   = document.getElementById('student-diag-title');
+            title.textContent = `تشخيص: ${name || 'طالب'}`;
+            body.innerHTML = `<div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> جاري الفحص...</div>`;
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => overlay.querySelector('.modal-box').classList.add('modal-show'));
+
+            try {
+                const [userSnap, attemptsSnap, flaggedSnap] = await Promise.all([
+                    db.collection("users").doc(uid).get(),
+                    db.collection("users").doc(uid).collection("attempts").get(),
+                    db.collection("users").doc(uid).collection("flaggedQuestions").get()
+                ]);
+
+                if (!userSnap.exists) { body.innerHTML = `<p style="color:var(--danger);">تعذّر إيجاد بيانات الطالب.</p>`; return; }
+                const student = userSnap.data();
+                const attemptDocsBySubject = {};
+                attemptsSnap.forEach(d => attemptDocsBySubject[d.id] = d.data());
+
+                let html = `
+                    <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid var(--border);">
+                        <span>إجمالي XP</span><strong>${student.xp || 0}</strong>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; font-size:13px; padding:8px 0; border-bottom:1px solid var(--border);">
+                        <span>أسئلة مميزة محفوظة</span><strong>${flaggedSnap.size}</strong>
+                    </div>
+                    <div style="margin-top:14px; font-weight:800; font-size:13px; color:var(--primary-dark);">تفاصيل المواد:</div>
+                `;
+
+                let mismatchFound = false;
+                Object.keys(fixedSubjects).forEach(subjectId => {
+                    const attemptsCount = (student.subjectAttemptsCount || {})[subjectId] || 0;
+                    const subjectXP     = (student.subjectXP || {})[subjectId] || 0;
+                    const hasDoc        = !!attemptDocsBySubject[subjectId];
+
+                    if (attemptsCount === 0 && !hasDoc) return; // مفيش نشاط في المادة دي أصلاً — نتخطاها
+
+                    // ✅ الفحص الجوهري: لو عنده محاولات مسجلة بس مفيش مستند attempts مطابق = احتمال فشل حفظ صامت
+                    const isMismatch = attemptsCount > 0 && !hasDoc;
+                    if (isMismatch) mismatchFound = true;
+
+                    html += `
+                        <div style="padding:10px; margin-top:8px; border-radius:8px; border:1.5px solid ${isMismatch ? 'var(--danger)' : 'var(--border)'}; background:${isMismatch ? '#fef2f2' : 'var(--bg-gradient)'};">
+                            <div style="font-weight:700; font-size:13px;">${esc(fixedSubjects[subjectId])}</div>
+                            <div style="font-size:12px; color:var(--text-muted); margin-top:3px;">
+                                محاولات مسجلة: ${attemptsCount} | XP بالمادة: ${subjectXP}
+                            </div>
+                            ${isMismatch
+                                ? `<div style="font-size:12px; color:var(--danger); font-weight:700; margin-top:5px;"><i class="fa-solid fa-triangle-exclamation"></i> فيه محاولة مسجلة بس مفيش تفاصيلها محفوظة (احتمال فشل حفظ جزئي وقت التسليم)</div>`
+                                : (hasDoc ? `<div style="font-size:11px; color:var(--success); margin-top:5px;"><i class="fa-solid fa-check"></i> بيانات المحاولة الأخيرة محفوظة بالكامل</div>` : '')
+                            }
+                        </div>`;
+                });
+
+                if (!mismatchFound) {
+                    html = `<div style="text-align:center; padding:10px 0 16px 0; color:var(--success); font-weight:700; font-size:13px;"><i class="fa-solid fa-circle-check"></i> مفيش أي تعارض — كل بيانات الطالب متسقة</div>` + html;
+                }
+
+                body.innerHTML = html;
+            } catch (err) {
+                body.innerHTML = `<p style="color:var(--danger);">تعذّر الفحص: ${esc(err.message)}</p>`;
+            }
+        }
+
+        function closeStudentDiagnostics() {
+            const overlay = document.getElementById('student-diagnostics-overlay');
+            const box = overlay.querySelector('.modal-box');
+            box.classList.remove('modal-show');
+            setTimeout(() => { overlay.style.display = 'none'; }, 200);
+        }
+
         function loadAdminStudentsList() {
             const tbody = document.getElementById('admin-students-table-body');
             tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب ومزامنة الطلاب...</td></tr>`;
@@ -6146,6 +5997,9 @@ html, body {
                             <div>آخر اختبار: ${lastQuizStr}</div>
                         </td>
                         <td style="padding: 12px; text-align: center; display:flex; gap:5px; justify-content:center;">
+                            <button type="button" class="ban-btn admin-diagnose-btn" style="background:#0284c7; color:white; font-size:11px;" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
+                                🔍 تشخيص
+                            </button>
                             <button type="button" class="ban-btn admin-ban-btn ${isBanned ? 'ban-inactive' : 'ban-active'}" style="font-size:11px;" data-uid="${esc(uid)}" data-banned="${isBanned}" data-name="${esc(student.name || '')}">
                                 ${isBanned ? '🔓 فك حظر' : '🚫 حظر'}
                             </button>
@@ -6160,6 +6014,9 @@ html, body {
                     });
                     tr.querySelector('.admin-level-input').addEventListener('blur', function() {
                         updateStudentLevelManually(this.dataset.uid, this.value, this.dataset.name);
+                    });
+                    tr.querySelector('.admin-diagnose-btn').addEventListener('click', function() {
+                        viewStudentDiagnostics(this.dataset.uid, this.dataset.name);
                     });
                     tr.querySelector('.admin-ban-btn').addEventListener('click', function() {
                         toggleBanStudent(this.dataset.uid, this.dataset.banned === 'true', this.dataset.name);
@@ -6927,6 +6784,19 @@ html, body {
                     <i class="fa-solid fa-check"></i> حفظ الأسئلة المحدَّدة في البنك
                 </button>
             </div>
+        </div>
+    </div>
+
+    <!-- ══════ مودال تشخيص الطالب — أداة دعم فني للأدمن ══════ -->
+    <div id="student-diagnostics-overlay" class="modal-overlay" style="display:none;" role="dialog" aria-modal="true" onclick="if(event.target===this) closeStudentDiagnostics();">
+        <div class="modal-box" style="max-width:480px; text-align:right;">
+            <div class="modal-icon-wrap"><i class="fa-solid fa-magnifying-glass-chart"></i></div>
+            <h3 id="student-diag-title" style="font-family:'Playfair Display', serif; text-align:center; margin:0 0 4px 0;">تشخيص طالب</h3>
+            <p style="text-align:center; color:var(--text-muted); font-size:12px; margin:0 0 16px 0;">مقارنة عدد المحاولات المسجلة بالمستندات الفعلية المحفوظة</p>
+            <div id="student-diag-body" style="max-height:50vh; overflow-y:auto; text-align:right;">
+                <div style="text-align:center; padding:20px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> جاري الفحص...</div>
+            </div>
+            <button class="modal-btn modal-btn-confirm safe" style="width:100%; margin-top:14px;" onclick="closeStudentDiagnostics()">إغلاق</button>
         </div>
     </div>
 
