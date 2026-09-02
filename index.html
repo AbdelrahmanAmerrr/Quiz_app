@@ -4336,9 +4336,9 @@ html, body {
                     const rank = index + 1;
                     const avatarSrc = u.avatar || defaultAvatar;
 
-                    if (rank === 1) top3.first  = { name: u.name, xp: u.xp, avatar: avatarSrc };
-                    else if (rank === 2) top3.second = { name: u.name, xp: u.xp, avatar: avatarSrc };
-                    else if (rank === 3) top3.third  = { name: u.name, xp: u.xp, avatar: avatarSrc };
+                    if (rank === 1) top3.first  = { uid: u.uid, name: u.name, xp: u.xp, avatar: avatarSrc };
+                    else if (rank === 2) top3.second = { uid: u.uid, name: u.name, xp: u.xp, avatar: avatarSrc };
+                    else if (rank === 3) top3.third  = { uid: u.uid, name: u.name, xp: u.xp, avatar: avatarSrc };
 
                     let medalBadge = `#${rank}`;
                     if (rank === 1) medalBadge = "🥇 الأول";
@@ -4357,35 +4357,7 @@ html, body {
                     `;
                 });
 
-                // بناء منصة التتويج الثلاثية من بيانات الكاش
-                if (top3.first || top3.second || top3.third) {
-                    podiumHtml = `
-                        ${top3.second ? `
-                        <div class="podium-step second">
-                            <img class="podium-avatar" src="${esc(top3.second.avatar)}">
-                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.second.name.split(' ')[0])}</div>
-                            <div class="podium-pillar">٢</div>
-                        </div>` : ''}
-                        
-                        ${top3.first ? `
-                        <div class="podium-step first">
-                            <i class="fa-solid fa-crown" style="color:var(--warning); margin-bottom:-4px; font-size:14px;"></i>
-                            <img class="podium-avatar" src="${esc(top3.first.avatar)}">
-                            <div style="font-size:12px; font-weight:black; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; color:var(--warning);">${esc(top3.first.name.split(' ')[0])}</div>
-                            <div class="podium-pillar">١</div>
-                        </div>` : ''}
-
-                        ${top3.third ? `
-                        <div class="podium-step third">
-                            <img class="podium-avatar" src="${esc(top3.third.avatar)}">
-                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.third.name.split(' ')[0])}</div>
-                            <div class="podium-pillar">٣</div>
-                        </div>` : ''}
-                    `;
-                }
-
-                podiumEl.innerHTML = podiumHtml;
-
+                // ✅ عرض القائمة فوراً — مالهاش علاقة بجلب صور البوديوم، ملهاش داعي تستنى
                 if (listHtml) {
                     listEl.innerHTML = listHtml;
                     // عرض توقيت آخر تحديث للكاش أسفل القائمة
@@ -4401,6 +4373,49 @@ html, body {
                         'لوحة الأوائل بانتظار أول بطل',
                         'خُض أول تحدٍ رسمي وابدأ تتصدّر الترتيب!');
                 }
+
+                // بناء منصة التتويج الثلاثية من بيانات الكاش
+                // ✅ [تحسين جودة] البوديوم بس (أول 3 مراكز) بياخد الصورة الأصلية كاملة الجودة
+                // مباشرة من مستند الطالب (users/{uid}.avatarBase64 — 300px/75%)
+                // بدل نسخة الكاش المصغّرة (130px) المشتركة — 3 قراءات إضافية بس، تكلفة صفر تقريباً
+                const podiumFetches = [top3.first, top3.second, top3.third]
+                    .filter(t => t && t.uid)
+                    .map(t =>
+                        db.collection("users").doc(t.uid).get().then(snap => {
+                            if (snap.exists && snap.data().avatarBase64) {
+                                t.avatar = snap.data().avatarBase64;
+                            }
+                        }).catch(() => {}) // فشل جلب صورة واحدة ميكسرش عرض الباقي — تفضل النسخة المصغّرة
+                    );
+
+                Promise.all(podiumFetches).then(() => {
+                    if (top3.first || top3.second || top3.third) {
+                        podiumHtml = `
+                            ${top3.second ? `
+                            <div class="podium-step second">
+                                <img class="podium-avatar" src="${esc(top3.second.avatar)}">
+                                <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.second.name.split(' ')[0])}</div>
+                                <div class="podium-pillar">٢</div>
+                            </div>` : ''}
+
+                            ${top3.first ? `
+                            <div class="podium-step first">
+                                <i class="fa-solid fa-crown" style="color:var(--warning); margin-bottom:-4px; font-size:14px;"></i>
+                                <img class="podium-avatar" src="${esc(top3.first.avatar)}">
+                                <div style="font-size:12px; font-weight:black; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; color:var(--warning);">${esc(top3.first.name.split(' ')[0])}</div>
+                                <div class="podium-pillar">١</div>
+                            </div>` : ''}
+
+                            ${top3.third ? `
+                            <div class="podium-step third">
+                                <img class="podium-avatar" src="${esc(top3.third.avatar)}">
+                                <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.third.name.split(' ')[0])}</div>
+                                <div class="podium-pillar">٣</div>
+                            </div>` : ''}
+                        `;
+                    }
+                    podiumEl.innerHTML = podiumHtml;
+                });
 
             }).catch((err) => {
                 // ✅ تعديل 6: معالجة خطأ الاتصال مع رسالة تنبيهية مطمئنة للطلاب
