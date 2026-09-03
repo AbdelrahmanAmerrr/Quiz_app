@@ -4375,47 +4375,35 @@ html, body {
                 }
 
                 // بناء منصة التتويج الثلاثية من بيانات الكاش
-                // ✅ [تحسين جودة] البوديوم بس (أول 3 مراكز) بياخد الصورة الأصلية كاملة الجودة
-                // مباشرة من مستند الطالب (users/{uid}.avatarBase64 — 300px/75%)
-                // بدل نسخة الكاش المصغّرة (130px) المشتركة — 3 قراءات إضافية بس، تكلفة صفر تقريباً
-                const podiumFetches = [top3.first, top3.second, top3.third]
-                    .filter(t => t && t.uid)
-                    .map(t =>
-                        db.collection("users").doc(t.uid).get().then(snap => {
-                            if (snap.exists && snap.data().avatarBase64) {
-                                t.avatar = snap.data().avatarBase64;
-                            }
-                        }).catch(() => {}) // فشل جلب صورة واحدة ميكسرش عرض الباقي — تفضل النسخة المصغّرة
-                    );
+                // ✅ [تحسين] الصور هنا بجودة أعلى فعلياً من باقي القائمة — مش لأننا بنقرا حي،
+                // لكن لأن الأدمن وقت التحديث بيدّي أول 20 طالب جودة أعلى قبل ما يتخزنوا في نفس المستند
+                // (شوف rebuildLeaderboardCacheByAdmin) — صفر قراءات إضافية، القراءة زي ما هي بالظبط.
+                if (top3.first || top3.second || top3.third) {
+                    podiumHtml = `
+                        ${top3.second ? `
+                        <div class="podium-step second">
+                            <img class="podium-avatar" src="${esc(top3.second.avatar)}">
+                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.second.name.split(' ')[0])}</div>
+                            <div class="podium-pillar">٢</div>
+                        </div>` : ''}
 
-                Promise.all(podiumFetches).then(() => {
-                    if (top3.first || top3.second || top3.third) {
-                        podiumHtml = `
-                            ${top3.second ? `
-                            <div class="podium-step second">
-                                <img class="podium-avatar" src="${esc(top3.second.avatar)}">
-                                <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.second.name.split(' ')[0])}</div>
-                                <div class="podium-pillar">٢</div>
-                            </div>` : ''}
+                        ${top3.first ? `
+                        <div class="podium-step first">
+                            <i class="fa-solid fa-crown" style="color:var(--warning); margin-bottom:-4px; font-size:14px;"></i>
+                            <img class="podium-avatar" src="${esc(top3.first.avatar)}">
+                            <div style="font-size:12px; font-weight:black; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; color:var(--warning);">${esc(top3.first.name.split(' ')[0])}</div>
+                            <div class="podium-pillar">١</div>
+                        </div>` : ''}
 
-                            ${top3.first ? `
-                            <div class="podium-step first">
-                                <i class="fa-solid fa-crown" style="color:var(--warning); margin-bottom:-4px; font-size:14px;"></i>
-                                <img class="podium-avatar" src="${esc(top3.first.avatar)}">
-                                <div style="font-size:12px; font-weight:black; max-width:90px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px; color:var(--warning);">${esc(top3.first.name.split(' ')[0])}</div>
-                                <div class="podium-pillar">١</div>
-                            </div>` : ''}
-
-                            ${top3.third ? `
-                            <div class="podium-step third">
-                                <img class="podium-avatar" src="${esc(top3.third.avatar)}">
-                                <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.third.name.split(' ')[0])}</div>
-                                <div class="podium-pillar">٣</div>
-                            </div>` : ''}
-                        `;
-                    }
-                    podiumEl.innerHTML = podiumHtml;
-                });
+                        ${top3.third ? `
+                        <div class="podium-step third">
+                            <img class="podium-avatar" src="${esc(top3.third.avatar)}">
+                            <div style="font-size:11px; font-weight:bold; max-width:80px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:4px;">${esc(top3.third.name.split(' ')[0])}</div>
+                            <div class="podium-pillar">٣</div>
+                        </div>` : ''}
+                    `;
+                }
+                podiumEl.innerHTML = podiumHtml;
 
             }).catch((err) => {
                 // ✅ تعديل 6: معالجة خطأ الاتصال مع رسالة تنبيهية مطمئنة للطلاب
@@ -4434,16 +4422,17 @@ html, body {
         // ✅ [PROFILE] ضغط مصغر للكاش — 100×100 بكسل JPEG 70% ≈ 6-8KB للصورة الواحدة
         // 100 طالب × 8KB = 800KB ← آمن من حد 1MB لمستند Firestore
         // رُفع من 60×60@50% لأن الضغط المزدوج على JPEG يراكم الأخطاء ويُفقد الحدة
-        function recompressAvatarMini(base64) {
+        // ✅ [تحسين] بقت تقبل حجم/جودة مخصصين — الأدمن بيدّي أول 20 طالب جودة أعلى من الباقي
+        // (نفس المستند المشترك، صفر قراءات إضافية، بس توزيع أذكى للمساحة المتاحة)
+        function recompressAvatarMini(base64, size, quality) {
+            size    = size    || 130;
+            quality = quality || 0.78;
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onerror = () => resolve(null);
                 img.onload  = () => {
                     try {
-                        // ✅ [تحسين جودة] رُفعت من 100 → 130 — أوضح على شاشات الموبايل عالية الكثافة (Retina)
-                        // خصوصاً صورة المركز الأول اللي بتتعرض بحجم 70px، مع مراعاة عدم تخطي حد مستند الـ1MB
-                        // (كل صورة بعد كده بتبقى ~8-12KB بدل ~4-6KB، فرق آمن حتى مع مئات الطلاب)
-                        const SIZE    = 130;
+                        const SIZE    = size;
                         const HALF    = SIZE / 2;
                         const canvas  = document.createElement('canvas');
                         canvas.width  = SIZE;
@@ -4459,12 +4448,13 @@ html, body {
                         ctx.arc(HALF, HALF, HALF, 0, Math.PI * 2);
                         ctx.clip();
                         ctx.drawImage(img, srcX, srcY, srcSize, srcSize, 0, 0, SIZE, SIZE);
-                        let result = canvas.toDataURL('image/jpeg', 0.78); // ✅ رُفعت من 70% → 78%
+                        let result = canvas.toDataURL('image/jpeg', quality);
 
                         // ✅ [حماية] صمام أمان: لو الصورة طلعت أكبر من المتوقع (محتوى معقد/ألوان كتير)،
                         // نرجعها لجودة أقل بدل ما نخاطر بحجم مستند leaderboard-cache الإجمالي
-                        if (result.length > 18000) {
-                            result = canvas.toDataURL('image/jpeg', 0.6);
+                        const maxBytes = size > 130 ? 30000 : 18000;
+                        if (result.length > maxBytes) {
+                            result = canvas.toDataURL('image/jpeg', Math.max(0.5, quality - 0.18));
                         }
                         resolve(result);
                     } catch(e) { resolve(null); }
@@ -4485,13 +4475,15 @@ html, body {
                 const rawUsers = [];
                 snapshot.forEach(doc => rawUsers.push({ ...doc.data(), uid: doc.id }));
 
-                // ضغط صور avatarBase64 بالتوازي — كل صورة تصبح 40×40 JPEG 30% ≈ 1-2KB
+                // ضغط صور avatarBase64 بالتوازي — أول 20 (الأعلى XP) بجودة أعلى، والباقي بالضغط العادي
                 btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري ضغط الصور (${rawUsers.length})...`;
-                const compressedUsers = await Promise.all(rawUsers.map(async (u) => {
+                const TOP_QUALITY_COUNT = 20; // ✅ عدد الطلاب اللي هياخدوا جودة أعلى — مرتبطين بترتيب XP بس، صفر قراءات إضافية وقت العرض
+                const compressedUsers = await Promise.all(rawUsers.map(async (u, idx) => {
                     let avatar = u.photoURL || null;
                     if (u.avatarBase64) {
-                        // إعادة ضغط: من 150×150 (10KB) إلى 40×40 (1-2KB) — آمن من حد 1MB
-                        const mini = await recompressAvatarMini(u.avatarBase64);
+                        const isTopTier = idx < TOP_QUALITY_COUNT;
+                        // أول 20: 200×200 جودة 85% — الباقي: 130×130 جودة 78% (زي الأول بالظبط)
+                        const mini = await recompressAvatarMini(u.avatarBase64, isTopTier ? 200 : 130, isTopTier ? 0.85 : 0.78);
                         if (mini) avatar = mini;
                     }
                     return {
@@ -4515,7 +4507,7 @@ html, body {
 
                 btn.disabled  = false;
                 btn.innerHTML = originalText;
-                showToast(`✅ تم تحديث كاش الأوائل! (${compressedUsers.length} طالب — الصور مضغوطة 130×130)`);
+                showToast(`✅ تم تحديث كاش الأوائل! (${compressedUsers.length} طالب — أول ${Math.min(TOP_QUALITY_COUNT, compressedUsers.length)} بجودة 200×200، والباقي 130×130)`);
                 logAdminAction("تحديث كاش اللوحة", `تجميع ${compressedUsers.length} طالب مع ضغط الصور في questions/leaderboard-cache`);
 
             } catch(err) {
