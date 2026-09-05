@@ -1144,9 +1144,24 @@ html, body {
             </div>
 
             <div class="card" id="view-dashboard" style="display: none;">
-                <div id="daily-reward-box" style="background: linear-gradient(135deg, #fef3c7 0%, #fffbeb 100%); border: 2px solid var(--warning); padding:15px; border-radius: var(--radius-sm); margin-bottom:15px; display:none; justify-content:space-between; align-items:center; animation: fadeInUp 0.4s ease;">
-                    <span style="color:#92400e; font-weight:bold;"><i class="fa-solid fa-gift"></i> مكافأة الدخول اليومية متاحة لك الآن! 🎁</span>
-                    <button class="ban-btn ban-inactive" onclick="claimDailyReward()">استلام +50 XP ⚡</button>
+                <!-- ✅ [تحسين] صندوق المكافأة اليومية بقى بهوية دهبية متسقة، وبيعرض عداد التتابع (Streak) الحقيقي -->
+                <div id="daily-reward-box" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border: none; padding:18px; border-radius: 14px; margin-bottom:15px; display:none; flex-direction:column; gap:12px; animation: fadeInUp 0.4s ease; box-shadow: 0 8px 24px rgba(197,160,89,0.35);">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
+                        <div>
+                            <div style="color:#fff; font-weight:900; font-size:15px; font-family:'Playfair Display', serif;"><i class="fa-solid fa-gift"></i> مكافأتك اليومية جاهزة</div>
+                            <div id="daily-streak-hint" style="color:rgba(255,255,255,0.85); font-size:12px; margin-top:3px;"></div>
+                        </div>
+                        <button class="ban-btn ban-inactive" onclick="claimDailyReward()" style="background:#fff; color:var(--primary-dark); font-weight:800; white-space:nowrap; border:none;">استلام <span id="daily-reward-amount">+50</span> XP ⚡</button>
+                    </div>
+                </div>
+
+                <!-- ✅ [جديد] شارة تتابع الدخول اليومي — ظاهرة دايماً (حتى لو المكافأة النهاردة اتاستلمت خلاص) -->
+                <div id="daily-streak-badge" style="display:none; align-items:center; gap:10px; background:var(--bg-gradient); border:1px solid var(--border); border-radius:12px; padding:10px 16px; margin-bottom:15px;">
+                    <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; box-shadow:0 3px 10px rgba(239,68,68,0.35);">🔥</div>
+                    <div>
+                        <div style="font-weight:800; font-size:14px;"><span id="daily-streak-value">0</span> يوم متتالي</div>
+                        <div id="daily-streak-subtext" style="font-size:11.5px; color:var(--text-muted);"></div>
+                    </div>
                 </div>
 
                 <div class="nav-tabs">
@@ -1255,6 +1270,8 @@ html, body {
                         <div class="achievement-badge" id="ach-500xp"><i class="fa-solid fa-fire"></i>500 XP</div>
                         <div class="achievement-badge" id="ach-full"><i class="fa-solid fa-star"></i>درجة كاملة</div>
                         <div class="achievement-badge" id="ach-subject"><i class="fa-solid fa-graduation-cap"></i>مُقفل المواد</div>
+                        <div class="achievement-badge" id="ach-streak7"><i class="fa-solid fa-fire"></i>أسبوع متتالي</div>
+                        <div class="achievement-badge" id="ach-streak30"><i class="fa-solid fa-fire-flame-curved"></i>شهر متتالي</div>
                     </div>
 
                     <div style="margin-top: 25px; background: var(--bg-gradient); padding: 15px; border-radius: var(--radius-sm); border: 1px solid var(--border);">
@@ -2593,6 +2610,11 @@ html, body {
                         const ach500   = document.getElementById('ach-500xp');   if (ach500   && xp >= 500)  ach500.classList.add('unlocked');
                         const achFull  = document.getElementById('ach-full');    if (achFull  && currentUser.hasFullScore) achFull.classList.add('unlocked');
                         const achSub   = document.getElementById('ach-subject'); if (achSub   && currentUser.completedSubjects && currentUser.completedSubjects.length >= 5) achSub.classList.add('unlocked');
+                        // ✅ [جديد] إنجازات تتابع الدخول اليومي
+                        const dStreak    = currentUser.dailyStreak || 0;
+                        const achStreak7  = document.getElementById('ach-streak7');  if (achStreak7  && dStreak >= 7)  achStreak7.classList.add('unlocked');
+                        const achStreak30 = document.getElementById('ach-streak30'); if (achStreak30 && dStreak >= 30) achStreak30.classList.add('unlocked');
+                        renderDailyStreakBadge();
 
                         if (currentUser.lastActivity) {
                             const act = currentUser.lastActivity;
@@ -2730,24 +2752,70 @@ html, body {
             }
         }
 
+        // ✅ [جديد] عرض شارة تتابع الدخول اليومي بشكل دائم بالداشبورد (مش بس جوه صندوق المكافأة)
+        function renderDailyStreakBadge() {
+            const badge = document.getElementById('daily-streak-badge');
+            const valueEl = document.getElementById('daily-streak-value');
+            const subEl = document.getElementById('daily-streak-subtext');
+            if (!badge || !currentUser) return;
+
+            const streak = currentUser.dailyStreak || 0;
+            if (streak < 1) { badge.style.display = 'none'; return; }
+
+            badge.style.display = 'flex';
+            valueEl.textContent = streak;
+
+            // تلميح للإنجاز الجاي — يشجّع الاستمرارية
+            if (streak < 7) subEl.textContent = `كمان ${7 - streak} يوم ووصل لإنجاز "أسبوع متتالي" 🏅`;
+            else if (streak < 30) subEl.textContent = `كمان ${30 - streak} يوم ووصل لإنجاز "شهر متتالي" 🏆`;
+            else subEl.textContent = `إنجاز رائع — استمر! 🔥`;
+        }
+
         function checkDailyRewardStatus() {
             const todayStr = new Date().toDateString();
+            const box = document.getElementById('daily-reward-box');
             if (currentUser && currentUser.lastDailyClaimedDate !== todayStr) {
-                document.getElementById('daily-reward-box').style.display = "flex";
+                box.style.display = "flex";
+                // ✅ [جديد] تلميح استباقي بمكسب الستريك المتوقع لو استلم النهاردة
+                const currentStreak = currentUser.dailyStreak || 0;
+                const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
+                const willContinueStreak = currentUser.lastDailyClaimedDate === yesterdayStr;
+                const nextStreak = willContinueStreak ? currentStreak + 1 : 1;
+                const bonus = Math.min((nextStreak - 1) * 5, 50);
+                document.getElementById('daily-reward-amount').textContent = `+${50 + bonus}`;
+                const hintBox = document.getElementById('daily-streak-hint');
+                if (hintBox) {
+                    hintBox.textContent = willContinueStreak
+                        ? `استلامك النهاردة هيوصلك ليوم ${nextStreak} متتالي 🔥`
+                        : (currentStreak > 0 ? `فاتك يوم — استلم دلوقتي وابدأ تتابع جديد` : `ابدأ أول تتابع دخول يومي ليك`);
+                }
             } else {
-                document.getElementById('daily-reward-box').style.display = "none";
+                box.style.display = "none";
             }
         }
 
         function claimDailyReward() {
             const todayStr = new Date().toDateString();
+            const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
+
+            // ✅ [جديد] حساب التتابع: لو استلم إمبارح يكمل، لو فاته يوم يرجع يبدأ من 1
+            const currentStreak = currentUser.dailyStreak || 0;
+            const willContinueStreak = currentUser.lastDailyClaimedDate === yesterdayStr;
+            const newStreak = willContinueStreak ? currentStreak + 1 : 1;
+            // مكافأة متدرجة: 50 أساسي + 5 XP لكل يوم تتابع، بحد أقصى 50 إضافية (يعني أقصى مكافأة يومية 100)
+            const bonus = Math.min((newStreak - 1) * 5, 50);
+            const totalReward = 50 + bonus;
+
             db.collection("users").doc(currentUser.uid).update({
-                xp: firebase.firestore.FieldValue.increment(50),
-                lastDailyClaimedDate: todayStr
+                xp: firebase.firestore.FieldValue.increment(totalReward),
+                lastDailyClaimedDate: todayStr,
+                dailyStreak: newStreak
             }).then(() => {
                 _ensureConfettiLoaded().then(() => confetti({ particleCount: 60, spread: 40 })).catch(() => {});
-                showToast("🎁 مبارك! استلمت 50 نقطة محارب إضافية لليوم.");
+                showToast(`🎁 مبارك! استلمت ${totalReward} نقطة محارب (تتابع ${newStreak} يوم 🔥).`);
                 fetchUserRecord(currentUser.uid);
+            }).catch(err => {
+                showToast("⚠️ تعذّر استلام المكافأة، جرّب تاني.", "error");
             });
         }
 
