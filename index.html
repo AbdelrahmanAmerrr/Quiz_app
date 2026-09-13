@@ -1312,6 +1312,26 @@ html, body {
             </div><!-- /view-dashboard -->
 
             <!-- شاشة اختيار عدد الأسئلة -->
+            <!-- ✅ [جديد] شاشة اختيار الفصل — تظهر بس لو المادة عندها فصول مضافة، غير كده بتتخطى تلقائياً -->
+            <div id="view-chapter-picker" style="display:none;">
+                <div class="picker-top-area">
+                    <div class="picker-bank-title">اختار الفصل اللي عايز تذاكره</div>
+                    <div class="picker-bank-sub">تقدر تختار فصل واحد أو أكتر، أو تمتحن في كل الفصول سوا</div>
+                </div>
+                <div class="picker-white-card">
+                    <div class="picker-card-accent"></div>
+                    <div id="chapter-picker-list" style="display:flex; flex-direction:column; gap:10px; margin:16px 0;"></div>
+                    <div class="picker-nav">
+                        <span class="picker-back-link" onclick="showView('view-dashboard')">
+                            الصفحة الرئيسية <i class="fa-solid fa-arrow-right"></i>
+                        </span>
+                        <button class="picker-next-btn" onclick="confirmChapterSelection()">
+                            <i class="fa-solid fa-chevron-left"></i> متابعة
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <div id="view-count-picker" style="display:none;">
 
                 <!-- ─── معلومات المادة في الأعلى ─── -->
@@ -1799,16 +1819,45 @@ html, body {
 
                     <div style="text-align: center; margin: 25px 0; font-weight: bold; color: var(--text-muted);">─ أو إضافة / تعديل سؤال بشكل يدوي فردي ─</div>
 
-                    <div class="card" style="background: var(--bg-gradient); margin-bottom: 10px; border-color: var(--primary);">
-                        <input type="hidden" id="form-q-id">
+                    <!-- ✅ [جديد] إدارة فصول المادة — اختياري تماماً، المادة بدون فصول تشتغل زي ما هي بالظبط -->
+                    <div class="card" style="background: rgba(197,160,89,0.08); border-color: var(--primary); margin-bottom: 10px;">
+                        <h4 style="margin:0 0 10px 0; color:var(--primary-dark);"><i class="fa-solid fa-list-ol"></i> إدارة فصول المادة (اختياري)</h4>
+                        <p style="font-size:12px; color:var(--text-muted); margin:0 0 12px 0; line-height:1.7;">
+                            لو مادة معيّنة مالهاش فصول مضافة، هتفضل تشتغل عادي زي أي مادة تانية (كل الأسئلة سوا). ضيف فصول هنا لو عايز الطلاب يقدروا يذاكروا فصل بفصل.
+                        </p>
                         <div class="admin-form-group">
-                            <label>اختر المادة الدراسية:</label>
-                            <select id="form-q-subject">
+                            <label>اختر المادة:</label>
+                            <select id="chapter-manage-subject" onchange="renderChaptersManageList()">
                                 <option value="databases">قواعد البيانات</option>
                                 <option value="structured_programming">البرمجة الهيكلية</option>
                                 <option value="corporate_accounting">محاسبة شركات</option>
                                 <option value="operations_management">إدارة الانتاج والعمليات</option>
                                 <option value="economics_english">انجليزي اقتصاد</option>
+                            </select>
+                        </div>
+                        <div id="chapters-manage-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:10px;"></div>
+                        <div style="display:flex; gap:8px;">
+                            <input type="text" id="new-chapter-name" placeholder="اسم الفصل الجديد..." style="flex:1;">
+                            <button class="ban-btn" style="background:var(--primary); color:#fff; white-space:nowrap;" onclick="addNewChapter()"><i class="fa-solid fa-plus"></i> إضافة</button>
+                        </div>
+                    </div>
+
+                    <div class="card" style="background: var(--bg-gradient); margin-bottom: 10px; border-color: var(--primary);">
+                        <input type="hidden" id="form-q-id">
+                        <div class="admin-form-group">
+                            <label>اختر المادة الدراسية:</label>
+                            <select id="form-q-subject" onchange="populateChapterDropdownForForm()">
+                                <option value="databases">قواعد البيانات</option>
+                                <option value="structured_programming">البرمجة الهيكلية</option>
+                                <option value="corporate_accounting">محاسبة شركات</option>
+                                <option value="operations_management">إدارة الانتاج والعمليات</option>
+                                <option value="economics_english">انجليزي اقتصاد</option>
+                            </select>
+                        </div>
+                        <div class="admin-form-group">
+                            <label>الفصل (اختياري):</label>
+                            <select id="form-q-chapter">
+                                <option value="">بدون فصل محدد</option>
                             </select>
                         </div>
                         <div class="admin-form-group"><input type="text" id="form-q-text" placeholder="نص السؤال..."></div>
@@ -1823,6 +1872,7 @@ html, body {
                     </div>
 
                     </div>
+
                     <!-- ══════ نهاية فرعي: إضافة أسئلة ══════ -->
 
                     <!-- ══════ فرعي: إدارة البنك ══════ -->
@@ -2894,6 +2944,7 @@ html, body {
         }
 
         let pendingQuestions = [];
+        let pendingQuestionsAll = []; // ✅ [جديد] النسخة الكاملة قبل فلترة الفصل — نرجعلها لو الطالب غيّر اختياره
 
         function startQuizArena() {
             const startBtn = document.getElementById('btn-start-quiz');
@@ -2928,34 +2979,22 @@ html, body {
                 // ✅ [OPT-35] خلط حقيقي من كامل بنك الأسئلة — يضمن تنويع الأسئلة في كل جلسة
                 // حتى لو حل الطالب 100 سؤال سابقاً، سيحصل على 100 مختلفة في الجلسة الجديدة
                 // ✅ [تحسين] خوارزمية Fisher-Yates بدل sort(Math.random) — توزيع عشوائي متساوي فعلياً بدون انحياز
-                pendingQuestions = [...questions];
-                for (let k = pendingQuestions.length - 1; k > 0; k--) {
+                pendingQuestionsAll = [...questions]; // ✅ [جديد] النسخة الكاملة قبل أي فلترة بالفصل
+                for (let k = pendingQuestionsAll.length - 1; k > 0; k--) {
                     const j = Math.floor(Math.random() * (k + 1));
-                    [pendingQuestions[k], pendingQuestions[j]] = [pendingQuestions[j], pendingQuestions[k]];
+                    [pendingQuestionsAll[k], pendingQuestionsAll[j]] = [pendingQuestionsAll[j], pendingQuestionsAll[k]];
                 }
 
-                // إعداد شاشة اختيار عدد الأسئلة
-                const total = pendingQuestions.length;
-                document.getElementById('picker-total-text').textContent   = total;
-                document.getElementById('picker-max-label-num').textContent = total;
-                document.getElementById('picker-subject-name').textContent  = fixedSubjects[activeCategory] || activeCategory;
-                // ✅ نسبة المختار من المتاح
-                const totRatio = document.getElementById('picker-total-ratio');
-                if (totRatio) totRatio.textContent = total;
+                // ✅ [جديد] لو المادة عندها فصول مضافة، نعرض شاشة اختيار الفصل الأول.
+                // لو مفيش فصول خالص، نكمل زي ما كان بالظبط (توافق كامل مع الوضع الحالي).
+                const chapters = _getChaptersForSubject(activeCategory);
+                if (chapters.length > 0) {
+                    showChapterPickerScreen(chapters);
+                    return;
+                }
 
-                const slider = document.getElementById('picker-slider');
-                slider.min   = Math.min(5, total);
-                slider.max   = total;
-                slider.step  = 1;
-                slider.value = Math.min(20, total);
-                document.getElementById('picker-number-display').textContent = slider.value;
-                _pickerLastVal = parseInt(slider.value);
-                _renderPickerDigits(parseInt(slider.value), 'none'); // عرض أولي بدون أنيميشن
-                _updateSliderFill(slider);
-                updatePickerAttemptsBadge(); // ✅ شارة المحاولات — شكلي فقط
-
-                showView('view-count-picker');
-                _initPickerDrag();
+                pendingQuestions = pendingQuestionsAll;
+                _proceedToCountPicker();
             }
 
             if (isFresh) {
@@ -2991,6 +3030,81 @@ html, body {
                 startBtn.innerHTML = `<i class="fa-solid fa-play"></i> بدء التحدي الآن`;
                 showToast("تعذّر تحميل الأسئلة، يرجى التحقق من اتصالك بالإنترنت.", "error");
             });
+        }
+
+        // ✅ [جديد] عرض شاشة اختيار الفصل بقايمة الفصول المتاحة + خيار "كل الفصول"
+        function showChapterPickerScreen(chapters) {
+            const listEl = document.getElementById('chapter-picker-list');
+            let html = `
+                <label style="display:flex; align-items:center; gap:10px; padding:14px; border:2px solid var(--primary); border-radius:10px; background:var(--bg-gradient); cursor:pointer; font-weight:800;">
+                    <input type="checkbox" id="chapter-opt-all" checked onchange="_onChapterAllToggle()" style="width:18px; height:18px;">
+                    كل الفصول (امتحان شامل)
+                </label>`;
+            chapters.forEach((ch, idx) => {
+                html += `
+                <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; cursor:pointer;">
+                    <input type="checkbox" class="chapter-opt-single" data-chapter="${esc(ch)}" onchange="_onChapterSingleToggle()" style="width:18px; height:18px;">
+                    ${esc(ch)}
+                </label>`;
+            });
+            listEl.innerHTML = html;
+            showView('view-chapter-picker');
+        }
+
+        // اختيار "كل الفصول" بيلغي أي اختيار فردي تاني
+        function _onChapterAllToggle() {
+            const allBox = document.getElementById('chapter-opt-all');
+            if (allBox.checked) {
+                document.querySelectorAll('.chapter-opt-single').forEach(cb => cb.checked = false);
+            }
+        }
+
+        // اختيار فصل فردي بيلغي "كل الفصول" تلقائياً
+        function _onChapterSingleToggle() {
+            const anyChecked = Array.from(document.querySelectorAll('.chapter-opt-single')).some(cb => cb.checked);
+            if (anyChecked) document.getElementById('chapter-opt-all').checked = false;
+        }
+
+        // بيفلتر pendingQuestions حسب الفصول المختارة، وبعدين يكمل لشاشة اختيار العدد
+        function confirmChapterSelection() {
+            const allSelected = document.getElementById('chapter-opt-all').checked;
+            const selectedChapters = Array.from(document.querySelectorAll('.chapter-opt-single:checked')).map(cb => cb.dataset.chapter);
+
+            if (allSelected || selectedChapters.length === 0) {
+                pendingQuestions = pendingQuestionsAll;
+            } else {
+                pendingQuestions = pendingQuestionsAll.filter(q => selectedChapters.includes(q.chapter));
+            }
+
+            if (pendingQuestions.length === 0) {
+                showToast("⚠️ مفيش أسئلة في الفصول المختارة، جرّب اختيار تاني.", "error");
+                return;
+            }
+            _proceedToCountPicker();
+        }
+
+        // إعداد شاشة اختيار عدد الأسئلة (بعد ما بنك الأسئلة يتحدد نهائياً — كامل أو مفلتر بفصل)
+        function _proceedToCountPicker() {
+            const total = pendingQuestions.length;
+            document.getElementById('picker-total-text').textContent   = total;
+            document.getElementById('picker-max-label-num').textContent = total;
+            document.getElementById('picker-subject-name').textContent  = fixedSubjects[activeCategory] || activeCategory;
+            const totRatio = document.getElementById('picker-total-ratio');
+            if (totRatio) totRatio.textContent = total;
+
+            const slider = document.getElementById('picker-slider');
+            slider.min   = Math.min(5, total);
+            slider.max   = total;
+            slider.step  = 1;
+            slider.value = Math.min(20, total);
+            document.getElementById('picker-number-display').textContent = slider.value;
+            _pickerLastVal = parseInt(slider.value);
+            _renderPickerDigits(parseInt(slider.value), 'none');
+            _updateSliderFill(slider);
+            updatePickerAttemptsBadge();
+
+            showView('view-count-picker');
+            _initPickerDrag();
         }
 
         let _pickerLastVal = 10; // لتحديد اتجاه الأنيميشن
@@ -3110,6 +3224,7 @@ html, body {
                         options: d.options,
                         answer: d.answer,
                         explanation: d.explanation || '',
+                        chapter: d.chapter || null, // ✅ [جديد] null = بدون فصل، بيظهر في "كل الفصول" فقط
                         // ✅ [تحسين] عشان نقدر نديله سياق اجتماعي في شات المراجعة ("أغلب زمايلك غلطوا فيه")
                         correctCount: d.correctCount || 0,
                         wrongCount: d.wrongCount || 0
@@ -4795,6 +4910,10 @@ html, body {
             // ✅ [OPT-18] قراءة الإحصائيات من مستند العداد + fallback للحقول غير المحسوبة
             db.collection("questions").doc("--metadata--").get().then(doc => {
                 const meta = doc.exists ? doc.data() : {};
+                // ✅ [جديد] نفس القراءة بتجيب قايمة الفصول كمان — صفر قراءات إضافية
+                cachedSubjectChapters = meta.chapters || {};
+                renderChaptersManageList();
+                populateChapterDropdownForForm();
 
                 const totalQ   = meta.totalQuestions || cachedAdminQuestions.length || '—';
                 const totalAtt = meta.totalAttempts  || '—';
@@ -6416,6 +6535,80 @@ html, body {
             reader.readAsText(file);
         }
 
+        // ✅ [جديد] نظام الفصول — مخزّن في questions/--metadata--.chapters.{subjectId} = [أسماء الفصول]
+        // فكرة التصميم: مادة بدون فصول = تشتغل زي ما هي بالظبط من غير أي تغيير (توافق كامل مع الوضع الحالي)
+        let cachedSubjectChapters = {}; // {subjectId: [names]} — يتحمّل من --metadata-- عند فتح لوحة الأدمن
+
+        function _getChaptersForSubject(subjectId) {
+            return cachedSubjectChapters[subjectId] || [];
+        }
+
+        function renderChaptersManageList() {
+            const subject = document.getElementById('chapter-manage-subject').value;
+            const listEl = document.getElementById('chapters-manage-list');
+            const chapters = _getChaptersForSubject(subject);
+
+            if (chapters.length === 0) {
+                listEl.innerHTML = `<div style="font-size:12px; color:var(--text-muted); padding:6px 0;">مفيش فصول مضافة للمادة دي لسه.</div>`;
+                return;
+            }
+            listEl.innerHTML = chapters.map((ch, idx) => `
+                <div style="display:flex; align-items:center; justify-content:space-between; background:var(--card-bg); border:1px solid var(--border); border-radius:6px; padding:7px 10px;">
+                    <span style="font-size:13px;">${esc(ch)}</span>
+                    <button onclick="deleteChapter(${idx})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px;" title="حذف الفصل"><i class="fa-solid fa-trash"></i></button>
+                </div>`).join('');
+        }
+
+        function addNewChapter() {
+            const subject = document.getElementById('chapter-manage-subject').value;
+            const input = document.getElementById('new-chapter-name');
+            const name = input.value.trim();
+            if (!name) { showToast("⚠️ اكتب اسم الفصل الأول.", "error"); return; }
+
+            const chapters = _getChaptersForSubject(subject);
+            if (chapters.includes(name)) { showToast("⚠️ الفصل ده موجود بالفعل.", "error"); return; }
+
+            const updated = [...chapters, name];
+            db.collection("questions").doc("--metadata--").set({
+                chapters: { [subject]: updated }
+            }, { merge: true }).then(() => {
+                cachedSubjectChapters[subject] = updated;
+                input.value = '';
+                renderChaptersManageList();
+                populateChapterDropdownForForm();
+                showToast("✅ اتضاف الفصل بنجاح.");
+                logAdminAction("إضافة فصل", `${fixedSubjects[subject]}: ${name}`);
+            }).catch(err => showToast("❌ فشل الإضافة: " + err.message, "error"));
+        }
+
+        function deleteChapter(index) {
+            const subject = document.getElementById('chapter-manage-subject').value;
+            const chapters = _getChaptersForSubject(subject);
+            const removedName = chapters[index];
+            const updated = chapters.filter((_, i) => i !== index);
+
+            db.collection("questions").doc("--metadata--").set({
+                chapters: { [subject]: updated }
+            }, { merge: true }).then(() => {
+                cachedSubjectChapters[subject] = updated;
+                renderChaptersManageList();
+                populateChapterDropdownForForm();
+                showToast("🗑️ اتحذف الفصل. الأسئلة اللي كانت متوسّمة بيه هتفضل موجودة بس بدون فصل محدد.");
+                logAdminAction("حذف فصل", `${fixedSubjects[subject]}: ${removedName}`);
+            }).catch(err => showToast("❌ فشل الحذف: " + err.message, "error"));
+        }
+
+        // بيملأ قايمة اختيار الفصل بنموذج إضافة/تعديل السؤال حسب المادة المختارة حالياً
+        function populateChapterDropdownForForm() {
+            const subject = document.getElementById('form-q-subject').value;
+            const chapters = _getChaptersForSubject(subject);
+            const select = document.getElementById('form-q-chapter');
+            const currentVal = select.value;
+            select.innerHTML = '<option value="">بدون فصل محدد</option>' +
+                chapters.map(ch => `<option value="${esc(ch)}">${esc(ch)}</option>`).join('');
+            if (chapters.includes(currentVal)) select.value = currentVal;
+        }
+
         function saveQuestionData() {
             const qId = document.getElementById('form-q-id').value;
             const subject = document.getElementById('form-q-subject').value;
@@ -6426,11 +6619,13 @@ html, body {
             const o4 = document.getElementById('form-q-opt4').value.trim();
             const ans = document.getElementById('form-q-answer').value.trim();
             const exp = document.getElementById('form-q-exp').value.trim();
+            const chapter = document.getElementById('form-q-chapter').value; // ✅ [جديد] فارغ = بدون فصل (توافق كامل مع الوضع الحالي)
 
             if(!text || !o1 || !o2 || !ans) { showToast("⚠️ يرجى ملء نص السؤال والخيارات والإجابة الصحيحة على الأقل.", "error"); return; }
 
             const payload = {
                 subject: subject,
+                chapter: chapter || null,
                 question: text,
                 options: [o1, o2, o3, o4].filter(o => o !== ""),
                 answer: ans,
@@ -6490,6 +6685,8 @@ html, body {
         function _populateEditForm(id, q) {
             document.getElementById('form-q-id').value = id;
             document.getElementById('form-q-subject').value = q.subject;
+            populateChapterDropdownForForm(); // ✅ [جديد] لازم نملأ قايمة الفصول حسب المادة الأول قبل ما نحدد القيمة
+            document.getElementById('form-q-chapter').value = q.chapter || "";
             document.getElementById('form-q-text').value = q.question;
             document.getElementById('form-q-opt1').value = q.options[0] || "";
             document.getElementById('form-q-opt2').value = q.options[1] || "";
@@ -6530,6 +6727,8 @@ html, body {
             document.getElementById('form-q-opt4').value = "";
             document.getElementById('form-q-answer').value = "";
             document.getElementById('form-q-exp').value = "";
+            const chapterSel = document.getElementById('form-q-chapter');
+            if (chapterSel) chapterSel.value = "";
             document.getElementById('btn-cancel-edit').style.display = "none";
         }
 
@@ -6603,7 +6802,7 @@ html, body {
         }
 
         function showView(viewId) {
-            const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-count-picker', 'view-arena', 'view-review', 'view-result', 'view-admin-panel'];
+            const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-chapter-picker', 'view-count-picker', 'view-arena', 'view-review', 'view-result', 'view-admin-panel'];
             views.forEach(v => {
                 const el = document.getElementById(v);
                 if (el) el.style.display = "none";
