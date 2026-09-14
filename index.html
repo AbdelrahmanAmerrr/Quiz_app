@@ -1910,7 +1910,7 @@ html, body {
                         <button id="btn-bulk-delete-questions" class="ban-btn ban-active" style="display:none;" onclick="deleteSelectedQuestionsGroup()"><i class="fa-solid fa-trash"></i> حذف الأسئلة المحددة دفعة واحدة</button>
                     </div>
 
-                    <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px;" id="admin-questions-list">
+                    <div style="max-height: 65vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px;" id="admin-questions-list">
                         جاري تحميل بنك الأسئلة...
                     </div>
 
@@ -5037,19 +5037,19 @@ html, body {
                 const rate = totalAnswers > 0 ? Math.round((c / totalAnswers) * 100) : 0;
                 const isChecked = selectedAdminQuestionsGroup.includes(q.uid) ? "checked" : "";
 
+                // ✅ [تحسين كثافة] بطاقة مضغوطة سطر ونص بدل بطاقة كبيرة — تقدر تشوف أسئلة أكتر بكتير
+                // في نفس المساحة، والتفاصيل (الإحصائيات) بقت سطر واحد صغير بدل شارات كبيرة متفرقة
                 html += `
-                    <div class="question-item" style="padding:15px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:12px;">
-                        <input type="checkbox" style="margin-top:5px; width:18px; height:18px; cursor:pointer;" ${isChecked} onchange="toggleSelectQuestionItem('${q.uid}', this.checked)">
-                        <div style="flex:1;">
-                            <strong>[${fixedSubjects[q.subject] || 'عام'}]</strong> ${q.question}
-                            <div style="margin: 5px 0;">
-                                <span class="q-stat-tag q-stat-success"><i class="fa-regular fa-circle-check"></i> إجابات صحيحة: ${c}</span>
-                                <span class="q-stat-tag q-stat-wrong"><i class="fa-regular fa-circle-xmark"></i> خاطئة: ${w}</span>
-                                <span class="q-stat-tag q-stat-rate"><i class="fa-solid fa-chart-pie"></i> نسبة النجاح: ${rate}%</span>
+                    <div class="question-item" style="padding:8px 10px; border-bottom:1px solid var(--border); display:flex; align-items:flex-start; gap:8px;">
+                        <input type="checkbox" style="margin-top:4px; width:16px; height:16px; cursor:pointer; flex-shrink:0;" ${isChecked} onchange="toggleSelectQuestionItem('${q.uid}', this.checked)">
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:12.5px; line-height:1.5;">
+                                <strong style="color:var(--primary-dark);">[${fixedSubjects[q.subject] || 'عام'}${q.chapter ? ' · ' + esc(q.chapter) : ''}]</strong> ${q.question}
                             </div>
-                            <div class="question-actions" style="margin-top:8px;">
-                                <button onclick="editQuestionInline('${q.uid}')" class="ban-btn ban-inactive" style="padding:4px 10px; font-size:12px;">تعديل 📝</button>
-                                <button onclick="deleteQuestionInline('${q.uid}')" class="ban-btn ban-active" style="padding:4px 10px; font-size:12px;">حذف 🗑️</button>
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap;">
+                                <span style="font-size:10.5px; color:var(--text-muted);">✅ ${c} · ❌ ${w} · 📊 ${rate}%</span>
+                                <button onclick="editQuestionInline('${q.uid}')" class="ban-btn ban-inactive" style="padding:2px 8px; font-size:10.5px;">تعديل 📝</button>
+                                <button onclick="deleteQuestionInline('${q.uid}')" class="ban-btn ban-active" style="padding:2px 8px; font-size:10.5px;">حذف 🗑️</button>
                             </div>
                         </div>
                     </div>
@@ -6722,6 +6722,12 @@ html, body {
                     _populateEditForm(id, doc.data());
                 });
             }
+            // ✅ [FIX] كان النموذج بيتملى صح بس من غير أي انتقال ليه — النموذج موجود في تبويب
+            // "إضافة أسئلة" مش "إدارة البنك"، فالأدمن كان بيفضل واقف مكانه ولا يشوف حاجة اتغيرت.
+            // دلوقتي بننقله فعلياً للتبويب الصح ونمرّر الصفحة لفوق تلقائياً.
+            switchQuestionsSubTab('add');
+            showToast("📝 السؤال اتحمّل في النموذج فوق، عدّله واضغط حفظ.");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function _populateEditForm(id, q) {
