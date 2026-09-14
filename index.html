@@ -358,6 +358,18 @@ html, body {
             margin: 0 -22px 20px -22px;
             border-radius: 0;
         }
+        /* ✅ [جديد] شرائح اختيار الفصل — بساطة زي مرجع التصميم، بهويتنا الدهبية */
+        .chapter-chip {
+            padding: 10px 18px; border-radius: 999px; border: 1.5px solid var(--border);
+            background: var(--card-bg); color: var(--text-main); font-size: 13.5px; font-weight: 700;
+            cursor: pointer; transition: all .15s; white-space: nowrap;
+        }
+        .chapter-chip:active { transform: scale(0.96); }
+        .chapter-chip.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: #fff; border-color: transparent; box-shadow: 0 4px 12px rgba(197,160,89,0.35);
+        }
+        .chapter-chip .chip-count { opacity: 0.75; font-weight: 500; }
         /* أزرار + و - مميزة */
         .picker-btn {
             width: 38px; height: 38px; border-radius: 8px;
@@ -1315,12 +1327,18 @@ html, body {
             <!-- ✅ [جديد] شاشة اختيار الفصل — تظهر بس لو المادة عندها فصول مضافة، غير كده بتتخطى تلقائياً -->
             <div id="view-chapter-picker" style="display:none;">
                 <div class="picker-top-area">
-                    <div class="picker-bank-title">اختار الفصل اللي عايز تذاكره</div>
-                    <div class="picker-bank-sub">تقدر تختار فصل واحد أو أكتر، أو تمتحن في كل الفصول سوا</div>
+                    <div class="picker-bank-title">
+                        بنك أسئلة <span id="chapter-picker-subject-name" style="color:var(--primary); font-weight:900;">—</span>
+                    </div>
+                    <div class="picker-bank-sub"><span id="chapter-picker-total-text">0</span> سؤال متاح</div>
                 </div>
                 <div class="picker-white-card">
                     <div class="picker-card-accent"></div>
-                    <div id="chapter-picker-list" style="display:flex; flex-direction:column; gap:10px; margin:16px 0;"></div>
+                    <div class="picker-card-header" style="display:block;">
+                        <div class="picker-question-label">اختار الفصل</div>
+                        <p style="font-size:12.5px; color:var(--text-muted); margin:6px 0 0 0;">اختار فصل واحد أو أكتر، أو سيب "كل الفصول" مختارة وامتحن شامل.</p>
+                    </div>
+                    <div id="chapter-picker-list" style="display:flex; flex-wrap:wrap; gap:10px; margin:18px 0;"></div>
                     <div class="picker-nav">
                         <span class="picker-back-link" onclick="showView('view-dashboard')">
                             الصفحة الرئيسية <i class="fa-solid fa-arrow-right"></i>
@@ -1380,8 +1398,8 @@ html, body {
 
                     <!-- التنقل -->
                     <div class="picker-nav">
-                        <span class="picker-back-link" onclick="showView('view-dashboard')">
-                            الصفحة الرئيسية <i class="fa-solid fa-arrow-right"></i>
+                        <span class="picker-back-link" onclick="goBackFromCountPicker()">
+                            <i class="fa-solid fa-arrow-right"></i> رجوع
                         </span>
                         <button class="picker-next-btn" onclick="launchArenaWithCount()">
                             <i class="fa-solid fa-chevron-left"></i> التالي
@@ -3056,18 +3074,16 @@ html, body {
 
         // ✅ [جديد] عرض شاشة اختيار الفصل بقايمة الفصول المتاحة + خيار "كل الفصول"
         function showChapterPickerScreen(chapters) {
+            document.getElementById('chapter-picker-subject-name').textContent = fixedSubjects[activeCategory] || activeCategory;
+            document.getElementById('chapter-picker-total-text').textContent   = pendingQuestionsAll.length;
+
             const listEl = document.getElementById('chapter-picker-list');
-            let html = `
-                <label style="display:flex; align-items:center; gap:10px; padding:14px; border:2px solid var(--primary); border-radius:10px; background:var(--bg-gradient); cursor:pointer; font-weight:800;">
-                    <input type="checkbox" id="chapter-opt-all" checked onchange="_onChapterAllToggle()" style="width:18px; height:18px;">
-                    كل الفصول (امتحان شامل)
-                </label>`;
-            chapters.forEach((ch, idx) => {
-                html += `
-                <label style="display:flex; align-items:center; gap:10px; padding:12px 14px; border:1.5px solid var(--border); border-radius:10px; cursor:pointer;">
-                    <input type="checkbox" class="chapter-opt-single" data-chapter="${esc(ch)}" onchange="_onChapterSingleToggle()" style="width:18px; height:18px;">
-                    ${esc(ch)}
-                </label>`;
+            let html = `<button type="button" class="chapter-chip active" id="chapter-opt-all" onclick="_onChapterAllToggle()">كل الفصول <span class="chip-count">· ${pendingQuestionsAll.length}</span></button>`;
+
+            chapters.forEach(ch => {
+                // ✅ [تحسين] عدد أسئلة كل فصل — بيساعد الطالب يقرر بسرعة، زي مرجع التصميم بالظبط
+                const count = pendingQuestionsAll.filter(q => q.chapter === ch).length;
+                html += `<button type="button" class="chapter-chip chapter-opt-single" data-chapter="${esc(ch)}" onclick="_onChapterSingleToggle(this)">${esc(ch)} <span class="chip-count">· ${count}</span></button>`;
             });
             listEl.innerHTML = html;
             showView('view-chapter-picker');
@@ -3075,22 +3091,21 @@ html, body {
 
         // اختيار "كل الفصول" بيلغي أي اختيار فردي تاني
         function _onChapterAllToggle() {
-            const allBox = document.getElementById('chapter-opt-all');
-            if (allBox.checked) {
-                document.querySelectorAll('.chapter-opt-single').forEach(cb => cb.checked = false);
-            }
+            document.getElementById('chapter-opt-all').classList.add('active');
+            document.querySelectorAll('.chapter-opt-single').forEach(el => el.classList.remove('active'));
         }
 
-        // اختيار فصل فردي بيلغي "كل الفصول" تلقائياً
-        function _onChapterSingleToggle() {
-            const anyChecked = Array.from(document.querySelectorAll('.chapter-opt-single')).some(cb => cb.checked);
-            if (anyChecked) document.getElementById('chapter-opt-all').checked = false;
+        // اختيار فصل فردي (تبديل) بيلغي "كل الفصول" تلقائياً
+        function _onChapterSingleToggle(el) {
+            el.classList.toggle('active');
+            const anyActive = Array.from(document.querySelectorAll('.chapter-opt-single')).some(e => e.classList.contains('active'));
+            document.getElementById('chapter-opt-all').classList.toggle('active', !anyActive);
         }
 
         // بيفلتر pendingQuestions حسب الفصول المختارة، وبعدين يكمل لشاشة اختيار العدد
         function confirmChapterSelection() {
-            const allSelected = document.getElementById('chapter-opt-all').checked;
-            const selectedChapters = Array.from(document.querySelectorAll('.chapter-opt-single:checked')).map(cb => cb.dataset.chapter);
+            const allSelected = document.getElementById('chapter-opt-all').classList.contains('active');
+            const selectedChapters = Array.from(document.querySelectorAll('.chapter-opt-single.active')).map(el => el.dataset.chapter);
 
             if (allSelected || selectedChapters.length === 0) {
                 pendingQuestions = pendingQuestionsAll;
@@ -3106,6 +3121,17 @@ html, body {
         }
 
         // إعداد شاشة اختيار عدد الأسئلة (بعد ما بنك الأسئلة يتحدد نهائياً — كامل أو مفلتر بفصل)
+        // ✅ [جديد] رجوع ذكي من شاشة اختيار العدد — لو المادة عندها فصول يرجع لشاشة اختيار الفصل
+        // (عشان الطالب يقدر يغيّر اختياره)، غير كده يرجع للصفحة الرئيسية مباشرة
+        function goBackFromCountPicker() {
+            const chapters = _getChaptersForSubject(activeCategory);
+            if (chapters.length > 0) {
+                showView('view-chapter-picker');
+            } else {
+                showView('view-dashboard');
+            }
+        }
+
         function _proceedToCountPicker() {
             const total = pendingQuestions.length;
             document.getElementById('picker-total-text').textContent   = total;
@@ -3115,7 +3141,7 @@ html, body {
             if (totRatio) totRatio.textContent = total;
 
             const slider = document.getElementById('picker-slider');
-            slider.min   = Math.min(5, total);
+            slider.min   = 1; // ✅ [تعديل] كان الحد الأدنى 5 إجباري، بقى ممكن تختار حتى سؤال واحد
             slider.max   = total;
             slider.step  = 1;
             slider.value = Math.min(20, total);
