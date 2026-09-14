@@ -1842,7 +1842,7 @@ html, body {
                         </div>
                     </div>
 
-                    <div class="card" style="background: var(--bg-gradient); margin-bottom: 10px; border-color: var(--primary);">
+                    <div class="card" id="question-form-card" style="background: var(--bg-gradient); margin-bottom: 10px; border-color: var(--primary);">
                         <input type="hidden" id="form-q-id">
                         <div class="admin-form-group">
                             <label>اختر المادة الدراسية:</label>
@@ -2388,6 +2388,10 @@ html, body {
                     );
                     try { localStorage.setItem('aq_subject_counts', JSON.stringify(subjectCounts)); } catch(e) {}
                     try { localStorage.setItem('aq_subject_versions', JSON.stringify(subjectVersions)); } catch(e) {}
+                    // ✅ [FIX] كانت قايمة الفصول بتتحمّل بس جوه لوحة الأدمن (openAdminPanel) —
+                    // يعني شاشة اختيار الفصل كانت مستحيل تظهر لأي طالب عادي خالص، بغض النظر عن أي حاجة تانية.
+                    // نفس القراءة دي أصلاً بتحصل لكل طالب عند تسجيل الدخول، فمفيش أي قراءة إضافية هنا.
+                    cachedSubjectChapters = data.chapters || {};
                     _applySubjectCounts();
                 } else {
                     rebuildMetadataCounts();
@@ -6724,10 +6728,14 @@ html, body {
             }
             // ✅ [FIX] كان النموذج بيتملى صح بس من غير أي انتقال ليه — النموذج موجود في تبويب
             // "إضافة أسئلة" مش "إدارة البنك"، فالأدمن كان بيفضل واقف مكانه ولا يشوف حاجة اتغيرت.
-            // دلوقتي بننقله فعلياً للتبويب الصح ونمرّر الصفحة لفوق تلقائياً.
+            // دلوقتي بننقله فعلياً للتبويب الصح ونمرّر لنفس بطاقة النموذج مباشرة (مش قمة الصفحة اللي فيها
+            // رفع CSV وتوليد AI قبله — كان لسه محتاج يدور وينزل بنفسه حتى بعد التمرير لفوق).
             switchQuestionsSubTab('add');
-            showToast("📝 السؤال اتحمّل في النموذج فوق، عدّله واضغط حفظ.");
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast("📝 السؤال اتحمّل في النموذج، عدّله واضغط حفظ.");
+            setTimeout(() => {
+                const formCard = document.getElementById('question-form-card');
+                if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }, 100); // تأخير بسيط لضمان ظهور التبويب أولاً قبل حساب موضع التمرير
         }
 
         function _populateEditForm(id, q) {
