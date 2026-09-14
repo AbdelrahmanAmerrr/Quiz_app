@@ -1878,54 +1878,10 @@ html, body {
                     <!-- ══════ فرعي: إدارة البنك ══════ -->
                     <div id="qsub-manage" class="qsub-content hidden-tab">
 
-                    <!-- ── ✅ [أداء] كاش القراءة الموحّد للطلاب ── -->
-                    <div style="background:rgba(197,160,89,0.08); border:1px solid var(--primary); border-radius:8px; padding:14px; margin-bottom:16px;">
-                        <h4 style="margin:0 0 6px 0; color:var(--primary-dark);"><i class="fa-solid fa-bolt"></i> كاش القراءة الموحّد</h4>
-                        <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 10px 0; line-height:1.7;">
-                            بيتحدّث تلقائياً مع أي إضافة/تعديل/حذف سؤال. استخدم الزرار ده يدوياً بس لو محتاج تبني الكاش لأول مرة، أو لو شاكك إنه مش متزامن.
-                        </p>
-                        <button class="ban-btn" style="background:var(--primary); color:#fff; width:100%;" onclick="rebuildAllQuestionsCaches()">
-                            <i class="fa-solid fa-rotate"></i> بناء/تحديث كاش كل المواد الآن
-                        </button>
-                    </div>
-
-                    <!-- ── ✅ [أداء] كاش الشروحات المشتركة بشات المراجعة ── -->
-                    <div style="background:rgba(197,160,89,0.08); border:1px solid var(--primary); border-radius:8px; padding:14px; margin-bottom:16px;">
-                        <h4 style="margin:0 0 6px 0; color:var(--primary-dark);"><i class="fa-solid fa-comment-dots"></i> كاش شروحات شات المراجعة</h4>
-                        <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 10px 0; line-height:1.7;">
-                            شروحات "اشرحلي أكتر" و"ليه إجابتي كده" بتتخزن تلقائياً وتتصفّى تلقائياً لو طالب قيّمها 👎. استخدم الزرار ده لمسح كل الكاش يدوياً لو محتاج بداية نظيفة.
-                        </p>
-                        <button class="ban-btn" style="background:#7f1d1d; color:#fff; width:100%;" onclick="clearExplanationCache()">
-                            <i class="fa-solid fa-broom"></i> امسح كل كاش الشروحات
-                        </button>
-                    </div>
-
-                    <!-- ── حذف الأسئلة ── -->
-                    <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:8px; padding:14px; margin-bottom:16px;">
-                        <h4 style="margin:0 0 12px 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> حذف الأسئلة</h4>
-                        <div style="margin-bottom:10px;">
-                            <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">حذف أسئلة مادة محددة:</label>
-                            <select id="deleteSubjectSelect" style="width:100%; padding:9px; border-radius:8px; border:1px solid #fca5a5; background:var(--card-bg); color:var(--text-main); font-size:14px;">
-                                <option value="">-- اختر المادة للحذف --</option>
-                                <option value="databases">قواعد البيانات</option>
-                                <option value="structured_programming">البرمجة الهيكلية</option>
-                                <option value="corporate_accounting">محاسبة شركات</option>
-                                <option value="operations_management">إدارة الانتاج والعمليات</option>
-                                <option value="economics_english">انجليزي اقتصاد</option>
-                            </select>
-                        </div>
-                        <button class="ban-btn" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; width:100%; margin-bottom:8px;" onclick="deleteQuestionsBySubject()">
-                            <i class="fa-solid fa-trash"></i> حذف أسئلة المادة المحددة
-                        </button>
-                        <button class="ban-btn" style="background:#7f1d1d; color:#fff; width:100%;" onclick="deleteAllQuestions()">
-                            <i class="fa-solid fa-skull"></i> مسح جميع الأسئلة (الكل)
-                        </button>
-                    </div>
-
                     <h3>🗂️ بنك الأسئلة المتاحة حالياً بالسيرفر</h3>
-                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 10px;">
                         <input type="text" id="admin-search-input" class="search-box" style="margin-bottom:0;" placeholder="🔍 ابحث بكلمات مفتاحية..." oninput="filterQuestionsBank()">
-                        <select id="filter-admin-subject" class="search-box" style="margin-bottom:0; height:45px;" onchange="filterQuestionsBank()">
+                        <select id="filter-admin-subject" class="search-box" style="margin-bottom:0; height:45px;" onchange="onFilterSubjectChanged()">
                             <option value="">جميع المواد</option>
                             <option value="databases">قواعد البيانات</option>
                             <option value="structured_programming">البرمجة الهيكلية</option>
@@ -1940,12 +1896,74 @@ html, body {
                             <option value="hard">صعب (نسبة نجاح < 35%)</option>
                         </select>
                     </div>
+                    <!-- ✅ [جديد] فلتر الفصل — بيظهر بس لو المادة المختارة عندها فصول مضافة -->
+                    <div id="filter-admin-chapter-wrap" style="display:none; align-items:center; gap:10px; margin-bottom:15px;">
+                        <select id="filter-admin-chapter" class="search-box" style="margin-bottom:0; height:45px; flex:1;" onchange="filterQuestionsBank()">
+                            <option value="">كل الفصول</option>
+                        </select>
+                        <button type="button" onclick="switchQuestionsSubTab('add')" style="background:none; border:1px solid var(--border); border-radius:8px; padding:0 12px; height:45px; color:var(--text-muted); font-size:12px; white-space:nowrap; cursor:pointer;">
+                            <i class="fa-solid fa-gear"></i> إدارة الفصول
+                        </button>
+                    </div>
+
                     <div style="margin-bottom: 10px; text-align: right;">
                         <button id="btn-bulk-delete-questions" class="ban-btn ban-active" style="display:none;" onclick="deleteSelectedQuestionsGroup()"><i class="fa-solid fa-trash"></i> حذف الأسئلة المحددة دفعة واحدة</button>
                     </div>
+
                     <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px;" id="admin-questions-list">
                         جاري تحميل بنك الأسئلة...
                     </div>
+
+                    <!-- ✅ [تحسين] أدوات الصيانة والحذف الجماعي — مطوية افتراضياً، مش أول حاجة تقابل الأدمن بعد كده -->
+                    <details style="margin-top:22px;">
+                        <summary style="cursor:pointer; font-weight:700; color:var(--text-muted); padding:10px 0; font-size:13.5px;">
+                            <i class="fa-solid fa-gear"></i> أدوات الصيانة والحذف الجماعي (نادراً ما تحتاجها)
+                        </summary>
+
+                        <!-- ── ✅ [أداء] كاش القراءة الموحّد للطلاب ── -->
+                        <div style="background:rgba(197,160,89,0.08); border:1px solid var(--primary); border-radius:8px; padding:14px; margin:14px 0;">
+                            <h4 style="margin:0 0 6px 0; color:var(--primary-dark);"><i class="fa-solid fa-bolt"></i> كاش القراءة الموحّد</h4>
+                            <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 10px 0; line-height:1.7;">
+                                بيتحدّث تلقائياً مع أي إضافة/تعديل/حذف سؤال. استخدم الزرار ده يدوياً بس لو محتاج تبني الكاش لأول مرة، أو لو شاكك إنه مش متزامن.
+                            </p>
+                            <button class="ban-btn" style="background:var(--primary); color:#fff; width:100%;" onclick="rebuildAllQuestionsCaches()">
+                                <i class="fa-solid fa-rotate"></i> بناء/تحديث كاش كل المواد الآن
+                            </button>
+                        </div>
+
+                        <!-- ── ✅ [أداء] كاش الشروحات المشتركة بشات المراجعة ── -->
+                        <div style="background:rgba(197,160,89,0.08); border:1px solid var(--primary); border-radius:8px; padding:14px; margin-bottom:14px;">
+                            <h4 style="margin:0 0 6px 0; color:var(--primary-dark);"><i class="fa-solid fa-comment-dots"></i> كاش شروحات شات المراجعة</h4>
+                            <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 10px 0; line-height:1.7;">
+                                شروحات "اشرحلي أكتر" و"ليه إجابتي كده" بتتخزن تلقائياً وتتصفّى تلقائياً لو طالب قيّمها 👎. استخدم الزرار ده لمسح كل الكاش يدوياً لو محتاج بداية نظيفة.
+                            </p>
+                            <button class="ban-btn" style="background:#7f1d1d; color:#fff; width:100%;" onclick="clearExplanationCache()">
+                                <i class="fa-solid fa-broom"></i> امسح كل كاش الشروحات
+                            </button>
+                        </div>
+
+                        <!-- ── حذف الأسئلة ── -->
+                        <div style="background:rgba(239,68,68,0.06); border:1px solid #fca5a5; border-radius:8px; padding:14px;">
+                            <h4 style="margin:0 0 12px 0; color:var(--danger);"><i class="fa-solid fa-trash-can"></i> حذف الأسئلة</h4>
+                            <div style="margin-bottom:10px;">
+                                <label style="display:block; margin-bottom:6px; font-size:13px; font-weight:600;">حذف أسئلة مادة محددة:</label>
+                                <select id="deleteSubjectSelect" style="width:100%; padding:9px; border-radius:8px; border:1px solid #fca5a5; background:var(--card-bg); color:var(--text-main); font-size:14px;">
+                                    <option value="">-- اختر المادة للحذف --</option>
+                                    <option value="databases">قواعد البيانات</option>
+                                    <option value="structured_programming">البرمجة الهيكلية</option>
+                                    <option value="corporate_accounting">محاسبة شركات</option>
+                                    <option value="operations_management">إدارة الانتاج والعمليات</option>
+                                    <option value="economics_english">انجليزي اقتصاد</option>
+                                </select>
+                            </div>
+                            <button class="ban-btn" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; width:100%; margin-bottom:8px;" onclick="deleteQuestionsBySubject()">
+                                <i class="fa-solid fa-trash"></i> حذف أسئلة المادة المحددة
+                            </button>
+                            <button class="ban-btn" style="background:#7f1d1d; color:#fff; width:100%;" onclick="deleteAllQuestions()">
+                                <i class="fa-solid fa-skull"></i> مسح جميع الأسئلة (الكل)
+                            </button>
+                        </div>
+                    </details>
 
                     </div>
                     <!-- ══════ نهاية فرعي: إدارة البنك ══════ -->
@@ -5097,11 +5115,17 @@ html, body {
             const word = document.getElementById('admin-search-input').value.toLowerCase().trim();
             const subjectFilter = document.getElementById('filter-admin-subject').value;
             const difficultyFilter = document.getElementById('filter-admin-difficulty').value;
+            const chapterFilter = document.getElementById('filter-admin-chapter').value; // ✅ [جديد]
 
             let filtered = cachedAdminQuestions;
 
             if(subjectFilter) {
                 filtered = filtered.filter(q => q.subject === subjectFilter);
+            }
+
+            // ✅ [جديد] فلتر الفصل
+            if(chapterFilter) {
+                filtered = filtered.filter(q => q.chapter === chapterFilter);
             }
 
             if(difficultyFilter) {
@@ -5126,6 +5150,24 @@ html, body {
             }
 
             renderQuestionsListUI(filtered);
+        }
+
+        // ✅ [جديد] لما الأدمن يغيّر فلتر المادة، نظهر/نخفي فلتر الفصل ونملأه بفصول المادة دي بس
+        function onFilterSubjectChanged() {
+            const subject = document.getElementById('filter-admin-subject').value;
+            const wrap = document.getElementById('filter-admin-chapter-wrap');
+            const select = document.getElementById('filter-admin-chapter');
+            const chapters = subject ? _getChaptersForSubject(subject) : [];
+
+            if (chapters.length > 0) {
+                select.innerHTML = '<option value="">كل الفصول</option>' +
+                    chapters.map(ch => `<option value="${esc(ch)}">${esc(ch)}</option>`).join('');
+                wrap.style.display = 'flex';
+            } else {
+                select.value = '';
+                wrap.style.display = 'none';
+            }
+            filterQuestionsBank();
         }
 
         function deleteQuestionsBySubject() {
