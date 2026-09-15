@@ -1809,16 +1809,22 @@ html, body {
                         <label for="csvFileInput" class="file-label">
                             <i class="fa-solid fa-file-excel file-icon"></i>
                             <span id="fileNameDisplay" style="font-weight:bold; display:block; margin-bottom:5px;">اضغط لاختيار ملف CSV</span>
-                            <small style="color:var(--text-muted); display:block;">الترتيب: Question, A, B, C, D, Answer, Explanation</small>
+                            <small style="color:var(--text-muted); display:block;">الترتيب: Question, A, B, C, D, Answer, Explanation, Chapter (اختياري)</small>
                         </label>
                         <div style="margin:14px 0 10px 0;">
-                            <select id="csvFileSubject" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px; font-weight:bold;">
+                            <select id="csvFileSubject" onchange="_populateCsvChapterSelect()" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px; font-weight:bold;">
                                 <option value="">-- اختر المادة --</option>
                                 <option value="databases">قواعد البيانات</option>
                                 <option value="structured_programming">البرمجة الهيكلية</option>
                                 <option value="corporate_accounting">محاسبة شركات</option>
                                 <option value="operations_management">إدارة الانتاج والعمليات</option>
                                 <option value="economics_english">انجليزي اقتصاد</option>
+                            </select>
+                        </div>
+                        <!-- ✅ [جديد] فصل افتراضي لكل الملف — بيتجاوزه أي عمود Chapter موجود جوه الـCSV نفسه لكل سطر لوحده -->
+                        <div id="csvChapterWrap" style="display:none; margin:0 0 10px 0;">
+                            <select id="csvFileChapter" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px;">
+                                <option value="">بدون فصل محدد (افتراضي لكل الملف)</option>
                             </select>
                         </div>
                         <button class="btn-launch" style="background:var(--success); width:100%;" onclick="uploadBulkQuestions()">
@@ -5480,8 +5486,25 @@ html, body {
         // ✅ [AI-GEN] توليد أسئلة من صورة منهج بالذكاء الاصطناعي (Gemini عبر /api/generate-questions)
         // ══════════════════════════════════════════════════════════════
 
+        // ✅ [جديد] تعبئة قايمة الفصول حسب المادة المختارة في نموذج توليد الذكاء الاصطناعي
+        function _populateAiGenChapterSelect() {
+            const subject = document.getElementById('aiGenSubject').value;
+            const wrap = document.getElementById('aiGenChapterWrap');
+            const select = document.getElementById('aiGenChapter');
+            const chapters = subject ? _getChaptersForSubject(subject) : [];
+
+            if (chapters.length > 0) {
+                select.innerHTML = '<option value="">بدون فصل محدد</option>' +
+                    chapters.map(ch => `<option value="${esc(ch)}">${esc(ch)}</option>`).join('');
+                wrap.style.display = 'block';
+            } else {
+                select.value = '';
+                wrap.style.display = 'none';
+            }
+        }
+
         let aiGenCurrentSubject = '';
-        let aiGenPageImages = []; // كل الصور/الصفحات الجاهزة للتحليل بعد المعالجة
+        let aiGenCurrentChapter = null; // ✅ [جديد]        let aiGenPageImages = []; // كل الصور/الصفحات الجاهزة للتحليل بعد المعالجة
 
         const AI_GEN_BATCH_PAGE_SIZE = 3;   // كام صورة تُرسل بالنداء الواحد لـ Gemini
         const AI_GEN_MAX_TOTAL_PAGES = 12;  // حد أقصى لعدد الصفحات/الصور بالمرة الواحدة
@@ -5773,6 +5796,7 @@ html, body {
 
         async function renderAiReviewCards(questions, subject) {
             aiGenCurrentSubject = subject;
+            aiGenCurrentChapter = document.getElementById('aiGenChapter').value || null; // ✅ [جديد]
             document.getElementById('ai-gen-form').style.display = 'none';
             document.getElementById('ai-gen-review').style.display = 'block';
             const searchBox = document.getElementById('aiGenReviewSearch');
@@ -5897,6 +5921,7 @@ html, body {
                 const newRef = db.collection("questions").doc();
                 batch.set(newRef, {
                     subject: aiGenCurrentSubject,
+                    chapter: aiGenCurrentChapter, // ✅ [جديد]
                     question: questionText,
                     options: options,
                     answer: answer,
@@ -5926,10 +5951,28 @@ html, body {
             }).catch(err => showToast("حدث خطأ أثناء الحفظ: " + err.message, "error"));
         }
 
+        // ✅ [جديد] تعبئة قايمة الفصول حسب المادة المختارة لرفع CSV
+        function _populateCsvChapterSelect() {
+            const subject = document.getElementById('csvFileSubject').value;
+            const wrap = document.getElementById('csvChapterWrap');
+            const select = document.getElementById('csvFileChapter');
+            const chapters = subject ? _getChaptersForSubject(subject) : [];
+
+            if (chapters.length > 0) {
+                select.innerHTML = '<option value="">بدون فصل محدد (افتراضي لكل الملف)</option>' +
+                    chapters.map(ch => `<option value="${esc(ch)}">${esc(ch)}</option>`).join('');
+                wrap.style.display = 'block';
+            } else {
+                select.value = '';
+                wrap.style.display = 'none';
+            }
+        }
+
         function uploadBulkQuestions() {
             const fileInput = document.getElementById('csvFileInput');
             const subjectSelect = document.getElementById('csvFileSubject');
             const selectedSubject = subjectSelect.value;
+            const defaultChapter = document.getElementById('csvFileChapter').value || null; // ✅ [جديد]
 
             if (fileInput.files.length === 0) { showToast("يا قائد، يرجى اختيار ملف الـ CSV أولاً!", "error"); return; }
             if (!selectedSubject) { showToast("يا قائد، يرجى تحديد المادة التعليمية أولاً!", "error"); return; }
@@ -5949,6 +5992,8 @@ html, body {
                             let newQuestionRef = db.collection("questions").doc(); 
                             batch.set(newQuestionRef, {
                                 subject: selectedSubject,
+                                // ✅ [جديد] عمود Chapter بالملف (لو موجود لهذا السطر) بيتغلّب على الفصل الافتراضي المختار فوق
+                                chapter: (q.Chapter && q.Chapter.trim()) ? q.Chapter.trim() : defaultChapter,
                                 question: q.Question,
                                 options: [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== ""),
                                 answer: q.Answer,
@@ -5971,6 +6016,8 @@ html, body {
                         logAdminAction("رفع ملف CSV", `تم رفع عدد ${count} سؤال لمادة ${fixedSubjects[selectedSubject]}`);
                         fileInput.value = "";
                         subjectSelect.value = "";
+                        document.getElementById('csvFileChapter').value = "";
+                        document.getElementById('csvChapterWrap').style.display = 'none';
                         document.getElementById('fileNameDisplay').innerText = "اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة";
                         document.getElementById('fileNameDisplay').style.color = "";
                         // ✅ [OPT-24] تحديث العداد بالعدد الفعلي المضاف (كتابة واحدة فقط)
@@ -6924,13 +6971,20 @@ html, body {
                 </label>
 
                 <div style="margin:14px 0 10px 0;">
-                    <select id="aiGenSubject" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px; font-weight:bold;">
+                    <select id="aiGenSubject" onchange="_populateAiGenChapterSelect()" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px; font-weight:bold;">
                         <option value="">-- اختر المادة --</option>
                         <option value="databases">قواعد البيانات</option>
                         <option value="structured_programming">البرمجة الهيكلية</option>
                         <option value="corporate_accounting">محاسبة شركات</option>
                         <option value="operations_management">إدارة الانتاج والعمليات</option>
                         <option value="economics_english">انجليزي اقتصاد</option>
+                    </select>
+                </div>
+
+                <!-- ✅ [جديد] الفصل — بيظهر بس لو المادة المختارة عندها فصول مضافة. كل الدفعة هتتوسم بنفس الفصل -->
+                <div id="aiGenChapterWrap" style="display:none; margin:0 0 10px 0;">
+                    <select id="aiGenChapter" style="width:100%; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px;">
+                        <option value="">بدون فصل محدد</option>
                     </select>
                 </div>
 
