@@ -220,6 +220,15 @@ html, body {
         .home-quiz-card-meta { font-size: 11.5px; opacity: 0.9; margin-top: 3px; }
         .home-quiz-card i.fa-chevron-left { opacity: 0.85; font-size: 14px; }
 
+        .quiz-add-mode-btn {
+            flex: 1; padding: 9px 6px; font-size: 12.5px; font-weight: bold; text-align: center;
+            border-radius: 8px; border: 2px solid var(--border); background: var(--card-bg);
+            color: var(--text-muted); cursor: pointer; transition: var(--transition);
+        }
+        .quiz-add-mode-btn.active {
+            border-color: #7c3aed; background: linear-gradient(135deg, #7c3aed, #c026d3); color: #fff;
+        }
+
         /* ═══ زر الإطلاق — ذهبي كلاسيكي ═══ */
         .btn-launch { 
             background: linear-gradient(135deg, #C5A059 0%, #A8853D 100%);
@@ -2332,19 +2341,35 @@ html, body {
                         </div>
 
                         <div style="border-top:2px dashed var(--border); padding-top:14px; margin-top:6px;">
-                            <h5 style="margin:0 0 8px 0; font-size:13px;"><i class="fa-solid fa-magnifying-glass"></i> إضافة سؤال من البنك الموجود:</h5>
-                            <input type="text" id="quiz-bank-search" class="search-box" placeholder="اختر المادة فوق، وابحث بنص السؤال هنا..." oninput="searchBankQuestionsForQuiz()" style="margin-bottom:8px;">
-                            <div id="quiz-bank-search-results" style="max-height:180px; overflow-y:auto; margin-bottom:14px;"></div>
+                            <h5 style="margin:0 0 10px 0; font-size:13px;">➕ إضافة سؤال للكويز:</h5>
+                            <div style="display:flex; gap:6px; margin-bottom:12px;">
+                                <button type="button" class="quiz-add-mode-btn active" id="quiz-mode-btn-bank" onclick="switchQuizAddMode('bank')">🔍 من البنك</button>
+                                <button type="button" class="quiz-add-mode-btn" id="quiz-mode-btn-ai" onclick="switchQuizAddMode('ai')">🤖 من صورة (AI)</button>
+                                <button type="button" class="quiz-add-mode-btn" id="quiz-mode-btn-manual" onclick="switchQuizAddMode('manual')">✏️ يدوي</button>
+                            </div>
 
-                            <h5 style="margin:0 0 8px 0; font-size:13px;"><i class="fa-solid fa-pen"></i> أو أضف سؤال جديد خاص بالكويز:</h5>
-                            <textarea id="quiz-new-q-text" class="search-box" placeholder="نص السؤال..." style="min-height:45px; margin-bottom:6px;"></textarea>
-                            <input type="text" id="quiz-new-q-opt-0" class="search-box" placeholder="الخيار الأول" style="margin-bottom:6px;">
-                            <input type="text" id="quiz-new-q-opt-1" class="search-box" placeholder="الخيار الثاني" style="margin-bottom:6px;">
-                            <input type="text" id="quiz-new-q-opt-2" class="search-box" placeholder="الخيار الثالث (اختياري)" style="margin-bottom:6px;">
-                            <input type="text" id="quiz-new-q-opt-3" class="search-box" placeholder="الخيار الرابع (اختياري)" style="margin-bottom:6px;">
-                            <input type="text" id="quiz-new-q-answer" class="search-box" placeholder="الإجابة الصحيحة (يجب مطابقة أحد الخيارات حرفياً)" style="margin-bottom:6px;">
-                            <textarea id="quiz-new-q-exp" class="search-box" placeholder="شرح الإجابة (اختياري)" style="min-height:35px; margin-bottom:8px;"></textarea>
-                            <button class="ban-btn ban-inactive" style="background:var(--bg-gradient); border:1px solid var(--border); width:100%;" onclick="addCustomQuestionToQuizBuilder()"><i class="fa-solid fa-plus"></i> أضف هذا السؤال للكويز</button>
+                            <div id="quiz-add-mode-bank">
+                                <input type="text" id="quiz-bank-search" class="search-box" placeholder="اختر المادة فوق، وابحث بنص السؤال هنا..." oninput="searchBankQuestionsForQuiz()" style="margin-bottom:8px;">
+                                <div id="quiz-bank-search-results" style="max-height:180px; overflow-y:auto;"></div>
+                            </div>
+
+                            <div id="quiz-add-mode-ai" style="display:none; text-align:center; padding:6px 0 4px;">
+                                <p style="font-size:12px; color:var(--text-muted); margin:0 0 10px;">ارفع صورة أو PDF للمنهج، وهتقدر تراجع وتعدّل الأسئلة المولّدة قبل ما تتضاف للكويز مباشرة.</p>
+                                <button class="btn-launch" style="background:linear-gradient(135deg,#7c3aed,#c026d3); width:100%;" onclick="openAiGenModalForQuiz()">
+                                    <i class="fa-solid fa-wand-magic-sparkles"></i> افتح مولّد الأسئلة بالذكاء الاصطناعي
+                                </button>
+                            </div>
+
+                            <div id="quiz-add-mode-manual" style="display:none;">
+                                <textarea id="quiz-new-q-text" class="search-box" placeholder="نص السؤال..." style="min-height:45px; margin-bottom:6px;"></textarea>
+                                <input type="text" id="quiz-new-q-opt-0" class="search-box" placeholder="الخيار الأول" style="margin-bottom:6px;">
+                                <input type="text" id="quiz-new-q-opt-1" class="search-box" placeholder="الخيار الثاني" style="margin-bottom:6px;">
+                                <input type="text" id="quiz-new-q-opt-2" class="search-box" placeholder="الخيار الثالث (اختياري)" style="margin-bottom:6px;">
+                                <input type="text" id="quiz-new-q-opt-3" class="search-box" placeholder="الخيار الرابع (اختياري)" style="margin-bottom:6px;">
+                                <input type="text" id="quiz-new-q-answer" class="search-box" placeholder="الإجابة الصحيحة (يجب مطابقة أحد الخيارات حرفياً)" style="margin-bottom:6px;">
+                                <textarea id="quiz-new-q-exp" class="search-box" placeholder="شرح الإجابة (اختياري)" style="min-height:35px; margin-bottom:8px;"></textarea>
+                                <button class="ban-btn ban-inactive" style="background:var(--bg-gradient); border:1px solid var(--border); width:100%;" onclick="addCustomQuestionToQuizBuilder()"><i class="fa-solid fa-plus"></i> أضف هذا السؤال للكويز</button>
+                            </div>
                         </div>
 
                         <div style="border-top:2px dashed var(--border); padding-top:14px; margin-top:14px;">
@@ -2354,10 +2379,13 @@ html, body {
                             </div>
                         </div>
 
-                        <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; margin:8px 0 14px; cursor:pointer;">
-                            <input type="checkbox" id="quiz-publish-checkbox" style="width:17px; height:17px;">
-                            انشر الكويز فوراً (يظهر للطلاب في الصفحة الرئيسية)
-                        </label>
+                        <div style="background:var(--bg-gradient); border-radius:10px; padding:12px 14px; margin:8px 0 14px;">
+                            <label style="display:flex; align-items:center; gap:8px; font-size:13.5px; font-weight:bold; cursor:pointer;">
+                                <input type="checkbox" id="quiz-publish-checkbox" style="width:17px; height:17px;">
+                                🟢 انشر الكويز فوراً (يظهر للطلاب في الصفحة الرئيسية)
+                            </label>
+                            <p style="font-size:11.5px; color:var(--text-muted); margin:6px 0 0;">لو سبته من غير تحديد، الكويز هيتحفظ كمسودة ⚪ ومحدش هيشوفه، وتقدر تنشره بعدين بضغطة زرار من قايمة "الكويزات الموجودة" تحت. <strong>متنساش تضغط "حفظ الكويز" تحت عشان أي سؤال ضفته يتسجل فعلياً.</strong></p>
+                        </div>
 
                         <div style="display:flex; gap:8px;">
                             <button class="btn-launch" style="background:linear-gradient(135deg,#7c3aed,#c026d3); flex:1;" onclick="saveQuizBuilder()"><i class="fa-solid fa-floppy-disk"></i> حفظ الكويز</button>
@@ -5686,13 +5714,42 @@ html, body {
         }
 
         let aiGenCurrentSubject = '';
-        let aiGenCurrentChapter = null; // ✅ [جديد]        let aiGenPageImages = []; // كل الصور/الصفحات الجاهزة للتحليل بعد المعالجة
+        let aiGenCurrentChapter = null; // ✅ [جديد]
+        let aiGenTargetMode = 'bank'; // ✅ [جديد] 'bank' = حفظ مباشر في بنك الأسئلة | 'quiz' = إضافة لقايمة أسئلة كويز تحت الإنشاء
+        let aiGenPageImages = []; // كل الصور/الصفحات الجاهزة للتحليل بعد المعالجة
 
         const AI_GEN_BATCH_PAGE_SIZE = 3;   // كام صورة تُرسل بالنداء الواحد لـ Gemini
         const AI_GEN_MAX_TOTAL_PAGES = 12;  // حد أقصى لعدد الصفحات/الصور بالمرة الواحدة
 
         function openAiGenModal() {
+            aiGenTargetMode = 'bank';
             resetAiGenModal();
+            const overlay = document.getElementById('ai-gen-overlay');
+            overlay.style.display = 'flex';
+            requestAnimationFrame(() => {
+                const box = document.getElementById('ai-gen-box');
+                if (box) box.classList.add('modal-show');
+            });
+        }
+
+        // ✅ [جديد] فتح نفس مولّد الذكاء الاصطناعي، لكن الأسئلة المعتمدة بتتضاف لقايمة أسئلة الكويز
+        // الحالي تحت الإنشاء بدل ما تتحفظ مباشرة في بنك الأسئلة العام
+        function openAiGenModalForQuiz() {
+            const quizSubject = document.getElementById('quiz-subject-select').value;
+            if (!quizSubject) { showToast("اختار مادة الكويز أولاً فوق قبل توليد الأسئلة.", "error"); return; }
+
+            aiGenTargetMode = 'quiz';
+            resetAiGenModal();
+
+            document.getElementById('aiGenSubject').value = quizSubject;
+            document.getElementById('aiGenSubject').disabled = true;
+            _populateAiGenChapterSelect();
+
+            document.getElementById('ai-gen-title').innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" style="color:#7c3aed;"></i> توليد أسئلة للكويز';
+            document.getElementById('aiGenSubmitBtn').style.background = '#7c3aed';
+            document.getElementById('aiGenSaveBtn').style.background = 'linear-gradient(135deg,#7c3aed,#c026d3)';
+            document.getElementById('aiGenSaveBtn').innerHTML = '<i class="fa-solid fa-plus"></i> أضف الأسئلة المحدَّدة للكويز';
+
             const overlay = document.getElementById('ai-gen-overlay');
             overlay.style.display = 'flex';
             requestAnimationFrame(() => {
@@ -5707,6 +5764,13 @@ html, body {
             setTimeout(() => {
                 const overlay = document.getElementById('ai-gen-overlay');
                 if (overlay) overlay.style.display = 'none';
+                // ✅ [جديد] رجوع كامل لوضع "البنك" الافتراضي بعد الإغلاق، مهما كان الوضع اللي اتفتح بيه
+                aiGenTargetMode = 'bank';
+                document.getElementById('aiGenSubject').disabled = false;
+                document.getElementById('ai-gen-title').innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" style="color:#be185d;"></i> توليد أسئلة من صورة';
+                document.getElementById('aiGenSubmitBtn').style.background = '#be185d';
+                document.getElementById('aiGenSaveBtn').style.background = 'var(--success)';
+                document.getElementById('aiGenSaveBtn').innerHTML = '<i class="fa-solid fa-check"></i> حفظ الأسئلة المحدَّدة في البنك';
             }, 200);
         }
 
@@ -5715,7 +5779,11 @@ html, body {
             document.getElementById('ai-gen-review').style.display = 'none';
             document.getElementById('ai-gen-cards').innerHTML = '';
             document.getElementById('aiGenFileInput').value = '';
-            document.getElementById('aiGenSubject').value = '';
+            // ✅ [جديد] في وضع الكويز المادة مقفولة على مادة الكويز نفسه، مش بترجع فاضية
+            if (aiGenTargetMode !== 'quiz') {
+                document.getElementById('aiGenSubject').value = '';
+                document.getElementById('aiGenSubject').disabled = false;
+            }
             document.getElementById('aiGenCount').value = '5';
             document.getElementById('aiGenNote').value = '';
             document.getElementById('aiGenFileDisplay').innerText = 'اضغط لاختيار صورة أو ملف PDF (تقدر تختار أكثر من صورة)';
@@ -6086,6 +6154,46 @@ html, body {
             const cards = document.querySelectorAll('.ai-gen-card');
             if (cards.length === 0) return;
 
+            // ✅ [جديد] وضع الكويز: الأسئلة المعتمدة تتضاف لقايمة أسئلة الكويز تحت الإنشاء، من غير أي كتابة على Firestore هنا
+            if (aiGenTargetMode === 'quiz') {
+                let addedCount = 0;
+                let skippedMismatch = 0;
+
+                cards.forEach(card => {
+                    const i = card.dataset.index;
+                    const includedBox = document.getElementById(`ai-inc-${i}`);
+                    if (!includedBox || !includedBox.checked) return;
+
+                    const questionText = document.getElementById(`ai-q-${i}`).value.trim();
+                    const options = [];
+                    for (let j = 0; j < 4; j++) {
+                        const optEl = document.getElementById(`ai-opt-${i}-${j}`);
+                        if (optEl && optEl.value.trim() !== '') options.push(optEl.value.trim());
+                    }
+                    const answer = document.getElementById(`ai-answer-${i}`).value.trim();
+                    const explanation = document.getElementById(`ai-exp-${i}`).value.trim();
+
+                    if (!questionText || options.length < 2 || !answer) return;
+                    if (!options.includes(answer)) { skippedMismatch++; return; }
+
+                    quizBuilderQuestions.push({ question: questionText, options, answer, explanation });
+                    addedCount++;
+                });
+
+                if (addedCount === 0) {
+                    showToast(skippedMismatch > 0
+                        ? "لم تتم إضافة أي سؤال: الإجابة يجب أن تطابق نص أحد الخيارات بالضبط."
+                        : "لا يوجد أي سؤال محدَّد للإضافة.", "error");
+                    return;
+                }
+
+                renderQuizBuilderQuestionsList();
+                showToast(`✅ اتضاف ${addedCount} سؤال للكويز — متنساش تضغط "حفظ الكويز" لما تخلص` + (skippedMismatch > 0 ? ` (تم تجاهل ${skippedMismatch})` : ''));
+                closeAiGenModal();
+                return;
+            }
+
+            // ── الوضع الافتراضي: حفظ مباشر في بنك الأسئلة العام ──
             const batch = db.batch();
             let count = 0;
             let skippedMismatch = 0;
@@ -6397,6 +6505,14 @@ html, body {
             document.getElementById('quiz-chapter-select').innerHTML = _chapterOptionsHtml(subject, '');
         }
 
+        // ✅ [تبسيط] تبديل طريقة إضافة السؤال (بنك / AI / يدوي) — واحدة ظاهرة بس في كل مرة بدل عرضهم مع بعض
+        function switchQuizAddMode(mode) {
+            ['bank', 'ai', 'manual'].forEach(m => {
+                document.getElementById(`quiz-add-mode-${m}`).style.display = (m === mode) ? 'block' : 'none';
+                document.getElementById(`quiz-mode-btn-${m}`).classList.toggle('active', m === mode);
+            });
+        }
+
         // يضمن تحميل بنك الأسئلة كامل في الكاش لو لسه ما اتحملش (لو الأدمن دخل تبويب الكويزات قبل ما يزور "إدارة البنك")
         function _ensureAdminQuestionsCache() {
             if (cachedAdminQuestions.length > 0) return Promise.resolve(cachedAdminQuestions);
@@ -6513,6 +6629,7 @@ html, body {
             document.getElementById('quiz-bank-search-results').innerHTML = '';
             document.getElementById('quiz-builder-title').innerHTML = '<i class="fa-solid fa-plus"></i> إنشاء كويز جديد';
             document.getElementById('quiz-builder-cancel-btn').style.display = 'none';
+            switchQuizAddMode('bank');
             renderQuizBuilderQuestionsList();
         }
 
@@ -6604,6 +6721,7 @@ html, body {
             document.getElementById('quiz-xp-per-correct').value = q.xpPerCorrect || 10;
             document.getElementById('quiz-publish-checkbox').checked = !!q.published;
             quizBuilderQuestions = JSON.parse(JSON.stringify(q.questions || []));
+            switchQuizAddMode('bank');
             renderQuizBuilderQuestionsList();
 
             document.getElementById('quiz-builder-title').innerHTML = '<i class="fa-solid fa-pen"></i> تعديل الكويز: ' + esc(q.title || '');
