@@ -190,6 +190,36 @@ html, body {
         .subject-card .q-count-badge { font-size: 11px; background: var(--border); padding: 3px 8px;
             border-radius: 4px; color: var(--text-muted); font-weight: 600; }
 
+        /* ═══ [جديد] قسم الكويزات المنشورة — هوية بصرية مستقلة (بنفسجي/فوشيا) عشان تدي إحساس "فرصة مؤقتة" مختلف عن هوية المنصة الذهبية الثابتة ═══ */
+        @keyframes quizBadgePulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(192,38,211,0.45); }
+            50%      { box-shadow: 0 0 0 7px rgba(192,38,211,0); }
+        }
+        .quiz-section-badge {
+            display: inline-flex; align-items: center; gap: 5px;
+            background: linear-gradient(135deg, #7c3aed 0%, #c026d3 100%);
+            color: #fff; font-size: 11px; font-weight: 800; padding: 4px 12px;
+            border-radius: 99px; letter-spacing: 0.3px;
+            animation: quizBadgePulse 2.2s infinite;
+        }
+        .home-quiz-card {
+            background: linear-gradient(135deg, #7c3aed 0%, #a21caf 55%, #c026d3 100%);
+            border-radius: 14px; padding: 14px 16px; color: #fff; cursor: pointer;
+            display: flex; align-items: center; justify-content: space-between; gap: 10px;
+            box-shadow: 0 6px 18px rgba(124,58,237,0.32); transition: var(--transition);
+            position: relative; overflow: hidden;
+        }
+        .home-quiz-card::after {
+            content: ""; position: absolute; inset: 0;
+            background: linear-gradient(120deg, rgba(255,255,255,0.18) 0%, transparent 40%);
+            pointer-events: none;
+        }
+        .home-quiz-card:hover { transform: translateY(-2px); box-shadow: 0 9px 22px rgba(124,58,237,0.42); }
+        .home-quiz-card:active { transform: scale(0.98); }
+        .home-quiz-card-title { font-weight: 800; font-size: 14.5px; }
+        .home-quiz-card-meta { font-size: 11.5px; opacity: 0.9; margin-top: 3px; }
+        .home-quiz-card i.fa-chevron-left { opacity: 0.85; font-size: 14px; }
+
         /* ═══ زر الإطلاق — ذهبي كلاسيكي ═══ */
         .btn-launch { 
             background: linear-gradient(135deg, #C5A059 0%, #A8853D 100%);
@@ -1209,6 +1239,15 @@ html, body {
                         <!-- مخفي — بقي للتوافقية فقط -->
                     </div>
 
+                    <!-- ✅ [جديد] كويزات خاطفة منشورة من الأدمن — منفصلة تماماً عن بنك الأسئلة، هوية بصرية مميّزة -->
+                    <div id="home-quizzes-section" style="display:none; margin-top:22px;">
+                        <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                            <span class="quiz-section-badge">⏳ لفترة محدودة</span>
+                            <h3 style="margin:0; font-size:15.5px;"><i class="fa-solid fa-bolt" style="color:#a855f7;"></i> كويزات خاطفة</h3>
+                        </div>
+                        <div id="home-quizzes-list" style="display:flex; flex-direction:column; gap:10px;"></div>
+                    </div>
+
                     <h3 style="margin-top:25px;"><i class="fa-solid fa-book"></i> اختر المادة الدراسية لتحدي بنك الأسئلة المحدث:</h3>
                     <div class="subject-grid" id="subjects-container"></div>
 
@@ -1475,6 +1514,33 @@ html, body {
                     </strong>
                     <p id="arena-explanation-text" style="margin:6px 0 0 0; font-size:14px;"></p>
                 </div>
+            </div>
+
+            <!-- ✅ [جديد] شاشة حل الكويز — منفصلة تماماً عن شاشة الامتحان الأساسية (بدون مؤقت/تمييز/بلاغ، أسئلة ثابتة) -->
+            <div class="card" id="view-quiz-arena" style="display:none;">
+                <div class="arena-progress-wrapper">
+                    <div id="quiz-arena-progress-fill" class="arena-progress-fill"></div>
+                </div>
+                <div class="arena-header">
+                    <div class="arena-counter-pill" id="quiz-arena-counter" style="background:linear-gradient(135deg,#7c3aed,#c026d3); color:#fff; border-color:transparent;">السؤال 1 من 1</div>
+                </div>
+
+                <h4 id="quiz-arena-title" style="margin:6px 0 0; font-size:14px; color:#a21caf; text-align:center;"></h4>
+
+                <div id="quiz-arena-question-wrap">
+                    <div class="arena-question-text" id="quiz-arena-question-text">جاري التحميل...</div>
+                    <div id="quiz-arena-options-box"></div>
+
+                    <button id="quiz-arena-next-btn" class="btn-launch" style="display:none; background:linear-gradient(135deg,#7c3aed,#c026d3); margin-top:16px;" onclick="quizArenaAdvance()">
+                        التالي <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                </div>
+
+                <div id="quiz-arena-result-box" style="display:none;"></div>
+
+                <button onclick="exitQuizArena()" style="background:none; border:none; color:var(--text-muted); font-size:12px; text-decoration:underline; cursor:pointer; display:block; margin:16px auto 0;">
+                    <i class="fa-solid fa-xmark"></i> إنهاء والخروج
+                </button>
             </div>
 
             <!-- ✅ [UX-NEW] خريطة الأسئلة — نافذة منبثقة مستقلة عن نظام showModal الأساسي -->
@@ -1787,6 +1853,7 @@ html, body {
                     <button onclick="switchAdminTab('tab-reports'); loadAdminReports();" id="btn-tab-reports" class="admin-tab-top-btn"><i class="fa-solid fa-flag fa-sm"></i> البلاغات <span id="reports-badge" style="display:none; background:#ef4444; color:#fff; border-radius:99px; padding:1px 6px; font-size:11px; margin-right:3px;">0</span></button>
                     <button onclick="switchAdminTab('tab-tools')"    id="btn-tab-tools"    class="admin-tab-top-btn"><i class="fa-solid fa-sliders fa-sm"></i> الأدوات</button>
                     <button onclick="switchAdminTab('tab-ai')"       id="btn-tab-ai"       class="admin-tab-top-btn"><i class="fa-solid fa-robot fa-sm"></i> الذكاء الاصطناعي</button>
+                    <button onclick="switchAdminTab('tab-quizzes')"  id="btn-tab-quizzes"  class="admin-tab-top-btn"><i class="fa-solid fa-stopwatch fa-sm"></i> الكويزات</button>
                     <button onclick="switchAdminTab('tab-logs')"     id="btn-tab-logs"     class="admin-tab-top-btn"><i class="fa-solid fa-scroll fa-sm"></i> السجل</button>
                 </div>
 
@@ -1803,7 +1870,7 @@ html, body {
                     <div id="qsub-add" class="qsub-content">
 
                     <!-- ── رفع CSV ── -->
-                    <div class="bulk-upload-card">
+                    <div class="bulk-upload-card" id="csv-upload-card">
                         <h4 style="margin:0 0 12px 0; color:var(--primary);"><i class="fa-solid fa-cloud-arrow-up"></i> رفع أسئلة CSV</h4>
                         <input type="file" id="csvFileInput" accept=".csv" onchange="updateFileNameDisplay()" style="display:none;" />
                         <label for="csvFileInput" class="file-label">
@@ -1828,7 +1895,36 @@ html, body {
                             </select>
                         </div>
                         <button class="btn-launch" style="background:var(--success); width:100%;" onclick="uploadBulkQuestions()">
-                            <i class="fa-solid fa-cloud-arrow-up"></i> رفع الأسئلة للسيرفر
+                            <i class="fa-solid fa-magnifying-glass"></i> تحليل الملف ومراجعة الأسئلة
+                        </button>
+                    </div>
+
+                    <!-- ✅ [جديد] مراجعة أسئلة الـCSV قبل الحفظ الفعلي — زي مراجعة توليد الذكاء الاصطناعي بالظبط،
+                         عشان يقدر يغيّر فصل أي سؤال لوحده بسهولة قبل ما يتحفظ في البنك -->
+                    <div class="bulk-upload-card" id="csv-review-wrap" style="display:none;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h4 style="margin:0; color:var(--primary);"><i class="fa-solid fa-list-check"></i> راجع أسئلة الملف قبل الحفظ ✏️</h4>
+                            <button onclick="resetCsvReview()" style="background:none; border:none; color:var(--text-muted); font-size:12px; cursor:pointer; text-decoration:underline;">اختيار ملف آخر</button>
+                        </div>
+
+                        <input type="text" id="csvReviewSearch" class="search-box" style="width:100%; margin-bottom:6px; padding:8px;" placeholder="🔍 ابحث بنص السؤال..." oninput="filterCsvCards()">
+                        <p style="font-size:11px; color:var(--text-muted); margin:0 0 10px;">🔴 مكرر شبه مؤكد بالبنك (أُلغي تحديده تلقائياً) &nbsp;|&nbsp; 🟡 يشبه سؤال موجود &nbsp;|&nbsp; ⚠️ اسم فصل بالملف مش مطابق لفصل مسجّل — اختر الفصل الصح يدوياً</p>
+
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:12px; flex-wrap:wrap; gap:8px;">
+                            <label style="display:flex; align-items:center; gap:6px; font-weight:bold; color:var(--text-muted); cursor:pointer;">
+                                <input type="checkbox" id="csvGenSelectAllBox" checked onclick="toggleCsvSelectAll(this.checked)" style="width:16px; height:16px;">
+                                تحديد الكل
+                            </label>
+                            <span id="csvGenSelectedCounter" style="color:var(--text-muted); font-weight:bold;"></span>
+                            <div style="display:flex; gap:8px;">
+                                <button onclick="toggleAllCsvCards(true)" style="background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; color:var(--text-main);">فتح الكل</button>
+                                <button onclick="toggleAllCsvCards(false)" style="background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; color:var(--text-main);">طي الكل</button>
+                            </div>
+                        </div>
+
+                        <div id="csv-gen-cards"></div>
+                        <button id="csvGenSaveBtn" class="btn-launch" style="background:var(--success); width:100%; margin-top:10px;" onclick="saveApprovedCsvQuestions()">
+                            <i class="fa-solid fa-check"></i> حفظ الأسئلة المحدَّدة في البنك
                         </button>
                     </div>
 
@@ -2200,6 +2296,79 @@ html, body {
                     <h3>📜 سجل نشاط الإدارة</h3>
                     <div style="max-height: 450px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: var(--bg-gradient);" id="admin-logs-list">
                         لا توجد عمليات مسجلة بالسجل حالياً.
+                    </div>
+                </div>
+
+                <!-- ══════════ تبويب: الكويزات (جديد) ══════════ -->
+                <div id="tab-quizzes" class="admin-tab-content hidden-tab">
+                    <h3 style="margin:0 0 4px 0;"><i class="fa-solid fa-stopwatch"></i> كويزات الفصول</h3>
+                    <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 16px 0;">امتحانات قصيرة بأسئلة ثابتة تختارها بنفسك، منفصلة تماماً عن بنك الأسئلة العشوائي — بتظهر للطلاب في مكان مميّز بالصفحة الرئيسية بس لو نشرتها.</p>
+
+                    <!-- ── بانِي كويز جديد/تعديل ── -->
+                    <div class="bulk-upload-card" id="quiz-builder-card" style="border-color:#c4b5fd;">
+                        <h4 id="quiz-builder-title" style="margin:0 0 12px 0; color:#7c3aed;"><i class="fa-solid fa-plus"></i> إنشاء كويز جديد</h4>
+                        <input type="hidden" id="quiz-edit-id" value="">
+
+                        <input type="text" id="quiz-title-input" class="search-box" placeholder="عنوان الكويز (مثال: كويز الفصل الأول - سريع)" style="margin-bottom:10px;">
+
+                        <div style="display:flex; gap:10px; margin-bottom:10px;">
+                            <select id="quiz-subject-select" onchange="_populateQuizChapterSelect()" style="flex:1; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px; font-weight:bold;">
+                                <option value="">-- اختر المادة --</option>
+                                <option value="databases">قواعد البيانات</option>
+                                <option value="structured_programming">البرمجة الهيكلية</option>
+                                <option value="corporate_accounting">محاسبة شركات</option>
+                                <option value="operations_management">إدارة الانتاج والعمليات</option>
+                                <option value="economics_english">انجليزي اقتصاد</option>
+                            </select>
+                            <select id="quiz-chapter-select" style="flex:1; padding:10px; border-radius:8px; border:2px solid var(--border); background:var(--card-bg); color:var(--text-main); font-size:14px;">
+                                <option value="">بدون فصل محدد</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom:14px;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--text-muted);">XP لكل إجابة صحيحة:</label>
+                            <input type="number" id="quiz-xp-per-correct" class="search-box" value="10" min="1" oninput="_checkQuizXpCap()" style="margin-top:4px;">
+                            <p id="quiz-xp-warning" style="display:none; color:var(--danger); font-size:11px; margin:5px 0 0;">⚠️ إجمالي المكافأة (XP × عدد الأسئلة) هيتجاوز سقف الحماية 450 لكل عملية، وحماية Firestore هترفض الكتابة كلها في السيرفر. قلل القيمة أو عدد الأسئلة.</p>
+                        </div>
+
+                        <div style="border-top:2px dashed var(--border); padding-top:14px; margin-top:6px;">
+                            <h5 style="margin:0 0 8px 0; font-size:13px;"><i class="fa-solid fa-magnifying-glass"></i> إضافة سؤال من البنك الموجود:</h5>
+                            <input type="text" id="quiz-bank-search" class="search-box" placeholder="اختر المادة فوق، وابحث بنص السؤال هنا..." oninput="searchBankQuestionsForQuiz()" style="margin-bottom:8px;">
+                            <div id="quiz-bank-search-results" style="max-height:180px; overflow-y:auto; margin-bottom:14px;"></div>
+
+                            <h5 style="margin:0 0 8px 0; font-size:13px;"><i class="fa-solid fa-pen"></i> أو أضف سؤال جديد خاص بالكويز:</h5>
+                            <textarea id="quiz-new-q-text" class="search-box" placeholder="نص السؤال..." style="min-height:45px; margin-bottom:6px;"></textarea>
+                            <input type="text" id="quiz-new-q-opt-0" class="search-box" placeholder="الخيار الأول" style="margin-bottom:6px;">
+                            <input type="text" id="quiz-new-q-opt-1" class="search-box" placeholder="الخيار الثاني" style="margin-bottom:6px;">
+                            <input type="text" id="quiz-new-q-opt-2" class="search-box" placeholder="الخيار الثالث (اختياري)" style="margin-bottom:6px;">
+                            <input type="text" id="quiz-new-q-opt-3" class="search-box" placeholder="الخيار الرابع (اختياري)" style="margin-bottom:6px;">
+                            <input type="text" id="quiz-new-q-answer" class="search-box" placeholder="الإجابة الصحيحة (يجب مطابقة أحد الخيارات حرفياً)" style="margin-bottom:6px;">
+                            <textarea id="quiz-new-q-exp" class="search-box" placeholder="شرح الإجابة (اختياري)" style="min-height:35px; margin-bottom:8px;"></textarea>
+                            <button class="ban-btn ban-inactive" style="background:var(--bg-gradient); border:1px solid var(--border); width:100%;" onclick="addCustomQuestionToQuizBuilder()"><i class="fa-solid fa-plus"></i> أضف هذا السؤال للكويز</button>
+                        </div>
+
+                        <div style="border-top:2px dashed var(--border); padding-top:14px; margin-top:14px;">
+                            <h5 style="margin:0 0 8px 0; font-size:13px;">أسئلة الكويز الحالي (<span id="quiz-builder-count">0</span>):</h5>
+                            <div id="quiz-builder-questions-list" style="display:flex; flex-direction:column; gap:6px; margin-bottom:12px;">
+                                <p style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px 0;">لسه مفيش أسئلة مضافة.</p>
+                            </div>
+                        </div>
+
+                        <label style="display:flex; align-items:center; gap:8px; font-size:13px; font-weight:bold; margin:8px 0 14px; cursor:pointer;">
+                            <input type="checkbox" id="quiz-publish-checkbox" style="width:17px; height:17px;">
+                            انشر الكويز فوراً (يظهر للطلاب في الصفحة الرئيسية)
+                        </label>
+
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-launch" style="background:linear-gradient(135deg,#7c3aed,#c026d3); flex:1;" onclick="saveQuizBuilder()"><i class="fa-solid fa-floppy-disk"></i> حفظ الكويز</button>
+                            <button id="quiz-builder-cancel-btn" style="display:none; background:none; border:1px solid var(--border); border-radius:8px; padding:0 16px; color:var(--text-muted); cursor:pointer;" onclick="resetQuizBuilder()">إلغاء التعديل</button>
+                        </div>
+                    </div>
+
+                    <!-- ── قايمة الكويزات الموجودة ── -->
+                    <h4 style="margin:22px 0 10px;"><i class="fa-solid fa-list"></i> الكويزات الموجودة</h4>
+                    <div id="admin-quizzes-list" style="display:flex; flex-direction:column; gap:10px;">
+                        <p style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px 0;">جاري التحميل...</p>
                     </div>
                 </div>
 
@@ -5319,7 +5488,7 @@ html, body {
             if (target) { target.classList.remove('hidden-tab'); _fadeInEl(target); }
 
             // إزالة الكلاس النشط من كل أزرار التبويبات
-            ['btn-tab-upload','btn-tab-students','btn-tab-stats','btn-tab-reports','btn-tab-tools','btn-tab-ai','btn-tab-logs'].forEach(id => {
+            ['btn-tab-upload','btn-tab-students','btn-tab-stats','btn-tab-reports','btn-tab-tools','btn-tab-ai','btn-tab-logs','btn-tab-quizzes'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.className = 'admin-tab-top-btn';
             });
@@ -5333,6 +5502,7 @@ html, body {
                 'tab-tools':    'atab-active-orange',
                 'tab-ai':       'atab-active-purple',
                 'tab-logs':     'atab-active',
+                'tab-quizzes':  'atab-active-orange',
             };
             const btnMap = {
                 'tab-upload':   'btn-tab-upload',
@@ -5342,6 +5512,7 @@ html, body {
                 'tab-tools':    'btn-tab-tools',
                 'tab-ai':       'btn-tab-ai',
                 'tab-logs':     'btn-tab-logs',
+                'tab-quizzes':  'btn-tab-quizzes',
             };
             const activeBtn = document.getElementById(btnMap[tabId]);
             if (activeBtn) activeBtn.className = `admin-tab-top-btn ${colorMap[tabId] || 'atab-active'}`;
@@ -5351,6 +5522,7 @@ html, body {
             if (tabId === 'tab-logs')     loadAdminLogsList();
             if (tabId === 'tab-upload')   switchQuestionsSubTab('add');
             if (tabId === 'tab-ai')       loadAiUsageDashboard();
+            if (tabId === 'tab-quizzes')  loadAdminQuizzesList();
         }
 
         // ✅ تنقل فرعي داخل تبويب "الأسئلة": إضافة أسئلة ↔ إدارة البنك
@@ -5501,6 +5673,16 @@ html, body {
                 select.value = '';
                 wrap.style.display = 'none';
             }
+        }
+
+        // ✅ [جديد] يبني <option> لقائمة فصول مادة معيّنة، مع تحديد فصل افتراضي — يُستخدم في بطاقات مراجعة
+        // توليد الذكاء الاصطناعي وبطاقات مراجعة رفع CSV، عشان كل سؤال في الدفعة يقدر ياخد فصل مختلف بسهولة
+        function _chapterOptionsHtml(subject, selectedChapter) {
+            const chapters = subject ? _getChaptersForSubject(subject) : [];
+            const sel = selectedChapter || '';
+            let html = `<option value="" ${sel === '' ? 'selected' : ''}>بدون فصل محدد</option>`;
+            html += chapters.map(ch => `<option value="${esc(ch)}" ${ch === sel ? 'selected' : ''}>${esc(ch)}</option>`).join('');
+            return html;
         }
 
         let aiGenCurrentSubject = '';
@@ -5834,6 +6016,13 @@ html, body {
                             <input type="text" id="ai-answer-${i}" class="search-box" style="width:100%; margin-top:4px; padding:8px;" value="${esc(q.answer)}">
                         </div>
                         <textarea id="ai-exp-${i}" class="search-box" style="width:100%; min-height:35px; padding:8px; font-size:12px;" placeholder="شرح الإجابة (اختياري)">${esc(q.explanation || '')}</textarea>
+                        ${_getChaptersForSubject(subject).length > 0 ? `
+                        <div style="margin-top:8px;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--text-muted);"><i class="fa-solid fa-layer-group"></i> فصل هذا السؤال:</label>
+                            <select id="ai-chapter-${i}" class="search-box" style="width:100%; margin-top:4px; padding:8px;">
+                                ${_chapterOptionsHtml(subject, aiGenCurrentChapter)}
+                            </select>
+                        </div>` : ''}
                     </div>
                 </div>
             `;
@@ -5918,10 +6107,14 @@ html, body {
                 if (!questionText || options.length < 2 || !answer) return;
                 if (!options.includes(answer)) { skippedMismatch++; return; }
 
+                // ✅ [جديد] فصل كل سؤال ياخده من قائمة بطاقته هو لو موجودة، وإلا من الفصل العام للدفعة (توافق)
+                const cardChapterSel = document.getElementById(`ai-chapter-${i}`);
+                const cardChapter = cardChapterSel ? (cardChapterSel.value || null) : aiGenCurrentChapter;
+
                 const newRef = db.collection("questions").doc();
                 batch.set(newRef, {
                     subject: aiGenCurrentSubject,
-                    chapter: aiGenCurrentChapter, // ✅ [جديد]
+                    chapter: cardChapter, // ✅ [جديد]
                     question: questionText,
                     options: options,
                     answer: answer,
@@ -5968,64 +6161,468 @@ html, body {
             }
         }
 
+        // ✅ [تحسين] الرفع بقى بيمر بخطوة مراجعة (بطاقات زي توليد الذكاء الاصطناعي بالظبط) قبل أي كتابة فعلية على Firestore —
+        // بيسمح بتعديل/استبعاد أي سؤال، وأهم حاجة: تحديد فصل مختلف لكل سؤال لوحده بسهولة قبل الحفظ النهائي
+        let csvGenCurrentSubject = '';
+
         function uploadBulkQuestions() {
             const fileInput = document.getElementById('csvFileInput');
             const subjectSelect = document.getElementById('csvFileSubject');
             const selectedSubject = subjectSelect.value;
-            const defaultChapter = document.getElementById('csvFileChapter').value || null; // ✅ [جديد]
+            const defaultChapter = document.getElementById('csvFileChapter').value || null;
 
             if (fileInput.files.length === 0) { showToast("يا قائد، يرجى اختيار ملف الـ CSV أولاً!", "error"); return; }
             if (!selectedSubject) { showToast("يا قائد، يرجى تحديد المادة التعليمية أولاً!", "error"); return; }
 
             const file = fileInput.files[0];
-            
+
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const questionsArray = results.data;
-                    let batch = db.batch(); 
-                    let count = 0;
-                    
-                    questionsArray.forEach((q) => {
-                        if(q.Question && q.A && q.B && q.Answer) { 
-                            let newQuestionRef = db.collection("questions").doc(); 
-                            batch.set(newQuestionRef, {
-                                subject: selectedSubject,
-                                // ✅ [جديد] عمود Chapter بالملف (لو موجود لهذا السطر) بيتغلّب على الفصل الافتراضي المختار فوق
-                                chapter: (q.Chapter && q.Chapter.trim()) ? q.Chapter.trim() : defaultChapter,
+                    const registeredChapters = _getChaptersForSubject(selectedSubject);
+
+                    const rows = results.data
+                        .filter(q => q.Question && q.A && q.B && q.Answer)
+                        .map(q => {
+                            const rawChapter = (q.Chapter && q.Chapter.trim()) ? q.Chapter.trim() : '';
+                            // ⚠️ لو العمود فيه اسم فصل مكتوب لكن مش مطابق حرفياً لأي فصل مسجّل بالمادة،
+                            // منستخدموش كما هو (كان هيتحفظ فصل "يتيم" بصمت) — بنرجع للفصل الافتراضي ونعلّم البطاقة بتحذير
+                            const chapterMismatch = !!(rawChapter && !registeredChapters.includes(rawChapter));
+                            return {
                                 question: q.Question,
                                 options: [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== ""),
                                 answer: q.Answer,
                                 explanation: q.Explanation || "",
-                                correctCount: 0,
-                                wrongCount: 0,
-                                createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                            });
-                            count++;
-                        }
-                    });
+                                chapter: (rawChapter && !chapterMismatch) ? rawChapter : defaultChapter,
+                                chapterMismatch
+                            };
+                        });
 
-                    if(count === 0) {
+                    if (rows.length === 0) {
                         showToast("لم نجد أسئلة صالحة، يرجى التأكد من العناوين الإجبارية بالأعمدة.", "error");
                         return;
                     }
 
-                    batch.commit().then(() => {
-                        showToast(`🎯 مبروك يا قائد! تم رفع عدد (${count}) سؤال بنجاح!`);
-                        logAdminAction("رفع ملف CSV", `تم رفع عدد ${count} سؤال لمادة ${fixedSubjects[selectedSubject]}`);
-                        fileInput.value = "";
-                        subjectSelect.value = "";
-                        document.getElementById('csvFileChapter').value = "";
-                        document.getElementById('csvChapterWrap').style.display = 'none';
-                        document.getElementById('fileNameDisplay').innerText = "اضغط هنا لاختيار ملف الـ CSV للرفع الجماعي للأسئلة";
-                        document.getElementById('fileNameDisplay').style.color = "";
-                        // ✅ [OPT-24] تحديث العداد بالعدد الفعلي المضاف (كتابة واحدة فقط)
-                        updateSubjectCounterBy(selectedSubject, count);
-                        _invalidateQuestionCache(selectedSubject);
-                        cachedAdminQuestions = [];
-                        openAdminPanel();
-                    }).catch(err => showToast("حدث خطأ أثناء الرفع: " + err.message, "error"));
+                    renderCsvReviewCards(rows, selectedSubject);
+                }
+            });
+        }
+
+        function resetCsvReview() {
+            document.getElementById('csv-upload-card').style.display = 'block';
+            document.getElementById('csv-review-wrap').style.display = 'none';
+            document.getElementById('csv-gen-cards').innerHTML = '';
+            document.getElementById('csvFileInput').value = '';
+            document.getElementById('csvFileSubject').value = '';
+            document.getElementById('csvFileChapter').value = '';
+            document.getElementById('csvChapterWrap').style.display = 'none';
+            document.getElementById('fileNameDisplay').innerText = 'اضغط لاختيار ملف CSV';
+            document.getElementById('fileNameDisplay').style.color = '';
+        }
+
+        // يبني بطاقات مراجعة CSV — نفس تصميم ومنطق بطاقات مراجعة الذكاء الاصطناعي، مع فحص التكرار وقائمة فصل لكل سطر
+        async function renderCsvReviewCards(rows, subject) {
+            csvGenCurrentSubject = subject;
+            document.getElementById('csv-upload-card').style.display = 'none';
+            document.getElementById('csv-review-wrap').style.display = 'block';
+            const searchBox = document.getElementById('csvReviewSearch');
+            if (searchBox) searchBox.value = '';
+
+            const container = document.getElementById('csv-gen-cards');
+            container.innerHTML = `<p style="text-align:center; color:var(--text-muted); font-size:12px; padding:20px 0;"><i class="fa-solid fa-spinner fa-spin"></i> جاري فحص التكرار مع بنك الأسئلة...</p>`;
+
+            const existingTexts = await _getExistingQuestionsForSubject(subject);
+            const dupFlags = _findDuplicateFlags(rows, existingTexts);
+
+            container.innerHTML = rows.map((q, i) => {
+                const flag = dupFlags[i];
+                const badge = flag === 'exact'
+                    ? `<span style="background:#fee2e2; color:#b91c1c; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap;">🔴 مكرر بالبنك</span>`
+                    : (flag === 'similar'
+                        ? `<span style="background:#fef3c7; color:#92400e; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap;">🟡 يشبه سؤال موجود</span>`
+                        : '');
+                const mismatchBadge = q.chapterMismatch
+                    ? `<span style="background:#fef3c7; color:#92400e; font-size:10px; font-weight:bold; padding:2px 7px; border-radius:10px; flex-shrink:0; white-space:nowrap;">⚠️ فصل غير مطابق</span>`
+                    : '';
+                return `
+                <div class="csv-gen-card" data-index="${i}" data-search="${esc(q.question.toLowerCase())}" style="border:2px solid ${(flag || q.chapterMismatch) ? '#f59e0b' : 'var(--border)'}; border-radius:10px; margin-bottom:10px; background:var(--card-bg); overflow:hidden;">
+                    <div style="display:flex; align-items:center; gap:8px; padding:10px 12px; cursor:pointer;" onclick="toggleCsvCard(${i})">
+                        <input type="checkbox" id="csv-inc-${i}" ${flag === 'exact' ? '' : 'checked'} onclick="event.stopPropagation(); updateCsvGenSelectedCount();" style="width:18px; height:18px; flex-shrink:0;">
+                        <span class="csv-card-preview" id="csv-preview-${i}" style="flex:1; font-size:13px; font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i + 1}. ${esc(q.question)}</span>
+                        ${badge}${mismatchBadge}
+                        <i class="fa-solid fa-chevron-down csv-card-chevron" id="csv-chevron-${i}" style="transition:transform .2s; color:var(--text-muted); flex-shrink:0;"></i>
+                    </div>
+                    <div class="csv-card-details" id="csv-details-${i}" style="display:none; padding:0 12px 12px 12px; border-top:1px solid var(--border);">
+                        <textarea id="csv-q-${i}" class="search-box" style="width:100%; min-height:50px; margin:10px 0 8px; padding:8px; resize:vertical;" oninput="syncCsvCardPreview(${i})">${esc(q.question)}</textarea>
+                        ${q.options.map((opt, j) => `
+                            <input type="text" id="csv-opt-${i}-${j}" class="search-box" style="width:100%; margin-bottom:6px; padding:8px; font-size:13px;" value="${esc(opt)}">
+                        `).join('')}
+                        <div style="margin:8px 0;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--text-muted);">الإجابة الصحيحة (يجب أن تطابق أحد الخيارات أعلاه حرفياً):</label>
+                            <input type="text" id="csv-answer-${i}" class="search-box" style="width:100%; margin-top:4px; padding:8px;" value="${esc(q.answer)}">
+                        </div>
+                        <textarea id="csv-exp-${i}" class="search-box" style="width:100%; min-height:35px; padding:8px; font-size:12px;" placeholder="شرح الإجابة (اختياري)">${esc(q.explanation || '')}</textarea>
+                        ${_getChaptersForSubject(subject).length > 0 ? `
+                        <div style="margin-top:8px;">
+                            <label style="font-size:12px; font-weight:bold; color:var(--text-muted);"><i class="fa-solid fa-layer-group"></i> فصل هذا السؤال:</label>
+                            <select id="csv-chapter-${i}" class="search-box" style="width:100%; margin-top:4px; padding:8px;">
+                                ${_chapterOptionsHtml(subject, q.chapter)}
+                            </select>
+                        </div>` : ''}
+                    </div>
+                </div>
+            `;
+            }).join('');
+
+            updateCsvGenSelectedCount();
+        }
+
+        function toggleCsvCard(i) {
+            const details = document.getElementById(`csv-details-${i}`);
+            const chevron = document.getElementById(`csv-chevron-${i}`);
+            if (!details) return;
+            const isOpen = details.style.display !== 'none';
+            details.style.display = isOpen ? 'none' : 'block';
+            if (chevron) chevron.style.transform = isOpen ? '' : 'rotate(180deg)';
+        }
+
+        function toggleAllCsvCards(expand) {
+            document.querySelectorAll('#csv-gen-cards .csv-card-details').forEach(d => d.style.display = expand ? 'block' : 'none');
+            document.querySelectorAll('#csv-gen-cards .csv-card-chevron').forEach(c => c.style.transform = expand ? 'rotate(180deg)' : '');
+        }
+
+        function syncCsvCardPreview(i) {
+            const preview = document.getElementById(`csv-preview-${i}`);
+            const input = document.getElementById(`csv-q-${i}`);
+            if (!preview || !input) return;
+            const text = input.value.trim() || '(بدون نص)';
+            preview.textContent = `${parseInt(i) + 1}. ${text}`;
+        }
+
+        function toggleCsvSelectAll(checked) {
+            document.querySelectorAll('#csv-gen-cards input[id^="csv-inc-"]').forEach(box => box.checked = checked);
+            updateCsvGenSelectedCount();
+        }
+
+        function updateCsvGenSelectedCount() {
+            const boxes = document.querySelectorAll('#csv-gen-cards input[id^="csv-inc-"]');
+            const total = boxes.length;
+            const checkedCount = document.querySelectorAll('#csv-gen-cards input[id^="csv-inc-"]:checked').length;
+            const counter = document.getElementById('csvGenSelectedCounter');
+            if (counter) counter.innerText = `${checkedCount} من ${total} محدد`;
+            const selectAllBox = document.getElementById('csvGenSelectAllBox');
+            if (selectAllBox) selectAllBox.checked = (total > 0 && checkedCount === total);
+        }
+
+        function filterCsvCards() {
+            const query = (document.getElementById('csvReviewSearch')?.value || '').trim().toLowerCase();
+            document.querySelectorAll('.csv-gen-card').forEach(card => {
+                const match = !query || (card.dataset.search || '').includes(query);
+                card.style.display = match ? '' : 'none';
+            });
+        }
+
+        function saveApprovedCsvQuestions() {
+            const cards = document.querySelectorAll('.csv-gen-card');
+            if (cards.length === 0) return;
+
+            const batch = db.batch();
+            let count = 0;
+            let skippedMismatch = 0;
+
+            cards.forEach(card => {
+                const i = card.dataset.index;
+                const includedBox = document.getElementById(`csv-inc-${i}`);
+                if (!includedBox || !includedBox.checked) return;
+
+                const questionText = document.getElementById(`csv-q-${i}`).value.trim();
+                const options = [];
+                for (let j = 0; j < 4; j++) {
+                    const optEl = document.getElementById(`csv-opt-${i}-${j}`);
+                    if (optEl && optEl.value.trim() !== '') options.push(optEl.value.trim());
+                }
+                const answer = document.getElementById(`csv-answer-${i}`).value.trim();
+                const explanation = document.getElementById(`csv-exp-${i}`).value.trim();
+
+                if (!questionText || options.length < 2 || !answer) return;
+                if (!options.includes(answer)) { skippedMismatch++; return; }
+
+                const chapterSel = document.getElementById(`csv-chapter-${i}`);
+                const chapter = chapterSel ? (chapterSel.value || null) : null;
+
+                const newRef = db.collection("questions").doc();
+                batch.set(newRef, {
+                    subject: csvGenCurrentSubject,
+                    chapter: chapter,
+                    question: questionText,
+                    options: options,
+                    answer: answer,
+                    explanation: explanation,
+                    correctCount: 0,
+                    wrongCount: 0,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                count++;
+            });
+
+            if (count === 0) {
+                showToast(skippedMismatch > 0
+                    ? "لم يتم حفظ أي سؤال: الإجابة يجب أن تطابق نص أحد الخيارات بالضبط."
+                    : "لا يوجد أي سؤال محدَّد للحفظ.", "error");
+                return;
+            }
+
+            batch.commit().then(() => {
+                showToast(`🎯 مبروك يا قائد! تم حفظ ${count} سؤال بنجاح!` + (skippedMismatch > 0 ? ` (تم تجاهل ${skippedMismatch} لعدم تطابق الإجابة)` : ''));
+                logAdminAction("رفع ملف CSV", `تم حفظ ${count} سؤال لمادة ${fixedSubjects[csvGenCurrentSubject]}`);
+                updateSubjectCounterBy(csvGenCurrentSubject, count);
+                _invalidateQuestionCache(csvGenCurrentSubject);
+                cachedAdminQuestions = [];
+                resetCsvReview();
+                openAdminPanel();
+            }).catch(err => showToast("حدث خطأ أثناء الحفظ: " + err.message, "error"));
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // ✅ [جديد] نظام الكويزات — لوحة الأدمن
+        // كويز = مستند في quizzes/{quizId}: subject, chapter (اختياري), title, questions[] (نسخة كاملة ثابتة
+        // مش مرتبطة بالبنك الأصلي، سواء منسوخة منه أو مكتوبة خصيصاً)، xpPerCorrect, published
+        // ══════════════════════════════════════════════════════════════
+        let quizBuilderQuestions = []; // {question, options[], answer, explanation}
+        let cachedAdminQuizzes = [];
+
+        function _populateQuizChapterSelect() {
+            const subject = document.getElementById('quiz-subject-select').value;
+            document.getElementById('quiz-chapter-select').innerHTML = _chapterOptionsHtml(subject, '');
+        }
+
+        // يضمن تحميل بنك الأسئلة كامل في الكاش لو لسه ما اتحملش (لو الأدمن دخل تبويب الكويزات قبل ما يزور "إدارة البنك")
+        function _ensureAdminQuestionsCache() {
+            if (cachedAdminQuestions.length > 0) return Promise.resolve(cachedAdminQuestions);
+            return db.collection("questions").orderBy("createdAt", "desc").get().then(snapshot => {
+                cachedAdminQuestions = [];
+                snapshot.forEach(doc => {
+                    if (doc.id === '--metadata--' || doc.id === 'leaderboard-cache') return;
+                    let q = doc.data();
+                    q.uid = doc.id;
+                    cachedAdminQuestions.push(q);
+                });
+                return cachedAdminQuestions;
+            });
+        }
+
+        function searchBankQuestionsForQuiz() {
+            const subject = document.getElementById('quiz-subject-select').value;
+            const query = document.getElementById('quiz-bank-search').value.trim().toLowerCase();
+            const resultsEl = document.getElementById('quiz-bank-search-results');
+
+            if (!subject) { resultsEl.innerHTML = `<p style="font-size:11.5px; color:var(--text-muted); padding:6px 0;">اختار المادة أولاً.</p>`; return; }
+            if (query.length < 2) { resultsEl.innerHTML = ''; return; }
+
+            resultsEl.innerHTML = `<p style="font-size:11.5px; color:var(--text-muted); padding:6px 0;"><i class="fa-solid fa-spinner fa-spin"></i> جاري البحث...</p>`;
+
+            _ensureAdminQuestionsCache().then(list => {
+                const matches = list.filter(q => q.subject === subject && (q.question || '').toLowerCase().includes(query)).slice(0, 15);
+                if (matches.length === 0) { resultsEl.innerHTML = `<p style="font-size:11.5px; color:var(--text-muted); padding:6px 0;">لا يوجد نتائج مطابقة.</p>`; return; }
+
+                resultsEl.innerHTML = matches.map(q => `
+                    <div style="display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border); border-radius:6px; margin-bottom:5px; font-size:12px;">
+                        <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${esc(q.question)}</span>
+                        <button onclick="addBankQuestionToQuizBuilder('${q.uid}')" style="background:#7c3aed; color:#fff; border:none; border-radius:6px; padding:4px 10px; font-size:11px; cursor:pointer; white-space:nowrap;">➕ إضافة</button>
+                    </div>
+                `).join('');
+            });
+        }
+
+        function addBankQuestionToQuizBuilder(uid) {
+            const q = cachedAdminQuestions.find(item => item.uid === uid);
+            if (!q) return;
+            quizBuilderQuestions.push({
+                question: q.question,
+                options: q.options || [],
+                answer: q.answer,
+                explanation: q.explanation || ''
+            });
+            renderQuizBuilderQuestionsList();
+            showToast("✅ اتضاف للكويز");
+        }
+
+        function addCustomQuestionToQuizBuilder() {
+            const questionText = document.getElementById('quiz-new-q-text').value.trim();
+            const options = [];
+            for (let j = 0; j < 4; j++) {
+                const val = document.getElementById(`quiz-new-q-opt-${j}`).value.trim();
+                if (val) options.push(val);
+            }
+            const answer = document.getElementById('quiz-new-q-answer').value.trim();
+            const explanation = document.getElementById('quiz-new-q-exp').value.trim();
+
+            if (!questionText || options.length < 2 || !answer) { showToast("اكتب نص السؤال وخيارين على الأقل والإجابة الصحيحة.", "error"); return; }
+            if (!options.includes(answer)) { showToast("الإجابة يجب أن تطابق أحد الخيارات حرفياً.", "error"); return; }
+
+            quizBuilderQuestions.push({ question: questionText, options, answer, explanation });
+            renderQuizBuilderQuestionsList();
+
+            document.getElementById('quiz-new-q-text').value = '';
+            for (let j = 0; j < 4; j++) document.getElementById(`quiz-new-q-opt-${j}`).value = '';
+            document.getElementById('quiz-new-q-answer').value = '';
+            document.getElementById('quiz-new-q-exp').value = '';
+            showToast("✅ اتضاف للكويز");
+        }
+
+        function removeQuizBuilderQuestion(idx) {
+            quizBuilderQuestions.splice(idx, 1);
+            renderQuizBuilderQuestionsList();
+        }
+
+        function renderQuizBuilderQuestionsList() {
+            const listEl = document.getElementById('quiz-builder-questions-list');
+            document.getElementById('quiz-builder-count').innerText = quizBuilderQuestions.length;
+
+            if (quizBuilderQuestions.length === 0) {
+                listEl.innerHTML = `<p style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px 0;">لسه مفيش أسئلة مضافة.</p>`;
+            } else {
+                listEl.innerHTML = quizBuilderQuestions.map((q, i) => `
+                    <div style="display:flex; align-items:center; gap:8px; padding:7px 9px; border:1px solid var(--border); border-radius:6px; font-size:12.5px;">
+                        <span style="flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${i + 1}. ${esc(q.question)}</span>
+                        <button onclick="removeQuizBuilderQuestion(${i})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px;" title="إزالة"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                `).join('');
+            }
+            _checkQuizXpCap();
+        }
+
+        // ⚠️ سقف الحماية 450 لكل عملية تحديث XP موجود بالفعل في قواعد Firestore (حماية ضد الاستغلال) —
+        // لو (XP لكل إجابة × عدد الأسئلة) تجاوزه، الكتابة هترفض بالكامل وقت التسليم. تنبيه استباقي هنا بس، مش منع.
+        function _checkQuizXpCap() {
+            const xpPerCorrect = parseInt(document.getElementById('quiz-xp-per-correct').value, 10) || 0;
+            const total = xpPerCorrect * quizBuilderQuestions.length;
+            document.getElementById('quiz-xp-warning').style.display = (total > 450) ? 'block' : 'none';
+        }
+
+        function resetQuizBuilder() {
+            quizBuilderQuestions = [];
+            document.getElementById('quiz-edit-id').value = '';
+            document.getElementById('quiz-title-input').value = '';
+            document.getElementById('quiz-subject-select').value = '';
+            document.getElementById('quiz-chapter-select').innerHTML = '<option value="">بدون فصل محدد</option>';
+            document.getElementById('quiz-xp-per-correct').value = 10;
+            document.getElementById('quiz-publish-checkbox').checked = false;
+            document.getElementById('quiz-bank-search').value = '';
+            document.getElementById('quiz-bank-search-results').innerHTML = '';
+            document.getElementById('quiz-builder-title').innerHTML = '<i class="fa-solid fa-plus"></i> إنشاء كويز جديد';
+            document.getElementById('quiz-builder-cancel-btn').style.display = 'none';
+            renderQuizBuilderQuestionsList();
+        }
+
+        function saveQuizBuilder() {
+            const editId = document.getElementById('quiz-edit-id').value;
+            const title = document.getElementById('quiz-title-input').value.trim();
+            const subject = document.getElementById('quiz-subject-select').value;
+            const chapter = document.getElementById('quiz-chapter-select').value || null;
+            const xpPerCorrect = parseInt(document.getElementById('quiz-xp-per-correct').value, 10) || 0;
+            const published = document.getElementById('quiz-publish-checkbox').checked;
+
+            if (!title) { showToast("اكتب عنوان للكويز.", "error"); return; }
+            if (!subject) { showToast("اختار المادة.", "error"); return; }
+            if (quizBuilderQuestions.length === 0) { showToast("أضف سؤال واحد على الأقل.", "error"); return; }
+            if (xpPerCorrect <= 0) { showToast("حدد قيمة XP صحيحة لكل إجابة.", "error"); return; }
+
+            const payload = {
+                title, subject, chapter,
+                questions: quizBuilderQuestions,
+                xpPerCorrect, published,
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+            };
+
+            const ref = editId ? db.collection("quizzes").doc(editId) : db.collection("quizzes").doc();
+            if (!editId) payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+
+            ref.set(payload, { merge: true }).then(() => {
+                showToast(editId ? "✅ تم تحديث الكويز" : "🎯 تم إنشاء الكويز بنجاح");
+                logAdminAction(editId ? "تعديل كويز" : "إنشاء كويز", `${title} (${fixedSubjects[subject] || subject})`);
+                resetQuizBuilder();
+                homeQuizzesFetched = false; // ✅ إجبار إعادة تحميل قايمة الكويزات بالصفحة الرئيسية للطلاب بعد أي تعديل
+                loadAdminQuizzesList();
+            }).catch(err => showToast("حدث خطأ: " + err.message, "error"));
+        }
+
+        function loadAdminQuizzesList() {
+            const listEl = document.getElementById('admin-quizzes-list');
+            listEl.innerHTML = `<p style="font-size:12px; color:var(--text-muted); text-align:center; padding:10px 0;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</p>`;
+
+            db.collection("quizzes").orderBy("createdAt", "desc").get().then(snapshot => {
+                cachedAdminQuizzes = [];
+                snapshot.forEach(doc => cachedAdminQuizzes.push({ uid: doc.id, ...doc.data() }));
+
+                if (cachedAdminQuizzes.length === 0) {
+                    listEl.innerHTML = `<p style="font-size:12.5px; color:var(--text-muted); text-align:center; padding:15px 0;">لسه مفيش أي كويز اتعمل.</p>`;
+                    return;
+                }
+
+                listEl.innerHTML = cachedAdminQuizzes.map(q => `
+                    <div style="border:1px solid var(--border); border-radius:10px; padding:12px 14px; background:var(--card-bg);">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                            <div>
+                                <strong>${esc(q.title)}</strong>
+                                <div style="font-size:11.5px; color:var(--text-muted); margin-top:3px;">
+                                    ${fixedSubjects[q.subject] || q.subject}${q.chapter ? ' · ' + esc(q.chapter) : ''} · ${(q.questions || []).length} سؤال · ${q.xpPerCorrect || 0} XP/إجابة
+                                </div>
+                            </div>
+                            <span style="font-size:10.5px; font-weight:bold; padding:3px 9px; border-radius:99px; white-space:nowrap; ${q.published ? 'background:#dcfce7; color:#15803d;' : 'background:var(--border); color:var(--text-muted);'}">${q.published ? '🟢 منشور' : '⚪ مسودة'}</span>
+                        </div>
+                        <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
+                            <button onclick="toggleQuizPublish('${q.uid}', ${!q.published})" style="background:none; border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--text-main);">${q.published ? 'إخفاء' : 'نشر'}</button>
+                            <button onclick="editQuizInBuilder('${q.uid}')" style="background:none; border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--text-main);">تعديل</button>
+                            <button onclick="deleteAdminQuiz('${q.uid}')" style="background:none; border:1px solid var(--danger); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--danger);">حذف</button>
+                        </div>
+                    </div>
+                `).join('');
+            }).catch(err => {
+                listEl.innerHTML = `<p style="font-size:12px; color:var(--danger); text-align:center; padding:10px 0;">تعذّر تحميل الكويزات: ${esc(err.message)}</p>`;
+            });
+        }
+
+        function toggleQuizPublish(quizId, newState) {
+            db.collection("quizzes").doc(quizId).update({ published: newState }).then(() => {
+                showToast(newState ? "🟢 تم نشر الكويز" : "⚪ تم إخفاء الكويز");
+                homeQuizzesFetched = false;
+                loadAdminQuizzesList();
+            }).catch(err => showToast("حدث خطأ: " + err.message, "error"));
+        }
+
+        function editQuizInBuilder(quizId) {
+            const q = cachedAdminQuizzes.find(item => item.uid === quizId);
+            if (!q) return;
+
+            document.getElementById('quiz-edit-id').value = quizId;
+            document.getElementById('quiz-title-input').value = q.title || '';
+            document.getElementById('quiz-subject-select').value = q.subject || '';
+            _populateQuizChapterSelect();
+            document.getElementById('quiz-chapter-select').value = q.chapter || '';
+            document.getElementById('quiz-xp-per-correct').value = q.xpPerCorrect || 10;
+            document.getElementById('quiz-publish-checkbox').checked = !!q.published;
+            quizBuilderQuestions = JSON.parse(JSON.stringify(q.questions || []));
+            renderQuizBuilderQuestionsList();
+
+            document.getElementById('quiz-builder-title').innerHTML = '<i class="fa-solid fa-pen"></i> تعديل الكويز: ' + esc(q.title || '');
+            document.getElementById('quiz-builder-cancel-btn').style.display = 'inline-block';
+            document.getElementById('quiz-builder-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function deleteAdminQuiz(quizId) {
+            showModal({
+                icon: '🗑️', title: 'حذف الكويز',
+                message: 'سيتم حذف الكويز نهائياً، ولن يقدر أي طالب يفتحه بعد كده.',
+                confirmText: 'نعم، احذف', cancelText: 'إلغاء',
+                onConfirm: () => {
+                    db.collection("quizzes").doc(quizId).delete().then(() => {
+                        showToast("🗑️ تم حذف الكويز");
+                        logAdminAction("حذف كويز", quizId);
+                        homeQuizzesFetched = false;
+                        loadAdminQuizzesList();
+                    }).catch(err => showToast("حدث خطأ: " + err.message, "error"));
                 }
             });
         }
@@ -6894,6 +7491,184 @@ html, body {
                 grid.appendChild(card);
             });
             updateQuestionCountOptions(activeCategory);
+            loadHomeQuizzes(); // ✅ [جديد] الكويزات المنشورة تظهر فوق شبكة المواد
+        }
+
+        // ══════════════════════════════════════════════════════════════
+        // ✅ [جديد] نظام الكويزات — واجهة الطالب
+        // كويز منشور = أسئلة ثابتة يختارها الأدمن بنفسه (مش عشوائية من البنك)، منفصل تماماً عن شاشة الامتحان الأساسية.
+        // XP بيتضاف مرة واحدة بس لأول محاولة (بحماية فعلية على مستوى قواعد Firestore، مش تحقق بالواجهة بس).
+        // ══════════════════════════════════════════════════════════════
+        let cachedHomeQuizzes = [];
+        let homeQuizzesFetched = false;
+        let activeQuizData = null;
+        let quizArenaQuestions = [];
+        let quizArenaIndex = 0;
+        let quizArenaAnswers = [];
+
+        function loadHomeQuizzes() {
+            if (homeQuizzesFetched) { _renderHomeQuizzes(); return; }
+            db.collection("quizzes").where("published", "==", true).get().then(snapshot => {
+                cachedHomeQuizzes = [];
+                snapshot.forEach(doc => cachedHomeQuizzes.push({ uid: doc.id, ...doc.data() }));
+                homeQuizzesFetched = true;
+                _renderHomeQuizzes();
+            }).catch(() => {
+                const section = document.getElementById('home-quizzes-section');
+                if (section) section.style.display = 'none';
+            });
+        }
+
+        function _renderHomeQuizzes() {
+            const section = document.getElementById('home-quizzes-section');
+            const listEl = document.getElementById('home-quizzes-list');
+            if (!section || !listEl) return;
+
+            if (cachedHomeQuizzes.length === 0) { section.style.display = 'none'; return; }
+            section.style.display = 'block';
+
+            listEl.innerHTML = cachedHomeQuizzes.map(q => `
+                <div class="home-quiz-card" onclick="startQuizFromCard('${q.uid}')">
+                    <div>
+                        <div class="home-quiz-card-title">${esc(q.title)}</div>
+                        <div class="home-quiz-card-meta">${fixedSubjects[q.subject] || ''}${q.chapter ? ' · ' + esc(q.chapter) : ''} · ${(q.questions || []).length} سؤال</div>
+                    </div>
+                    <i class="fa-solid fa-chevron-left"></i>
+                </div>
+            `).join('');
+        }
+
+        function startQuizFromCard(quizId) {
+            const quiz = cachedHomeQuizzes.find(q => q.uid === quizId);
+            if (!quiz || !quiz.questions || quiz.questions.length === 0) { showToast("تعذّر تحميل الكويز.", "error"); return; }
+
+            activeQuizData = quiz;
+            quizArenaQuestions = quiz.questions.map(q => ({
+                ...q,
+                shuffledOptions: [...(q.options || [])].sort(() => Math.random() - 0.5)
+            }));
+            quizArenaIndex = 0;
+            quizArenaAnswers = new Array(quizArenaQuestions.length).fill(null);
+
+            document.getElementById('quiz-arena-title').innerText = quiz.title || 'كويز';
+            document.getElementById('quiz-arena-question-wrap').style.display = 'block';
+            document.getElementById('quiz-arena-result-box').style.display = 'none';
+            document.getElementById('quiz-arena-result-box').innerHTML = '';
+
+            showView('view-quiz-arena');
+            renderQuizArenaQuestion();
+        }
+
+        function renderQuizArenaQuestion() {
+            const q = quizArenaQuestions[quizArenaIndex];
+            document.getElementById('quiz-arena-counter').innerText = `السؤال ${quizArenaIndex + 1} من ${quizArenaQuestions.length}`;
+            document.getElementById('quiz-arena-progress-fill').style.width = `${(quizArenaIndex / quizArenaQuestions.length) * 100}%`;
+            document.getElementById('quiz-arena-question-text').innerText = q.question;
+
+            const box = document.getElementById('quiz-arena-options-box');
+            box.innerHTML = '';
+            const savedAnswer = quizArenaAnswers[quizArenaIndex];
+            const cleanAnswer = String(q.answer || '').trim();
+
+            q.shuffledOptions.forEach(opt => {
+                const node = document.createElement('button');
+                node.className = 'option-node';
+                node.innerHTML = `<span>${esc(String(opt))}</span><i class="fa-regular fa-circle"></i>`;
+                if (savedAnswer !== null) {
+                    node.disabled = true;
+                    if (String(opt).trim() === cleanAnswer) node.classList.add('correct');
+                    else if (String(opt).trim() === String(savedAnswer).trim()) node.classList.add('wrong');
+                } else {
+                    node.onclick = () => handleQuizArenaSelection(opt);
+                }
+                box.appendChild(node);
+            });
+
+            const nextBtn = document.getElementById('quiz-arena-next-btn');
+            nextBtn.style.display = savedAnswer !== null ? 'block' : 'none';
+            nextBtn.innerHTML = (quizArenaIndex === quizArenaQuestions.length - 1)
+                ? 'إنهاء الكويز 🏁'
+                : 'التالي <i class="fa-solid fa-arrow-left"></i>';
+        }
+
+        function handleQuizArenaSelection(opt) {
+            quizArenaAnswers[quizArenaIndex] = opt;
+            renderQuizArenaQuestion();
+        }
+
+        function quizArenaAdvance() {
+            if (quizArenaIndex < quizArenaQuestions.length - 1) {
+                quizArenaIndex++;
+                renderQuizArenaQuestion();
+            } else {
+                finishQuizArena();
+            }
+        }
+
+        function exitQuizArena() {
+            activeQuizData = null;
+            quizArenaQuestions = [];
+            showView('view-dashboard');
+        }
+
+        function finishQuizArena() {
+            let correctCount = 0;
+            quizArenaQuestions.forEach((q, i) => {
+                const ans = quizArenaAnswers[i];
+                if (ans !== null && String(ans).trim() === String(q.answer).trim()) correctCount++;
+            });
+
+            const quizId = activeQuizData.uid;
+            const uid = currentUser ? currentUser.uid : (auth.currentUser ? auth.currentUser.uid : null);
+            if (!uid) { renderQuizArenaResult(correctCount, 0, false); return; }
+
+            const attemptRef = db.collection("users").doc(uid).collection("quizAttempts").doc(quizId);
+
+            attemptRef.get().then(snap => {
+                const alreadyAttempted = snap.exists;
+                const xpEarned = alreadyAttempted ? 0 : (correctCount * (activeQuizData.xpPerCorrect || 0));
+
+                if (alreadyAttempted) {
+                    renderQuizArenaResult(correctCount, 0, true);
+                    return;
+                }
+
+                const tasks = [
+                    attemptRef.set({
+                        correctCount, total: quizArenaQuestions.length,
+                        xpEarned, completedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    })
+                ];
+                if (xpEarned > 0) {
+                    tasks.push(db.collection("users").doc(uid).update({
+                        xp: firebase.firestore.FieldValue.increment(xpEarned)
+                    }));
+                }
+
+                Promise.all(tasks).then(() => {
+                    renderQuizArenaResult(correctCount, xpEarned, false);
+                    if (typeof currentUser === 'object' && currentUser) currentUser.xp = (currentUser.xp || 0) + xpEarned;
+                }).catch(() => {
+                    // غالباً محاولة تانية اتسجلت في نفس اللحظة على جهاز تاني — القاعدة منعت الكتابة، نعرض النتيجة من غير XP
+                    renderQuizArenaResult(correctCount, 0, true);
+                });
+            }).catch(() => renderQuizArenaResult(correctCount, 0, false));
+        }
+
+        function renderQuizArenaResult(correctCount, xpEarned, alreadyAttempted) {
+            document.getElementById('quiz-arena-question-wrap').style.display = 'none';
+            const resultBox = document.getElementById('quiz-arena-result-box');
+            resultBox.style.display = 'block';
+            resultBox.innerHTML = `
+                <div style="text-align:center; padding:20px 0;">
+                    <div style="font-size:40px; margin-bottom:10px;">${correctCount === quizArenaQuestions.length ? '🏆' : '🎯'}</div>
+                    <h3 style="margin:0 0 8px 0;">نتيجتك: ${correctCount} من ${quizArenaQuestions.length}</h3>
+                    ${xpEarned > 0
+                        ? `<p style="color:var(--success); font-weight:800; font-size:15px;">+${xpEarned} XP ⚡</p>`
+                        : (alreadyAttempted ? `<p style="color:var(--text-muted); font-size:13px;">دي مش أول مرة تحل الكويز ده — الـXP بتتاخد مرة واحدة بس، باقي المحاولات تدريب.</p>` : '')}
+                    <button class="btn-launch" style="margin-top:16px; background:linear-gradient(135deg,#7c3aed,#c026d3);" onclick="showView('view-dashboard')">رجوع للرئيسية</button>
+                </div>
+            `;
         }
 
         function updateQuestionCountOptions(subjectKey) {
@@ -6931,7 +7706,7 @@ html, body {
         }
 
         function showView(viewId) {
-            const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-chapter-picker', 'view-count-picker', 'view-arena', 'view-review', 'view-result', 'view-admin-panel'];
+            const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-chapter-picker', 'view-count-picker', 'view-arena', 'view-quiz-arena', 'view-review', 'view-result', 'view-admin-panel'];
             views.forEach(v => {
                 const el = document.getElementById(v);
                 if (el) el.style.display = "none";
