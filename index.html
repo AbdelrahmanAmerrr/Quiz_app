@@ -4540,38 +4540,24 @@ html, body {
             }
 
             // ══════════════════════════════════════════════
-            // [XP-NEW-V2] نظام XP الديناميكي العادل — فئات أدق
+            // [XP-NEW-V3] نظام XP خطّي عادل — بيحل مشكلتين في النظام القديم (الفئات التصنيفية):
+            // 1) امتحان قصير بإجابات كاملة كان بياخد XP قليل جداً مقارنة بالمجهود، لأن "مضاعف الحجم" كان بفئات تصنيفية قافزة
+            // 2) فرق 1% في النسبة عند حد فئة (74% مقابل 75% مثلاً) كان بيعمل قفزة XP كبيرة ومفاجئة، مش متدرجة
+            // الحل: XP يتناسب مباشرة مع عدد الإجابات الصحيحة الفعلي (بدل تصنيف حجم الامتحان)، مضروب في مضاعف دقة
+            // متدرّج بسلاسة تامة بدون أي حدود فئات — أي فرق نسبة بسيط ينعكس بفرق XP بسيط ومتناسب.
             // ══════════════════════════════════════════════
-            // أولاً: النقاط الأساسية حسب نسبة الدقة (7 فئات)
-            let baseXP;
-            if      (percentage >= 95) baseXP = 200;
-            else if (percentage >= 85) baseXP = 160;
-            else if (percentage >= 75) baseXP = 120;
-            else if (percentage >= 65) baseXP =  90;
-            else if (percentage >= 50) baseXP =  60;
-            else if (percentage >= 35) baseXP =  35;
-            else                       baseXP =  15;
+            const XP_PER_CORRECT_ANSWER = 2; // نقطة الضبط الوحيدة لسخاء النظام كله — تعديلها يغيّر كل شيء بالتناسب
+            // مضاعف دقة سلس بدون أي فئات: 0.5 عند دقة 0% إلى 1.5 عند دقة 100% — يكافئ الدقة العالية بتدرج مستمر تماماً
+            const accuracyMultiplier = 0.5 + (percentage / 100);
+            const sizeMultiplier = Math.round(accuracyMultiplier * 100) / 100; // للعرض فقط في تفاصيل XP للطالب (= مضاعف الدقة)
 
-            // ثانياً: مُضاعِف حجم الاختبار — مرتبط مباشرة بعدد الأسئلة الذي اختاره الطالب من العداد (9 فئات)
-            const totalQ = currentQuestions.length;
-            let sizeMultiplier;
-            if      (totalQ <= 10)  sizeMultiplier = 0.15;
-            else if (totalQ <= 20)  sizeMultiplier = 0.25;
-            else if (totalQ <= 35)  sizeMultiplier = 0.45;
-            else if (totalQ <= 50)  sizeMultiplier = 0.65;
-            else if (totalQ <= 70)  sizeMultiplier = 0.9;
-            else if (totalQ <= 100) sizeMultiplier = 1.3;
-            else if (totalQ <= 150) sizeMultiplier = 1.8;
-            else if (totalQ <= 250) sizeMultiplier = 2.5;
-            else                    sizeMultiplier = 3.2;
-
-            const xpGained = Math.round(baseXP * sizeMultiplier);
+            const xpGained = Math.round(score * XP_PER_CORRECT_ANSWER * accuracyMultiplier);
             
             const displayXP = isPracticeMode ? 0 : xpGained;
             document.getElementById('result-xp-gained').innerHTML =
                 `+${displayXP}
                 <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-top:2px;">
-                    ${isPracticeMode ? 'وضع تدريبي' : `${baseXP} × ${sizeMultiplier}`}
+                    ${isPracticeMode ? 'وضع تدريبي' : `${score} إجابة صحيحة × ${sizeMultiplier}`}
                 </div>`;
             document.getElementById('result-percent').innerText = `${percentage}%`;
 
@@ -4624,7 +4610,10 @@ html, body {
 
             } else {
                 // ── حساب XP النهائي مع تطبيق سقف المادة ──
-                const finalXPGained = Math.min(xpGained, XP_CAP_PER_SUBJECT - currentSubjectXP);
+                // ⚠️ [إصلاح] قواعد Firestore بترفض أي زيادة XP فوق 450 في عملية كتابة واحدة (حماية موجودة أصلاً) —
+                // من غير الحد ده هنا، امتحان كبير جداً بنتيجة شبه كاملة كان ممكن يطلع XP أكبر من 450 في مرة واحدة،
+                // فالحفظ كان هيترفض من السيرفر كل مرة (مش مرة واحدة بس)، والطالب يفضل عالق من غير أي طريقة يحفظ بيها النتيجة دي
+                const finalXPGained = Math.min(xpGained, XP_CAP_PER_SUBJECT - currentSubjectXP, 450);
 
                 statusText.innerText = `🎉 جولة رسمية! ربحت +${finalXPGained} XP (${currentAttempts + 1}/${MAX_XP_ATTEMPTS_PER_SUB} محاولات في المادة).`;
                 _ensureConfettiLoaded().then(() => confetti({ particleCount: 120, spread: 70, origin: { y: 0.6 } })).catch(() => {});
@@ -4632,7 +4621,7 @@ html, body {
                 document.getElementById('result-xp-gained').innerHTML =
                     `+${finalXPGained}
                     <div style="font-size:11px;font-weight:500;color:var(--text-muted);margin-top:2px;">
-                        ${baseXP} × ${sizeMultiplier}
+                        ${score} إجابة صحيحة × ${sizeMultiplier}
                     </div>`;
 
                 const nextXp    = (currentUser.xp || 0) + finalXPGained;
@@ -4875,11 +4864,9 @@ html, body {
 
         // ✅ تعديل 2: دالة إعادة بناء كاش الأوائل - مخصصة للأدمن فقط
         // تقرأ أعلى 100 طالب حياً وتضغطهم في مستند system/leaderboard
-        // ✅ [PROFILE] ضغط مصغر للكاش — 100×100 بكسل JPEG 70% ≈ 6-8KB للصورة الواحدة
-        // 100 طالب × 8KB = 800KB ← آمن من حد 1MB لمستند Firestore
-        // رُفع من 60×60@50% لأن الضغط المزدوج على JPEG يراكم الأخطاء ويُفقد الحدة
-        // ✅ [تحسين] بقت تقبل حجم/جودة مخصصين — الأدمن بيدّي أول 20 طالب جودة أعلى من الباقي
-        // (نفس المستند المشترك، صفر قراءات إضافية، بس توزيع أذكى للمساحة المتاحة)
+        // ✅ [جودة أعلى] الدقة اتزودت عشان تبان واضحة على شاشات الموبايل عالية الكثافة (2x-3x):
+        // أول 20 (الأعلى XP): 240×240 @87% — الباقي: 160×160 @82%. فيه فحص حجم إجمالي قبل الكتابة
+        // (شوف approxDocBytes تحت) يمنع تخطي حد الـ1 ميجابايت لمستند Firestore الواحد.
         function recompressAvatarMini(base64, size, quality) {
             size    = size    || 130;
             quality = quality || 0.78;
@@ -4908,7 +4895,7 @@ html, body {
 
                         // ✅ [حماية] صمام أمان: لو الصورة طلعت أكبر من المتوقع (محتوى معقد/ألوان كتير)،
                         // نرجعها لجودة أقل بدل ما نخاطر بحجم مستند leaderboard-cache الإجمالي
-                        const maxBytes = size > 130 ? 30000 : 18000;
+                        const maxBytes = size > 160 ? 42000 : 22000;
                         if (result.length > maxBytes) {
                             result = canvas.toDataURL('image/jpeg', Math.max(0.5, quality - 0.18));
                         }
@@ -4931,16 +4918,24 @@ html, body {
                 const rawUsers = [];
                 snapshot.forEach(doc => rawUsers.push({ ...doc.data(), uid: doc.id }));
 
-                // ضغط صور avatarBase64 بالتوازي — أول 20 (الأعلى XP) بجودة أعلى، والباقي بالضغط العادي
-                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري ضغط الصور (${rawUsers.length})...`;
-                const TOP_QUALITY_COUNT = 20; // ✅ عدد الطلاب اللي هياخدوا جودة أعلى — مرتبطين بترتيب XP بس، صفر قراءات إضافية وقت العرض
+                // ضغط صور avatarBase64 بالتوازي — المشكلة الحقيقية في الجودة مش الدقة، دي فقدان تراكمي
+                // من الضغط المزدوج (JPEG اتضغطت وقت الرفع، وبتتفك وتتضغط تاني هنا). الحل: أعلى 20 (الأهم بصرياً —
+                // البوديوم) بياخدوا نسخة الأصل زي ما هي بدون أي إعادة ضغط تاني (جيل واحد بس)، والباقي لسه محتاج
+                // إعادة ضغط لتوفير المساحة (مفيش بديل من غير ترقية Firebase Storage المدفوعة).
+                btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> جاري تجهيز الصور (${rawUsers.length})...`;
+                const TOP_QUALITY_COUNT = 20; // ✅ عدد الطلاب اللي هياخدوا الصورة الأصلية بدون إعادة ضغط — مرتبطين بترتيب XP بس
                 const compressedUsers = await Promise.all(rawUsers.map(async (u, idx) => {
                     let avatar = u.photoURL || null;
                     if (u.avatarBase64) {
                         const isTopTier = idx < TOP_QUALITY_COUNT;
-                        // أول 20: 200×200 جودة 85% — الباقي: 130×130 جودة 78% (زي الأول بالظبط)
-                        const mini = await recompressAvatarMini(u.avatarBase64, isTopTier ? 200 : 130, isTopTier ? 0.85 : 0.78);
-                        if (mini) avatar = mini;
+                        if (isTopTier) {
+                            // ✅ [إصلاح جذري] بدون أي إعادة تشفير — نفس بايتات الرفع الأصلية، صفر فقدان إضافي
+                            avatar = u.avatarBase64;
+                        } else {
+                            // الباقي: إعادة ضغط ضرورية لتوفير مساحة المستند — 160×160 جودة 82%
+                            const mini = await recompressAvatarMini(u.avatarBase64, 160, 0.82);
+                            if (mini) avatar = mini;
+                        }
                     }
                     return {
                         uid:            u.uid,
@@ -4955,6 +4950,17 @@ html, body {
                     };
                 }));
 
+                // ✅ [حماية] فحص الحجم الكلي قبل الكتابة — مستند Firestore محدود بـ1 ميجابايت، واستخدام
+                // الصور الأصلية الكاملة لأعلى 20 (بدون ضغط إضافي) ممكن ياخد مساحة أكبر من قبل. لو اقترب
+                // من الحد، نرفض الكتابة بأمان بدل ما تفشل بخطأ غامض من Firestore، ونقترح تقليل TOP_QUALITY_COUNT
+                const approxDocBytes = new Blob([JSON.stringify({ users: compressedUsers })]).size;
+                if (approxDocBytes > 900000) {
+                    btn.disabled  = false;
+                    btn.innerHTML = originalText;
+                    showToast(`⚠️ حجم الكاش المتوقع (${Math.round(approxDocBytes / 1024)} كيلوبايت) قريب جداً من حد Firestore (1 ميجابايت) — قلل TOP_QUALITY_COUNT في الكود (حالياً 20) وحاول تاني.`, "error");
+                    return;
+                }
+
                 // حفظ الكاش في Firestore
                 await db.collection("questions").doc("leaderboard-cache").set({
                     users:       compressedUsers,
@@ -4963,7 +4969,7 @@ html, body {
 
                 btn.disabled  = false;
                 btn.innerHTML = originalText;
-                showToast(`✅ تم تحديث كاش الأوائل! (${compressedUsers.length} طالب — أول ${Math.min(TOP_QUALITY_COUNT, compressedUsers.length)} بجودة 200×200، والباقي 130×130)`);
+                showToast(`✅ تم تحديث كاش الأوائل! (${compressedUsers.length} طالب — أول ${Math.min(TOP_QUALITY_COUNT, compressedUsers.length)} بجودة الصورة الأصلية كاملة، والباقي 160×160 — إجمالي الحجم ${Math.round(approxDocBytes / 1024)} كيلوبايت)`);
                 logAdminAction("تحديث كاش اللوحة", `تجميع ${compressedUsers.length} طالب مع ضغط الصور في questions/leaderboard-cache`);
 
             } catch(err) {
@@ -7154,8 +7160,10 @@ html, body {
             showToast("⏳ جاري معالجة وضغط الصورة...", "success");
 
             try {
-                // ضغط: 150×150 بكسل، JPEG جودة 60% — يُنتج بضعة KB فقط
-                const base64 = await compressImageToBase64(file, 300, 0.75); // 300px + Retina DPR + 75% جودة
+                // ✅ [جودة أعلى] رُفعت جودة الأصل وسقف كثافة البكسل — الصورة دي بقت تُستخدم زي ما هي بدون
+                // إعادة ضغط لأعلى 20 طالب في لوحة الأوائل (شوف rebuildLeaderboardCacheByAdmin)، فجودتها هنا
+                // هي السقف الفعلي لجودة البوديوم كله. حجم أكبر شوية لكن مقبول جداً (لسه صورة واحدة صغيرة).
+                const base64 = await compressImageToBase64(file, 300, 0.85); // 300px + Retina DPR (حتى 2x) + 85% جودة
 
                 // حفظ في Firestore بـ update() فقط — لا يمس أي حقل آخر
                 await db.collection("users").doc(currentUser.uid).update({
