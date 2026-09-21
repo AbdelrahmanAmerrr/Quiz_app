@@ -1213,26 +1213,6 @@ html, body {
             </div>
 
             <div class="card" id="view-dashboard" style="display: none;">
-                <!-- ✅ [تحسين] صندوق المكافأة اليومية بقى بهوية دهبية متسقة، وبيعرض عداد التتابع (Streak) الحقيقي -->
-                <div id="daily-reward-box" style="background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); border: none; padding:18px; border-radius: 14px; margin-bottom:15px; display:none; flex-direction:column; gap:12px; animation: fadeInUp 0.4s ease; box-shadow: 0 8px 24px rgba(197,160,89,0.35);">
-                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px;">
-                        <div>
-                            <div style="color:#fff; font-weight:900; font-size:15px; font-family:'Playfair Display', serif;"><i class="fa-solid fa-gift"></i> مكافأتك اليومية جاهزة</div>
-                            <div id="daily-streak-hint" style="color:rgba(255,255,255,0.85); font-size:12px; margin-top:3px;"></div>
-                        </div>
-                        <button class="ban-btn ban-inactive" onclick="claimDailyReward()" style="background:#fff; color:var(--primary-dark); font-weight:800; white-space:nowrap; border:none;">استلام <span id="daily-reward-amount">+50</span> XP ⚡</button>
-                    </div>
-                </div>
-
-                <!-- ✅ [جديد] شارة تتابع الدخول اليومي — ظاهرة دايماً (حتى لو المكافأة النهاردة اتاستلمت خلاص) -->
-                <div id="daily-streak-badge" style="display:none; align-items:center; gap:10px; background:var(--bg-gradient); border:1px solid var(--border); border-radius:12px; padding:10px 16px; margin-bottom:15px;">
-                    <div style="width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,#f59e0b,#ef4444); display:flex; align-items:center; justify-content:center; font-size:18px; flex-shrink:0; box-shadow:0 3px 10px rgba(239,68,68,0.35);">🔥</div>
-                    <div>
-                        <div style="font-weight:800; font-size:14px;"><span id="daily-streak-value">0</span> يوم متتالي</div>
-                        <div id="daily-streak-subtext" style="font-size:11.5px; color:var(--text-muted);"></div>
-                    </div>
-                </div>
-
                 <div class="nav-tabs">
                     <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')"><i class="fa-solid fa-house-chimney fa-sm"></i> الرئيسية</div>
                     <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')"><i class="fa-solid fa-circle-user fa-sm"></i> الملف الشخصي</div>
@@ -1240,6 +1220,21 @@ html, body {
                 </div>
 
                 <div id="dash-subtab-container">
+                    <!-- ✅ [إصلاح] بقى جوه تاب "الرئيسية" بس (كان قبل كده برّا الـ3 تابات فظهر في البروفايل واللوحة كمان) —
+                         وبقى صندوق واحد مضغوط بدل صندوقين كبيرين فوق بعض (مكافأة + ستريك) -->
+                    <div id="daily-combo-box" style="display:none; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-gradient); border:1px solid var(--border); border-radius:12px; padding:9px 13px; margin-bottom:14px; flex-wrap:wrap;">
+                        <div style="display:flex; align-items:center; gap:8px; min-width:0;">
+                            <span style="font-size:19px; flex-shrink:0;">🔥</span>
+                            <div style="min-width:0;">
+                                <div style="font-weight:800; font-size:13px; white-space:nowrap;"><span id="daily-streak-value">0</span> يوم متتالي</div>
+                                <div id="daily-streak-subtext" style="font-size:10.5px; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px;"></div>
+                            </div>
+                        </div>
+                        <button id="daily-claim-btn" onclick="claimDailyReward()" style="display:none; background:var(--primary); color:#fff; font-weight:800; font-size:12px; padding:7px 12px; border:none; border-radius:8px; white-space:nowrap; cursor:pointer; flex-shrink:0;">
+                            استلام <span id="daily-reward-amount">+50</span> XP ⚡
+                        </button>
+                    </div>
+
                     <div style="display: flex; align-items: center; gap: 15px; margin-bottom: 15px;">
                         <img id="dash-student-avatar" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); display: none;">
                         <h3>أهلاً بك: <span id="dash-student-name" style="color: var(--primary);"></span> <span id="dash-rank-delta" style="font-size:13px; margin-right:10px;"></span></h3>
@@ -2163,7 +2158,10 @@ html, body {
 
                     <!-- بطاقات الإحصائيات -->
                     <div class="stats-grid" style="margin-bottom:20px;">
-                        <div class="stat-box" style="background:var(--primary-light);"><i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">—</div><span>إجمالي الطلاب</span></div>
+                        <div class="stat-box" style="background:var(--primary-light); position:relative;">
+                            <button onclick="event.stopPropagation(); recalculateTotalStudents(true);" id="btn-recalc-students" title="إعادة حساب دقيقة من السيرفر" style="position:absolute; top:4px; left:4px; background:none; border:none; color:var(--primary); cursor:pointer; font-size:11px; padding:2px;"><i class="fa-solid fa-rotate"></i></button>
+                            <i class="fa-solid fa-users" style="color:var(--primary)"></i><div id="admin-total-students">—</div><span>إجمالي الطلاب</span>
+                        </div>
                         <div class="stat-box" style="background:#fef3c7;"><i class="fa-solid fa-file-invoice" style="color:#b45309"></i><div id="admin-total-questions">—</div><span>إجمالي الأسئلة</span></div>
                         <div class="stat-box" style="background:#d1fae5;"><i class="fa-solid fa-calendar-day" style="color:var(--success)"></i><div id="admin-daily-attempts">—</div><span>محاولات كلية</span></div>
                         <!-- ✅ [FIX] كانت "متوسط الدرجات" لا تُحسب أبداً وتظل "—" دائماً — استُبدلت بدقة البنك المحسوبة فعلياً من بيانات الأسئلة المحمّلة -->
@@ -3073,45 +3071,62 @@ html, body {
         }
 
         // ✅ [جديد] عرض شارة تتابع الدخول اليومي بشكل دائم بالداشبورد (مش بس جوه صندوق المكافأة)
+        // ✅ [إعادة تصميم] صندوق واحد مضغوط بدل صندوقين — الدالتين لسه منفصلتين (بينداوا حالتين مختلفتين:
+        // الستريك نفسه، وتوفر مكافأة النهاردة)، لكن الاتنين بيتحكموا في ظهور نفس الصندوق سوا عبر _updateDailyComboVisibility
         function renderDailyStreakBadge() {
-            const badge = document.getElementById('daily-streak-badge');
             const valueEl = document.getElementById('daily-streak-value');
             const subEl = document.getElementById('daily-streak-subtext');
-            if (!badge || !currentUser) return;
+            if (!currentUser) return;
 
             const streak = currentUser.dailyStreak || 0;
-            if (streak < 1) { badge.style.display = 'none'; return; }
+            if (valueEl) valueEl.textContent = streak;
 
-            badge.style.display = 'flex';
-            valueEl.textContent = streak;
+            // تلميح للإنجاز الجاي — يشجّع الاستمرارية (بس لو مفيش تلميح استلام أهم مكتوب فوقه من checkDailyRewardStatus)
+            const claimBtn = document.getElementById('daily-claim-btn');
+            const claimVisible = claimBtn && claimBtn.style.display !== 'none';
+            if (subEl && !claimVisible) {
+                if (streak < 1) subEl.textContent = '';
+                else if (streak < 7) subEl.textContent = `كمان ${7 - streak} يوم لإنجاز "أسبوع متتالي" 🏅`;
+                else if (streak < 30) subEl.textContent = `كمان ${30 - streak} يوم لإنجاز "شهر متتالي" 🏆`;
+                else subEl.textContent = 'إنجاز رائع — استمر! 🔥';
+            }
 
-            // تلميح للإنجاز الجاي — يشجّع الاستمرارية
-            if (streak < 7) subEl.textContent = `كمان ${7 - streak} يوم ووصل لإنجاز "أسبوع متتالي" 🏅`;
-            else if (streak < 30) subEl.textContent = `كمان ${30 - streak} يوم ووصل لإنجاز "شهر متتالي" 🏆`;
-            else subEl.textContent = `إنجاز رائع — استمر! 🔥`;
+            _updateDailyComboVisibility();
         }
 
         function checkDailyRewardStatus() {
             const todayStr = new Date().toDateString();
-            const box = document.getElementById('daily-reward-box');
+            const claimBtn = document.getElementById('daily-claim-btn');
+            const subEl = document.getElementById('daily-streak-subtext');
             if (currentUser && currentUser.lastDailyClaimedDate !== todayStr) {
-                box.style.display = "flex";
+                if (claimBtn) claimBtn.style.display = 'inline-block';
                 // ✅ [جديد] تلميح استباقي بمكسب الستريك المتوقع لو استلم النهاردة
                 const currentStreak = currentUser.dailyStreak || 0;
                 const yesterdayStr = new Date(Date.now() - 86400000).toDateString();
                 const willContinueStreak = currentUser.lastDailyClaimedDate === yesterdayStr;
                 const nextStreak = willContinueStreak ? currentStreak + 1 : 1;
                 const bonus = Math.min((nextStreak - 1) * 5, 50);
-                document.getElementById('daily-reward-amount').textContent = `+${50 + bonus}`;
-                const hintBox = document.getElementById('daily-streak-hint');
-                if (hintBox) {
-                    hintBox.textContent = willContinueStreak
-                        ? `استلامك النهاردة هيوصلك ليوم ${nextStreak} متتالي 🔥`
-                        : (currentStreak > 0 ? `فاتك يوم — استلم دلوقتي وابدأ تتابع جديد` : `ابدأ أول تتابع دخول يومي ليك`);
+                const amountEl = document.getElementById('daily-reward-amount');
+                if (amountEl) amountEl.textContent = `+${50 + bonus}`;
+                if (subEl) {
+                    subEl.textContent = willContinueStreak
+                        ? `استلم دلوقتي ووصل ليوم ${nextStreak} متتالي`
+                        : (currentStreak > 0 ? `فاتك يوم — استلم وابدأ تتابع جديد` : `ابدأ أول تتابع دخول ليك`);
                 }
             } else {
-                box.style.display = "none";
+                if (claimBtn) claimBtn.style.display = 'none';
             }
+            _updateDailyComboVisibility();
+        }
+
+        // الصندوق يظهر لو فيه ستريك حقيقي (يوم فأكتر) أو لو فيه مكافأة متاحة النهاردة — أيهما تحقق
+        function _updateDailyComboVisibility() {
+            const box = document.getElementById('daily-combo-box');
+            if (!box || !currentUser) return;
+            const claimBtn = document.getElementById('daily-claim-btn');
+            const claimVisible = claimBtn && claimBtn.style.display !== 'none';
+            const streak = currentUser.dailyStreak || 0;
+            box.style.display = (streak >= 1 || claimVisible) ? 'flex' : 'none';
         }
 
         function claimDailyReward() {
@@ -5217,6 +5232,24 @@ html, body {
             }).catch(e => showToast("خطأ في التحقق: " + e.message, "error"));
         }
 
+        // ✅ [إصلاح] إعادة حساب دقيقة لإجمالي الطلاب — قراءة حية من السيرفر دايماً (مش كاش محلي ممكن يكون ناقص/قديم)،
+        // وبتكتب الرقم الصحيح فوق أي قيمة قديمة حتى لو كانت موجودة أصلاً (العداد التراكمي القديم كان ممكن ينحرف
+        // عن الحقيقة بمرور الوقت ومايتصلحش لوحده غير لو القيمة صفر أو فاضية تماماً)
+        function recalculateTotalStudents(manualTrigger) {
+            const btn = document.getElementById('btn-recalc-students');
+            if (btn) btn.querySelector('i').classList.add('fa-spin');
+            db.collection("users").get({ source: 'server' }).then(s => {
+                document.getElementById('admin-total-students').innerText = s.size;
+                db.collection("questions").doc("--metadata--")
+                  .set({ totalStudents: s.size }, { merge: true });
+                if (manualTrigger) showToast(`✅ العدد الدقيق: ${s.size} طالب`);
+            }).catch(() => {
+                if (manualTrigger) showToast("⚠️ تعذّر إعادة الحساب.", "error");
+            }).finally(() => {
+                if (btn) btn.querySelector('i').classList.remove('fa-spin');
+            });
+        }
+
         function openAdminPanel() {
             showView('view-admin-panel');
             resetQuestionForm();
@@ -5242,22 +5275,11 @@ html, body {
                 if (meta.totalStudents) {
                     document.getElementById('admin-total-students').innerText = meta.totalStudents;
                 } else {
-                    // fallback خفيف: عدد المستخدمين في كاش اللوحة (≤100)
+                    // fallback خفيف: عدد المستخدمين في كاش اللوحة (≤100) كعرض مبدئي بس لحد ما نحسب الرقم الدقيق
                     const lb = cachedLeaderboardUsers;
                     document.getElementById('admin-total-students').innerText =
                         lb ? `${lb.length}+` : '—';
-                    // بناء العداد في الخلفية مرة واحدة
-                    db.collection("users").get({ source: 'cache' }).then(s => {
-                        document.getElementById('admin-total-students').innerText = s.size;
-                        db.collection("questions").doc("--metadata--")
-                          .set({ totalStudents: s.size }, { merge: true });
-                    }).catch(() => {
-                        db.collection("users").get().then(s => {
-                            document.getElementById('admin-total-students').innerText = s.size;
-                            db.collection("questions").doc("--metadata--")
-                              .set({ totalStudents: s.size }, { merge: true });
-                        }).catch(() => {});
-                    });
+                    recalculateTotalStudents();
                 }
 
                 // ✅ [FIX] activeStudents لم تكن تُكتب أبداً في أي مكان بالكود، فكانت تظل "—" دائماً.
