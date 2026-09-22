@@ -2132,23 +2132,8 @@ html, body {
                                       background:var(--card-bg); color:var(--text-main);
                                       font-size:13px; font-family:'Tajawal',sans-serif; width:200px;">
                     </div>
-                    <div class="student-table-container">
-                        <table class="student-table">
-                            <thead>
-                                <tr>
-                                    <th>اسم الطالب</th>
-                                    <th>نقاط الـ XP</th>
-                                    <th>المستوى</th>
-                                    <th>آخر دخول / آخر امتحان</th>
-                                    <th style="text-align: center;">إجراءات الرقابة</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-students-table-body">
-                                <tr>
-                                    <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب بيانات الطلاب...</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div id="admin-students-list" style="display:flex; flex-direction:column; gap:8px;">
+                        <p style="text-align:center; color:var(--text-muted); padding:20px;">جاري سحب بيانات الطلاب...</p>
                     </div>
                 </div>
 
@@ -3144,7 +3129,8 @@ html, body {
             db.collection("users").doc(currentUser.uid).update({
                 xp: firebase.firestore.FieldValue.increment(totalReward),
                 lastDailyClaimedDate: todayStr,
-                dailyStreak: newStreak
+                dailyStreak: newStreak,
+                lastActivityAt: firebase.firestore.FieldValue.serverTimestamp() // ✅ [إصلاح] كان بيتحدث بس من الامتحانات، فطالب نشط يومياً بالستريك بس كان بيختفي من فلتر "الشهر الحالي"
             }).then(() => {
                 _ensureConfettiLoaded().then(() => confetti({ particleCount: 60, spread: 40 })).catch(() => {});
                 showToast(`🎁 مبارك! استلمت ${totalReward} نقطة محارب (تتابع ${newStreak} يوم 🔥).`);
@@ -3848,6 +3834,16 @@ html, body {
             const activeQ = currentQuestions[qIndex];
             const questionTextEl = document.getElementById('arena-question-text');
             questionTextEl.innerText = activeQ.question;
+            // ✅ [FIX] زرار "تمييز" كان بيفضل شكله زي ما هو من السؤال اللي فات (مش بيتصفّر أو يتزامن مع
+            // حالة السؤال الجديد) — دلوقتي بيتحدث فعلياً مع كل سؤال جديد حسب isFlagged بتاعه هو
+            const flagBtn = document.getElementById('btn-flag-action');
+            if (flagBtn) {
+                const isFlaggedNow = !!activeQ.isFlagged;
+                flagBtn.className = isFlaggedNow ? 'arena-action-btn flagged' : 'arena-action-btn';
+                flagBtn.innerHTML = isFlaggedNow
+                    ? '<i class="fa-solid fa-thumbtack"></i> مميَّز'
+                    : '<i class="fa-solid fa-thumbtack"></i> مراجعة';
+            }
             // ✅ [UX-v3] صفحة الامتحان تحديداً تستخدم الطبقة السريعة (شبه فورية) — الأولوية للاستجابة
             _fadeInEl(questionTextEl, direction, true);
             
@@ -5672,9 +5668,9 @@ html, body {
         // ✅ بحث الطلاب بالاسم في لوحة الأدمن
         function filterAdminStudentsByName() {
             const query = (document.getElementById('admin-student-search')?.value || '').trim().toLowerCase();
-            document.querySelectorAll('#admin-students-table-body tr').forEach(row => {
-                const name = (row.dataset.studentName || '').toLowerCase();
-                row.style.display = (!query || name.includes(query)) ? '' : 'none';
+            document.querySelectorAll('#admin-students-list > div[data-student-name]').forEach(card => {
+                const name = (card.dataset.studentName || '').toLowerCase();
+                card.style.display = (!query || name.includes(query)) ? '' : 'none';
             });
         }
 
@@ -6964,93 +6960,93 @@ html, body {
             setTimeout(() => { overlay.style.display = 'none'; }, 200);
         }
 
+        // ✅ [إعادة تصميم] نفس صيغة حساب المستوى المستخدمة في كل مكان تاني بالمنصة — مصدر واحد للحقيقة
+        function _levelFromXP(xp) {
+            return Math.floor(Math.sqrt((xp || 0) / 100)) + 1;
+        }
+
         function loadAdminStudentsList() {
-            const tbody = document.getElementById('admin-students-table-body');
-            tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">جاري سحب ومزامنة الطلاب...</td></tr>`;
-            
+            const listEl = document.getElementById('admin-students-list');
+            listEl.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">جاري سحب ومزامنة الطلاب...</p>`;
+
             db.collection("users").orderBy("xp", "desc").limit(100).get().then((snapshot) => {
-                tbody.innerHTML = "";
-                if(snapshot.empty) {
-                    tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">لا يوجد أي طلاب مسجلين حتى الآن.</td></tr>`;
+                listEl.innerHTML = "";
+                if (snapshot.empty) {
+                    listEl.innerHTML = `<p style="text-align:center; color:var(--text-muted); padding:20px;">لا يوجد أي طلاب مسجلين حتى الآن.</p>`;
                     return;
                 }
-                
+
                 snapshot.forEach((doc) => {
                     const student = doc.data();
                     const uid = doc.id;
                     const isBanned = student.isBanned === true;
-                    
+
                     let dateStr = "غير محدد";
-                    if(student.lastLogin && student.lastLogin.toDate) {
-                        dateStr = student.lastLogin.toDate().toLocaleString('ar-EG', {hour12:true});
+                    if (student.lastLogin && student.lastLogin.toDate) {
+                        dateStr = student.lastLogin.toDate().toLocaleString('ar-EG', { hour12: true });
                     }
-                    
                     let lastQuizStr = student.lastActivity ? `${student.lastActivity.subjectName} (${student.lastActivity.score}/${student.lastActivity.total})` : "لا يوجد";
-                    
-                    const tr = document.createElement('tr');
-                    tr.dataset.studentName = (student.name || '').toLowerCase(); // ✅ للبحث بالاسم
-                    // ✅ [SEC-2] البيانات القادمة من المستخدم (student.name) تُمرَّر عبر data-* attributes
-                    // مُعقَّمة بـ esc()، وليس داخل onclick/onblur كسلسلة نصية — لمنع كسر السياق البرمجي وتنفيذ كود دخيل
-                    tr.innerHTML = `
-                        <td style="padding: 12px; font-weight: bold; ${isBanned ? 'text-decoration: line-through; color: var(--text-muted);' : ''}">${esc(student.name) || 'طالب مجهول'}</td>
-                        <td style="padding: 12px;">
-                            <input type="number" class="search-box admin-xp-input" style="width:90px; margin:0; padding:6px;" value="${student.xp || 0}" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
-                        </td>
-                        <td style="padding: 12px;">
-                            <input type="number" class="search-box admin-level-input" style="width:60px; margin:0; padding:6px;" value="${student.level || 1}" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
-                        </td>
-                        <td style="padding: 12px; font-size:12px; color:var(--text-muted);">
-                            <div>دخول: ${dateStr}</div>
-                            <div>آخر اختبار: ${lastQuizStr}</div>
-                        </td>
-                        <td style="padding: 12px; text-align: center; display:flex; gap:5px; justify-content:center;">
-                            <button type="button" class="ban-btn admin-diagnose-btn" style="background:#0284c7; color:white; font-size:11px;" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
-                                🔍 تشخيص
+
+                    const card = document.createElement('div');
+                    card.dataset.studentName = (student.name || '').toLowerCase(); // ✅ للبحث بالاسم
+                    card.style.cssText = `border:1px solid var(--border); border-radius:10px; padding:10px 12px; background:var(--bg-gradient); ${isBanned ? 'opacity:0.65;' : ''}`;
+                    // ✅ [SEC-2] البيانات القادمة من المستخدم (student.name) مُعقَّمة بـ esc() وممررة عبر data-* — مش كسلسلة داخل onclick
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-bottom:8px;">
+                            <strong style="font-size:13.5px; ${isBanned ? 'text-decoration:line-through; color:var(--text-muted);' : ''}">${esc(student.name) || 'طالب مجهول'}</strong>
+                            <span class="admin-level-badge" style="background:var(--primary-light); color:var(--primary); font-size:11px; font-weight:800; padding:2px 9px; border-radius:99px; white-space:nowrap;">Lv ${_levelFromXP(student.xp)}</span>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                            <label style="font-size:11.5px; color:var(--text-muted); flex-shrink:0;">XP:</label>
+                            <input type="number" class="search-box admin-xp-input" style="width:100px; margin:0; padding:5px 8px; font-size:13px;" value="${student.xp || 0}" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
+                            <span style="font-size:10.5px; color:var(--text-muted);">المستوى بيتحسب تلقائياً من الـXP</span>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); margin-bottom:9px;">
+                            دخول: ${dateStr} &nbsp;|&nbsp; آخر اختبار: ${lastQuizStr}
+                        </div>
+                        <div style="display:flex; gap:5px; flex-wrap:wrap;">
+                            <button type="button" class="ban-btn admin-diagnose-btn" title="يفحص لو محاولات الطالب المسجلة متطابقة فعلياً مع البيانات المحفوظة (كشف فشل حفظ صامت)" style="background:#0284c7; color:white; font-size:10.5px; padding:5px 9px;" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
+                                🔍 تشخيص الحفظ
                             </button>
-                            <button type="button" class="ban-btn admin-ban-btn ${isBanned ? 'ban-inactive' : 'ban-active'}" style="font-size:11px;" data-uid="${esc(uid)}" data-banned="${isBanned}" data-name="${esc(student.name || '')}">
+                            <button type="button" class="ban-btn admin-ban-btn ${isBanned ? 'ban-inactive' : 'ban-active'}" style="font-size:10.5px; padding:5px 9px;" data-uid="${esc(uid)}" data-banned="${isBanned}" data-name="${esc(student.name || '')}">
                                 ${isBanned ? '🔓 فك حظر' : '🚫 حظر'}
                             </button>
-                            <button type="button" class="ban-btn admin-reset-btn ban-active" style="background:#f59e0b; color:white; font-size:11px;" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
+                            <button type="button" class="ban-btn admin-reset-btn ban-active" style="background:#f59e0b; color:white; font-size:10.5px; padding:5px 9px;" data-uid="${esc(uid)}" data-name="${esc(student.name || '')}">
                                 🔄 تصفير مادة
                             </button>
-                        </td>
+                        </div>
                     `;
                     // ✅ ربط الأحداث برمجياً (addEventListener) بدل onclick/onblur — يقرأ القيم الخام من dataset بأمان
-                    tr.querySelector('.admin-xp-input').addEventListener('blur', function() {
-                        updateStudentXpManually(this.dataset.uid, this.value, this.dataset.name);
+                    card.querySelector('.admin-xp-input').addEventListener('blur', function() {
+                        updateStudentXpManually(this.dataset.uid, this.value, this.dataset.name, card.querySelector('.admin-level-badge'));
                     });
-                    tr.querySelector('.admin-level-input').addEventListener('blur', function() {
-                        updateStudentLevelManually(this.dataset.uid, this.value, this.dataset.name);
-                    });
-                    tr.querySelector('.admin-diagnose-btn').addEventListener('click', function() {
+                    card.querySelector('.admin-diagnose-btn').addEventListener('click', function() {
                         viewStudentDiagnostics(this.dataset.uid, this.dataset.name);
                     });
-                    tr.querySelector('.admin-ban-btn').addEventListener('click', function() {
+                    card.querySelector('.admin-ban-btn').addEventListener('click', function() {
                         toggleBanStudent(this.dataset.uid, this.dataset.banned === 'true', this.dataset.name);
                     });
-                    tr.querySelector('.admin-reset-btn').addEventListener('click', function() {
+                    card.querySelector('.admin-reset-btn').addEventListener('click', function() {
                         resetStudentAttemptsSpecific(this.dataset.uid, this.dataset.name);
                     });
-                    tbody.appendChild(tr);
+                    listEl.appendChild(card);
                 });
             }).catch(err => {
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger); padding: 20px;">حدث خطأ في تحميل الطلاب: ${err.message}</td></tr>`;
+                listEl.innerHTML = `<p style="text-align:center; color:var(--danger); padding:20px;">حدث خطأ في تحميل الطلاب: ${err.message}</p>`;
             });
         }
 
-        function updateStudentXpManually(uid, newXp, studentName) {
+        // ✅ [إصلاح جذري] المستوى بقى دايماً بيتحسب تلقائياً من الـXP بنفس المعادلة المستخدمة في كل مكان تاني
+        // بالمنصة، وبيتكتب مع كل تعديل XP في نفس العملية — استحال يحصل تعارض بينهم تاني (كان ده سبب
+        // "المستوى بيبقى عشوائي" — كان فيه خانة منفصلة تماماً لتعديل المستوى يدوياً بدون أي ربط بالـXP)
+        function updateStudentXpManually(uid, newXp, studentName, levelBadgeEl) {
             const xpVal = parseInt(newXp);
-            db.collection("users").doc(uid).update({ xp: xpVal }).then(() => {
-                showToast(`تم تحديث نقاط الطالب ${studentName} إلى ${xpVal}`);
-                logAdminAction("تعديل نقاط", `تغيير XP الطالب ${studentName} يدويًا إلى ${xpVal}`);
-            });
-        }
-
-        function updateStudentLevelManually(uid, newLevel, studentName) {
-            const lvlVal = parseInt(newLevel);
-            db.collection("users").doc(uid).update({ level: lvlVal }).then(() => {
-                showToast(`تم تحديث مستوى الطالب ${studentName} إلى ${lvlVal}`);
-                logAdminAction("تعديل مستوى", `تغيير مستوى الطالب ${studentName} يدويًا إلى ليفل ${lvlVal}`);
+            if (isNaN(xpVal) || xpVal < 0) { showToast("⚠️ رقم XP غير صالح.", "error"); return; }
+            const newLevel = _levelFromXP(xpVal);
+            db.collection("users").doc(uid).update({ xp: xpVal, level: newLevel }).then(() => {
+                if (levelBadgeEl) levelBadgeEl.textContent = `Lv ${newLevel}`;
+                showToast(`تم تحديث نقاط الطالب ${studentName} إلى ${xpVal} (المستوى ${newLevel})`);
+                logAdminAction("تعديل نقاط", `تغيير XP الطالب ${studentName} يدويًا إلى ${xpVal} — المستوى اتحدث تلقائياً لـ${newLevel}`);
             });
         }
 
@@ -7975,11 +7971,11 @@ html, body {
                         xpEarned, completedAt: firebase.firestore.FieldValue.serverTimestamp()
                     })
                 ];
-                if (xpEarned > 0) {
-                    tasks.push(db.collection("users").doc(uid).update({
-                        xp: firebase.firestore.FieldValue.increment(xpEarned)
-                    }));
-                }
+                // ✅ [إصلاح] الكويزات كانت بتاخد XP لكن ملهاش أي أثر على lastActivityAt — طالب نشط بالكويزات
+                // بس كان بيختفي من فلتر "الشهر الحالي" بلوحة الأوائل. بيتسجل مرة واحدة بس (أول محاولة حقيقية)
+                const userUpdate = { lastActivityAt: firebase.firestore.FieldValue.serverTimestamp() };
+                if (xpEarned > 0) userUpdate.xp = firebase.firestore.FieldValue.increment(xpEarned);
+                tasks.push(db.collection("users").doc(uid).update(userUpdate));
 
                 Promise.all(tasks).then(() => {
                     renderQuizArenaResult(correctCount, xpEarned, false);
