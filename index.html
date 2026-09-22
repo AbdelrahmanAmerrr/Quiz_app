@@ -1502,7 +1502,7 @@ html, body {
                     <button class="arena-action-btn" onclick="openQuestionMap()" title="خريطة الأسئلة" aria-label="خريطة الأسئلة">
                         <i class="fa-solid fa-table-cells"></i>
                     </button>
-                    <button class="arena-action-btn" onclick="reportQuestionProblem()" title="الإبلاغ عن مشكلة" aria-label="الإبلاغ عن مشكلة">
+                    <button class="arena-action-btn" id="btn-report-action" onclick="reportQuestionProblem()" title="الإبلاغ عن مشكلة" aria-label="الإبلاغ عن مشكلة">
                         <i class="fa-solid fa-flag"></i>
                     </button>
                     <button class="arena-action-btn" onclick="saveAndExitQuizArena()"
@@ -3676,12 +3676,10 @@ html, body {
                 const isFlagged = currentQuestions[qIndex].isFlagged;
                 const btn = document.getElementById('btn-flag-action');
                 if (btn) {
+                    // ✅ [FIX] أيقونة بس بدون نص في الحالتين — الفرق بصري فقط عبر كلاس flagged (لون/تمييز)
                     btn.className = isFlagged
                         ? 'arena-action-btn flagged'
                         : 'arena-action-btn';
-                    btn.innerHTML = isFlagged
-                        ? '<i class="fa-solid fa-thumbtack"></i> مميَّز'
-                        : '<i class="fa-solid fa-thumbtack"></i> مراجعة';
                 }
                 showToast(isFlagged ? "📌 تم تمييز السؤال للمراجعة." : "تم إلغاء التمييز.");
             }
@@ -3745,8 +3743,8 @@ html, body {
                 timestamp:      firebase.firestore.FieldValue.serverTimestamp()
             }).then(() => {
                 showToast("✅ تم إرسال البلاغ للإدارة. شكراً لمساعدتك!");
-                const btn = document.querySelector('.arena-action-btn[onclick="reportQuestionProblem()"]');
-                if (btn) { btn.style.color = 'var(--success)'; btn.innerHTML = '<i class="fa-solid fa-check"></i> أُرسل'; }
+                const btn = document.getElementById('btn-report-action');
+                if (btn) { btn.style.color = 'var(--success)'; btn.innerHTML = '<i class="fa-solid fa-check"></i>'; }
             }).catch(() => showToast("⚠️ فشل الإرسال، تحقق من الاتصال.", "error"));
         }
 
@@ -3839,10 +3837,15 @@ html, body {
             const flagBtn = document.getElementById('btn-flag-action');
             if (flagBtn) {
                 const isFlaggedNow = !!activeQ.isFlagged;
+                // ✅ [FIX] أيقونة بس بدون نص — نفس شكل الزرار الأصلي بالظبط، الفرق بصري عبر كلاس flagged فقط
                 flagBtn.className = isFlaggedNow ? 'arena-action-btn flagged' : 'arena-action-btn';
-                flagBtn.innerHTML = isFlaggedNow
-                    ? '<i class="fa-solid fa-thumbtack"></i> مميَّز'
-                    : '<i class="fa-solid fa-thumbtack"></i> مراجعة';
+            }
+            // ✅ [FIX] نفس مشكلة زرار التمييز بالظبط لكن لزرار الإبلاغ — بعد إرسال بلاغ كان بيتحول لعلامة صح
+            // خضراء وميفضلش على شكله الأصلي أبداً حتى وانت بتنتقل لسؤال تاني. بيترجع لشكله الافتراضي مع كل سؤال جديد.
+            const reportBtn = document.getElementById('btn-report-action');
+            if (reportBtn) {
+                reportBtn.style.color = '';
+                reportBtn.innerHTML = '<i class="fa-solid fa-flag"></i>';
             }
             // ✅ [UX-v3] صفحة الامتحان تحديداً تستخدم الطبقة السريعة (شبه فورية) — الأولوية للاستجابة
             _fadeInEl(questionTextEl, direction, true);
