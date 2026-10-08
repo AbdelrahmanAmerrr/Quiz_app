@@ -245,6 +245,12 @@ html, body {
         }
         #bank-xp-toggle:checked + #bank-xp-toggle-slider { background-color: var(--success); }
         #bank-xp-toggle:checked + #bank-xp-toggle-slider::before { transform: translateX(-20px); }
+        #ai-chat-toggle-slider::before {
+            content: ""; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: #fff; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        #ai-chat-toggle:checked + #ai-chat-toggle-slider { background-color: var(--success); }
+        #ai-chat-toggle:checked + #ai-chat-toggle-slider::before { transform: translateX(-20px); }
 
         .quiz-add-mode-btn {
             flex: 1; padding: 9px 6px; font-size: 12.5px; font-weight: bold; text-align: center;
@@ -2232,6 +2238,21 @@ html, body {
                         </div>
                     </div>
 
+                    <!-- ✅ [جديد] مفتاح عام: إظهار/إخفاء مساعد الذكاء الاصطناعي في صفحة المراجعة لكل الطلاب -->
+                    <div style="border:2px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:18px; background:var(--bg-gradient);">
+                        <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-robot"></i> مساعد الذكاء الاصطناعي بصفحة المراجعة</h4>
+                        <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 12px;">
+                            إخفاء مؤقت للميزة لحد ما تخلص تعديلات عليها — هتختفي زرار "اسأل عن السؤال ده" بالكامل من صفحة مراجعة الطلاب كلهم.
+                        </p>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--card-bg); border-radius:8px; padding:10px 14px;">
+                            <span id="ai-chat-mode-label" style="font-weight:800; font-size:13.5px;">جاري التحميل...</span>
+                            <label style="position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0;">
+                                <input type="checkbox" id="ai-chat-toggle" onchange="toggleAiChatFeature(this.checked)" style="opacity:0; width:0; height:0;">
+                                <span id="ai-chat-toggle-slider" style="position:absolute; cursor:pointer; inset:0; background-color:var(--border); transition:.3s; border-radius:26px;"></span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="tools-grid">
                         <!-- Backup -->
                         <div class="tool-card">
@@ -2474,6 +2495,7 @@ html, body {
         let activeCategory = "databases";
         let isPracticeMode = false;
         let bankXpSystemEnabled = true; // ✅ [جديد] مفتاح عام من الأدمن: البنك العادي شغال بنظام XP وحد المحاولات، ولا مفتوح للمراجعة الحرة (مراجعة أيام المذاكرة، XP وقت الامتحانات)
+        let aiChatEnabled = true; // ✅ [جديد] مفتاح عام من الأدمن: إظهار أو إخفاء مساعد الذكاء الاصطناعي في صفحة المراجعة للطلاب كلهم
         let currentQuestions = [];
         let cachedAdminQuestions = [];
         let selectedAdminQuestionsGroup = [];
@@ -2650,6 +2672,7 @@ html, body {
                     // ✅ [جديد] مفتاح عام: هل البنك العادي شغال بنظام XP وحد الـ3 محاولات، ولا مفتوح للمراجعة الحرة؟
                     // افتراضي true (نفس السلوك القديم) لو الحقل مش موجود أصلاً — توافق كامل مع أي بيانات سابقة
                     bankXpSystemEnabled = data.bankXpEnabled !== false;
+                    aiChatEnabled = data.aiChatEnabled !== false; // ✅ [جديد] نفس الفكرة لمفتاح إظهار/إخفاء شات الذكاء الاصطناعي
                     _applySubjectCounts();
                 } else {
                     rebuildMetadataCounts();
@@ -3208,11 +3231,9 @@ html, body {
                 isPracticeMode = mode;
                 subjectAttemptCache[activeCategory] = mode;
                 if (!alertBox) return;
-                // ✅ [جديد] لو البنك العام مقفول نظام XP بالكامل من الأدمن (فترة مراجعة حرة) — رسالة مختلفة تماماً،
-                // مفيش داعي نلخبط الطالب بكلام عن "محاولات رسمية" وهو أصلاً مفتوح بلا حدود
+                // ✅ [FIX] اتشال الصندوق الأحمر الكبير لحالة المراجعة الحرة — الشارة الصغيرة تحت كفاية ومش مزعجة
                 if (!bankXpSystemEnabled) {
-                    alertBox.style.display = "block";
-                    alertBox.innerHTML = `📖 وضع المراجعة الحرة مفعّل حالياً — محاولات مفتوحة بلا حدود، من غير XP. هيرجع نظام الدرجات بعد كده أيام الامتحانات.`;
+                    alertBox.style.display = "none";
                 } else if (isBlocked) {
                     alertBox.style.display = "block";
                     alertBox.innerHTML = `⚠️ وضع تدريبي — استنفذت محاولاتك الرسمية في هذه المادة (${usedAttempts}/${MAX_XP_ATTEMPTS_PER_SUB}).`;
@@ -4078,6 +4099,7 @@ html, body {
         let reviewChatBusy = false;
 
         function openReviewChatPanel(i) {
+            if (!aiChatEnabled) return; // ✅ [جديد] مقفول من الأدمن مؤقتاً — ميفتحش حتى لو اتنادت الدالة من مكان تاني
             const log = userQuizAnswersLog[i];
             if (!log) return;
             reviewChatOpenIndex = i;
@@ -4227,14 +4249,20 @@ html, body {
             } catch (e) { /* صامت — تجربة المستخدم أهم من ضمان وصول التقييم */ }
         }
 
-        // ✅ [تحسين] حفظ رد الشات الحالي مع السؤال بشكل دائم في "أسئلتي المميزة" —
-        // يشتغل حتى لو السؤال لسه مش متعلّم (📌) — بيعلّمه تلقائياً كنتيجة جانبية للحفظ
+        // ✅ [إصلاح] "أسئلتي المميزة" بقت مصدرها حصرياً زرار التمييز (📌) في البنك العام، مش حفظ شات الذكاء
+        // الاصطناعي. الدالة دي بقت بس تضيف ملاحظة الشات لسؤال متمّيز بالفعل — ومش بتضيف سؤال جديد للقايمة
+        // ولا بتعلّمه تلقائياً كنتيجة جانبية زي ما كان بيحصل قبل كده.
         async function _saveAiNoteToFlagged(msgIndex) {
             const i = reviewChatOpenIndex;
             const list = i !== null ? reviewChatHistoryByIndex[i] : null;
             const msg = list ? list[msgIndex] : null;
             const log = i !== null ? userQuizAnswersLog[i] : null;
             if (!msg || msg.role !== 'bot' || msg.noteSaved || !log || !currentUser || !activeCategory) return;
+
+            if (!currentQuestions[i] || !currentQuestions[i].isFlagged) {
+                showToast("📌 مَيّز السؤال ده الأول من زرار التمييز عشان تقدر تحفظ ملاحظة عليه.", "error");
+                return;
+            }
 
             try {
                 const ref = db.collection("users").doc(currentUser.uid).collection("flaggedQuestions").doc(activeCategory);
@@ -4243,21 +4271,15 @@ html, body {
                 let items = Array.isArray(data.items) ? data.items : [];
 
                 const existingIdx = items.findIndex(it => it.question === log.question);
-                const itemPayload = {
-                    question:      log.question || '',
-                    correctAnswer: log.correctAnswer || '',
-                    chosen:        log.chosen || null,
-                    isCorrect:     !!log.isCorrect,
-                    explanation:   log.explanation || '',
-                    aiNote:        msg.text // ✅ الشرح المحفوظ من الشات
-                };
-
-                if (existingIdx >= 0) {
-                    items[existingIdx] = { ...items[existingIdx], ...itemPayload };
-                } else {
-                    items.unshift(itemPayload);
+                if (existingIdx < 0) {
+                    // السؤال متمّيز بس لسه مش محفوظ في القايمة (هيتحفظ عادي مع تسليم الامتحان) — منضيفوش نسخة تانية هنا
+                    showToast("📌 اتحفظت الملاحظة محلياً، وهتتسجل مع السؤال بعد تسليم الامتحان.", "success");
+                    msg.noteSaved = true;
+                    _renderReviewChatBody();
+                    return;
                 }
-                items = items.slice(0, 20);
+
+                items[existingIdx] = { ...items[existingIdx], aiNote: msg.text };
 
                 await ref.set({
                     subjectId:    activeCategory,
@@ -4265,9 +4287,6 @@ html, body {
                     items:        items,
                     updatedAt:    firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                // نعلّم السؤال محلياً كمان عشان يفضل شكله متسق لو رجع لصفحة المراجعة
-                if (currentQuestions[i]) currentQuestions[i].isFlagged = true;
 
                 msg.noteSaved = true;
                 _renderReviewChatBody();
@@ -4481,7 +4500,7 @@ html, body {
                     <small style="color:var(--text-muted);display:block;margin-top:5px;">
                         💡 ${log.explanation || 'لا يوجد شرح متوفر.'}
                     </small>
-                    ${isFlag ? `<button class="review-chat-open-btn" onclick="openReviewChatPanel(${i})">
+                    ${(isFlag && aiChatEnabled) ? `<button class="review-chat-open-btn" onclick="openReviewChatPanel(${i})">
                         <i class="fa-solid fa-robot"></i> اسأل عن السؤال ده
                     </button>` : ''}
                 </div>`;
@@ -5284,18 +5303,53 @@ html, body {
         }
 
         // ✅ [جديد] مفتاح عام: وضع بنك الأسئلة العادي — نظام XP الرسمي ولا مراجعة حرة بلا حدود
+        // ومفتاح إظهار/إخفاء مساعد الذكاء الاصطناعي — الاتنين من نفس مستند الميتاداتا، فبنحمّلهم مع بعض بقراءة واحدة
         function loadBankXpToggleState() {
-            const labelEl  = document.getElementById('bank-xp-mode-label');
-            const toggleEl = document.getElementById('bank-xp-toggle');
+            const labelEl    = document.getElementById('bank-xp-mode-label');
+            const toggleEl   = document.getElementById('bank-xp-toggle');
+            const aiLabelEl  = document.getElementById('ai-chat-mode-label');
+            const aiToggleEl = document.getElementById('ai-chat-toggle');
             if (!labelEl || !toggleEl) return;
 
             db.collection("questions").doc("--metadata--").get().then(doc => {
-                const enabled = doc.exists ? (doc.data().bankXpEnabled !== false) : true;
+                const data = doc.exists ? doc.data() : {};
+                const enabled = data.bankXpEnabled !== false;
                 toggleEl.checked = enabled;
                 labelEl.innerHTML = enabled
                     ? '🎯 نظام الدرجات الرسمي شغال (XP + حد 3 محاولات)'
                     : '📖 مراجعة حرة شغالة (بلا حدود، من غير XP)';
+
+                if (aiLabelEl && aiToggleEl) {
+                    const aiEnabled = data.aiChatEnabled !== false;
+                    aiToggleEl.checked = aiEnabled;
+                    aiLabelEl.innerHTML = aiEnabled ? '🟢 ظاهر للطلاب' : '⚪ مخفي عن الطلاب';
+                }
             }).catch(() => { labelEl.innerText = 'تعذّر تحميل الحالة.'; });
+        }
+
+        function toggleAiChatFeature(enabled) {
+            const labelEl  = document.getElementById('ai-chat-mode-label');
+            const toggleEl = document.getElementById('ai-chat-toggle');
+            // نفس احتياط مفتاح البنك العام: نرجّع الزرار لحالته القديمة فوراً، ونطبّق التغيير بصرياً بس بعد نجاح الحفظ
+            if (toggleEl) toggleEl.checked = !enabled;
+
+            showModal({
+                icon: enabled ? '🤖' : '🙈',
+                title: enabled ? 'إظهار مساعد الذكاء الاصطناعي' : 'إخفاء مساعد الذكاء الاصطناعي',
+                message: enabled
+                    ? 'زرار "اسأل عن السؤال ده" هيرجع يظهر للطلاب كلهم في صفحة المراجعة.'
+                    : 'زرار "اسأل عن السؤال ده" هيختفي تماماً من صفحة المراجعة لكل الطلاب لحد ما ترجّعه تاني.',
+                confirmText: 'نعم، كمّل', cancelText: 'إلغاء',
+                onConfirm: () => {
+                    db.collection("questions").doc("--metadata--").set({ aiChatEnabled: enabled }, { merge: true }).then(() => {
+                        aiChatEnabled = enabled;
+                        if (toggleEl) toggleEl.checked = enabled;
+                        if (labelEl) labelEl.innerHTML = enabled ? '🟢 ظاهر للطلاب' : '⚪ مخفي عن الطلاب';
+                        showToast(enabled ? "✅ مساعد الذكاء الاصطناعي ظاهر تاني" : "✅ تم إخفاء مساعد الذكاء الاصطناعي");
+                        logAdminAction("تبديل ظهور شات الذكاء الاصطناعي", enabled ? "تفعيل" : "إخفاء");
+                    }).catch(err => showToast("❌ فشل التبديل: " + err.message, "error"));
+                }
+            });
         }
 
         function toggleBankXpSystem(enabled) {
