@@ -238,6 +238,14 @@ html, body {
         .circular-timer.quiz-timer-urgent .progress-circle { stroke: #dc2626 !important; }
         .circular-timer.quiz-timer-urgent .timer-text { color: #dc2626 !important; }
 
+        /* ═══ [جديد] مفتاح تبديل بسيط (iOS-style) لوضع بنك الأسئلة العام ═══ */
+        #bank-xp-toggle-slider::before {
+            content: ""; position: absolute; height: 20px; width: 20px; left: 3px; bottom: 3px;
+            background-color: #fff; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        #bank-xp-toggle:checked + #bank-xp-toggle-slider { background-color: var(--success); }
+        #bank-xp-toggle:checked + #bank-xp-toggle-slider::before { transform: translateX(-20px); }
+
         .quiz-add-mode-btn {
             flex: 1; padding: 9px 6px; font-size: 12.5px; font-weight: bold; text-align: center;
             border-radius: 8px; border: 2px solid var(--border); background: var(--card-bg);
@@ -1550,9 +1558,9 @@ html, body {
                     <div class="circular-timer" id="quiz-circular-timer">
                         <svg viewBox="0 0 48 48">
                             <circle class="bg-circle" cx="24" cy="24" r="20"/>
-                            <circle id="quiz-circle-fill" class="progress-circle" cx="24" cy="24" r="20" style="stroke:#dc2626;"/>
+                            <circle id="quiz-circle-fill" class="progress-circle" cx="24" cy="24" r="20"/>
                         </svg>
-                        <div id="quiz-timer-sec" class="timer-text" style="color:#dc2626;">45</div>
+                        <div id="quiz-timer-sec" class="timer-text">45</div>
                     </div>
                 </div>
 
@@ -2209,6 +2217,21 @@ html, body {
                 <div id="tab-tools" class="admin-tab-content hidden-tab">
                     <h3>⚙️ أدوات الإدارة والصيانة</h3>
 
+                    <!-- ✅ [جديد] مفتاح عام: وضع البنك العادي — نظام XP الرسمي (أيام الامتحانات) ولا مراجعة حرة بلا حدود (أيام المذاكرة) -->
+                    <div style="border:2px solid var(--primary); border-radius:12px; padding:14px 16px; margin-bottom:18px; background:var(--bg-gradient);">
+                        <h4 style="margin:0 0 6px 0; color:var(--primary);"><i class="fa-solid fa-toggle-on"></i> وضع بنك الأسئلة العام</h4>
+                        <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 12px;">
+                            بدّل بين وضعين لكل أسئلة البنك العادي دفعة واحدة: <strong>نظام الدرجات الرسمي</strong> (XP + حد 3 محاولات لكل مادة — أيام الامتحانات)، أو <strong>مراجعة حرة</strong> (محاولات مفتوحة بلا حدود، من غير أي XP — أيام المذاكرة العادية).
+                        </p>
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--card-bg); border-radius:8px; padding:10px 14px;">
+                            <span id="bank-xp-mode-label" style="font-weight:800; font-size:13.5px;">جاري التحميل...</span>
+                            <label style="position:relative; display:inline-block; width:46px; height:26px; flex-shrink:0;">
+                                <input type="checkbox" id="bank-xp-toggle" onchange="toggleBankXpSystem(this.checked)" style="opacity:0; width:0; height:0;">
+                                <span id="bank-xp-toggle-slider" style="position:absolute; cursor:pointer; inset:0; background-color:var(--border); transition:.3s; border-radius:26px;"></span>
+                            </label>
+                        </div>
+                    </div>
+
                     <div class="tools-grid">
                         <!-- Backup -->
                         <div class="tool-card">
@@ -2450,6 +2473,7 @@ html, body {
         let currentUser = null;
         let activeCategory = "databases";
         let isPracticeMode = false;
+        let bankXpSystemEnabled = true; // ✅ [جديد] مفتاح عام من الأدمن: البنك العادي شغال بنظام XP وحد المحاولات، ولا مفتوح للمراجعة الحرة (مراجعة أيام المذاكرة، XP وقت الامتحانات)
         let currentQuestions = [];
         let cachedAdminQuestions = [];
         let selectedAdminQuestionsGroup = [];
@@ -2623,6 +2647,9 @@ html, body {
                     // يعني شاشة اختيار الفصل كانت مستحيل تظهر لأي طالب عادي خالص، بغض النظر عن أي حاجة تانية.
                     // نفس القراءة دي أصلاً بتحصل لكل طالب عند تسجيل الدخول، فمفيش أي قراءة إضافية هنا.
                     cachedSubjectChapters = data.chapters || {};
+                    // ✅ [جديد] مفتاح عام: هل البنك العادي شغال بنظام XP وحد الـ3 محاولات، ولا مفتوح للمراجعة الحرة؟
+                    // افتراضي true (نفس السلوك القديم) لو الحقل مش موجود أصلاً — توافق كامل مع أي بيانات سابقة
+                    bankXpSystemEnabled = data.bankXpEnabled !== false;
                     _applySubjectCounts();
                 } else {
                     rebuildMetadataCounts();
@@ -3181,7 +3208,12 @@ html, body {
                 isPracticeMode = mode;
                 subjectAttemptCache[activeCategory] = mode;
                 if (!alertBox) return;
-                if (isBlocked) {
+                // ✅ [جديد] لو البنك العام مقفول نظام XP بالكامل من الأدمن (فترة مراجعة حرة) — رسالة مختلفة تماماً،
+                // مفيش داعي نلخبط الطالب بكلام عن "محاولات رسمية" وهو أصلاً مفتوح بلا حدود
+                if (!bankXpSystemEnabled) {
+                    alertBox.style.display = "block";
+                    alertBox.innerHTML = `📖 وضع المراجعة الحرة مفعّل حالياً — محاولات مفتوحة بلا حدود، من غير XP. هيرجع نظام الدرجات بعد كده أيام الامتحانات.`;
+                } else if (isBlocked) {
                     alertBox.style.display = "block";
                     alertBox.innerHTML = `⚠️ وضع تدريبي — استنفذت محاولاتك الرسمية في هذه المادة (${usedAttempts}/${MAX_XP_ATTEMPTS_PER_SUB}).`;
                 } else if (mode) {
@@ -3199,7 +3231,9 @@ html, body {
                     const startBtn = document.getElementById('btn-start-quiz');
                     if (startBtn && startBtn.parentNode) startBtn.parentNode.insertBefore(badge, startBtn);
                 }
-                if (isBlocked) {
+                if (!bankXpSystemEnabled) {
+                    badge.innerHTML = `<span style="color:var(--text-muted)">📖 مراجعة حرة — محاولات غير محدودة</span>`;
+                } else if (isBlocked) {
                     badge.innerHTML = `<span style="color:var(--danger)">🚫 لا محاولات رسمية متبقية في هذه المادة</span>`;
                 } else {
                     badge.innerHTML = `<span style="color:${remaining < MAX_XP_ATTEMPTS_PER_SUB ? 'var(--warning)' : 'var(--success)'}">⚡ متبقي لك <strong>${remaining}</strong> من <strong>${MAX_XP_ATTEMPTS_PER_SUB}</strong> محاولات رسمية</span>`;
@@ -3207,11 +3241,11 @@ html, body {
             }
 
             // ══════════════════════════════════════════════════════════
-            // المنطق النهائي: يعتمد فقط على currentUser.subjectAttemptsCount
-            // لا كاش قديم، لا قراءة Firestore — القرار فوري وصحيح دائماً
+            // المنطق النهائي: يعتمد على currentUser.subjectAttemptsCount، وعلى مفتاح الأدمن العام bankXpSystemEnabled
+            // لا كاش قديم، لا قراءة Firestore إضافية — القرار فوري وصحيح دائماً
             // ══════════════════════════════════════════════════════════
-            // وضع تدريبي فقط إذا استنفد المحاولات الرسمية الثلاث أو XP المادة
-            _applyAlert(isBlocked);
+            // وضع تدريبي لو: البنك كله مقفول XP من الأدمن (مراجعة حرة)، أو استنفد المحاولات الرسمية الثلاث أو XP المادة
+            _applyAlert(!bankXpSystemEnabled || isBlocked);
         }
 
         let pendingQuestions = [];
@@ -5249,6 +5283,52 @@ html, body {
             });
         }
 
+        // ✅ [جديد] مفتاح عام: وضع بنك الأسئلة العادي — نظام XP الرسمي ولا مراجعة حرة بلا حدود
+        function loadBankXpToggleState() {
+            const labelEl  = document.getElementById('bank-xp-mode-label');
+            const toggleEl = document.getElementById('bank-xp-toggle');
+            if (!labelEl || !toggleEl) return;
+
+            db.collection("questions").doc("--metadata--").get().then(doc => {
+                const enabled = doc.exists ? (doc.data().bankXpEnabled !== false) : true;
+                toggleEl.checked = enabled;
+                labelEl.innerHTML = enabled
+                    ? '🎯 نظام الدرجات الرسمي شغال (XP + حد 3 محاولات)'
+                    : '📖 مراجعة حرة شغالة (بلا حدود، من غير XP)';
+            }).catch(() => { labelEl.innerText = 'تعذّر تحميل الحالة.'; });
+        }
+
+        function toggleBankXpSystem(enabled) {
+            const labelEl  = document.getElementById('bank-xp-mode-label');
+            const toggleEl = document.getElementById('bank-xp-toggle');
+            // ✅ [ملحوظة] نافذة التأكيد ممكن تتقفل بالضغط برّاها من غير ما تستدعي onCancel —
+            // فبدل ما نعتمد عليه، نرجّع شكل الزرار لحالته القديمة فوراً، ونطبّق التغيير الفعلي بصرياً
+            // بس بعد نجاح الحفظ على السيرفر (مش قبل كده أبداً)
+            if (toggleEl) toggleEl.checked = !enabled;
+
+            showModal({
+                icon: enabled ? '🎯' : '📖',
+                title: enabled ? 'تفعيل نظام الدرجات الرسمي' : 'تفعيل المراجعة الحرة',
+                message: enabled
+                    ? 'كل طلاب المنصة هيرجعوا يلعبوا بنظام XP وحد الـ3 محاولات الرسمي لكل مادة في البنك العام فوراً.'
+                    : 'كل طلاب المنصة هيقدروا يحلّوا أي مادة في البنك العام محاولات مفتوحة بلا حدود، من غير أي XP جديد، لحد ما ترجّعه تاني.',
+                confirmText: 'نعم، فعّل', cancelText: 'إلغاء',
+                onConfirm: () => {
+                    db.collection("questions").doc("--metadata--").set({ bankXpEnabled: enabled }, { merge: true }).then(() => {
+                        bankXpSystemEnabled = enabled;
+                        if (toggleEl) toggleEl.checked = enabled;
+                        if (labelEl) labelEl.innerHTML = enabled
+                            ? '🎯 نظام الدرجات الرسمي شغال (XP + حد 3 محاولات)'
+                            : '📖 مراجعة حرة شغالة (بلا حدود، من غير XP)';
+                        showToast(enabled ? "✅ رجع نظام الدرجات الرسمي" : "✅ اتفعّلت المراجعة الحرة");
+                        logAdminAction("تبديل وضع البنك العام", enabled ? "رجّع نظام XP الرسمي" : "فعّل مراجعة حرة بلا XP");
+                    }).catch(err => {
+                        showToast("❌ فشل التبديل: " + err.message, "error");
+                    });
+                }
+            });
+        }
+
         function openAdminPanel() {
             showView('view-admin-panel');
             resetQuestionForm();
@@ -5638,6 +5718,7 @@ html, body {
             if (tabId === 'tab-logs')     loadAdminLogsList();
             if (tabId === 'tab-upload')   switchQuestionsSubTab('add');
             if (tabId === 'tab-ai')       loadAiUsageDashboard();
+            if (tabId === 'tab-tools')    loadBankXpToggleState();
             if (tabId === 'tab-quizzes')  loadAdminQuizzesList();
         }
 
@@ -6834,12 +6915,51 @@ html, body {
                         <div style="display:flex; gap:6px; margin-top:10px; flex-wrap:wrap;">
                             <button onclick="toggleQuizPublish('${q.uid}', ${!q.published})" style="background:none; border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--text-main);">${q.published ? 'إخفاء' : 'نشر'}</button>
                             <button onclick="editQuizInBuilder('${q.uid}')" style="background:none; border:1px solid var(--border); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--text-main);">تعديل</button>
+                            <button onclick="copyQuizQuestionsToBank('${q.uid}')" style="background:none; border:1px solid var(--primary); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--primary);"><i class="fa-solid fa-copy"></i> نسخ للبنك العام</button>
                             <button onclick="deleteAdminQuiz('${q.uid}')" style="background:none; border:1px solid var(--danger); border-radius:6px; padding:5px 10px; font-size:11.5px; cursor:pointer; color:var(--danger);">حذف</button>
                         </div>
                     </div>
                 `).join('');
             }).catch(err => {
                 listEl.innerHTML = `<p style="font-size:12px; color:var(--danger); text-align:center; padding:10px 0;">تعذّر تحميل الكويزات: ${esc(err.message)}</p>`;
+            });
+        }
+
+        // ✅ [جديد] نسخ أسئلة كويز (مراجعة مؤقتة لفصل معيّن) إلى بنك الأسئلة العام الدائم —
+        // مرحلة طبيعية في دورة حياة الكويز: مراجعة خاطفة لفترة محدودة، وبعدين تنضم للبنك الدائم.
+        // نسخ (مش نقل) — الكويز الأصلي يفضل زي ما هو، تقدر تخفيه أو تحذفه يدوياً بعد النسخ لو حبيت.
+        function copyQuizQuestionsToBank(quizId) {
+            const quiz = cachedAdminQuizzes.find(q => q.uid === quizId);
+            if (!quiz || !quiz.questions || quiz.questions.length === 0) { showToast("⚠️ الكويز ده مفيهوش أي أسئلة.", "error"); return; }
+
+            showModal({
+                icon: '📥', title: 'نسخ أسئلة الكويز للبنك العام',
+                message: `هيتم نسخ ${quiz.questions.length} سؤال من كويز "${quiz.title}" لبنك الأسئلة العام (مادة ${fixedSubjects[quiz.subject] || quiz.subject}${quiz.chapter ? ' — فصل ' + quiz.chapter : ''}). الكويز نفسه هيفضل موجود زي ما هو.`,
+                confirmText: 'نعم، انسخ', cancelText: 'إلغاء',
+                onConfirm: () => {
+                    const batch = db.batch();
+                    quiz.questions.forEach(q => {
+                        const ref = db.collection("questions").doc();
+                        batch.set(ref, {
+                            subject: quiz.subject,
+                            chapter: quiz.chapter || null,
+                            question: q.question,
+                            options: q.options || [],
+                            answer: q.answer,
+                            explanation: q.explanation || '',
+                            correctCount: 0,
+                            wrongCount: 0,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    });
+                    batch.commit().then(() => {
+                        showToast(`✅ تم نسخ ${quiz.questions.length} سؤال لبنك الأسئلة العام.`);
+                        logAdminAction("نسخ أسئلة كويز للبنك", `${quiz.title} → ${quiz.questions.length} سؤال لمادة ${fixedSubjects[quiz.subject] || quiz.subject}`);
+                        updateSubjectCounterBy(quiz.subject, quiz.questions.length);
+                        _invalidateQuestionCache(quiz.subject);
+                        cachedAdminQuestions = [];
+                    }).catch(err => showToast("❌ فشل النسخ: " + err.message, "error"));
+                }
             });
         }
 
@@ -7531,10 +7651,71 @@ html, body {
                 return;
             }
             listEl.innerHTML = chapters.map((ch, idx) => `
-                <div style="display:flex; align-items:center; justify-content:space-between; background:var(--card-bg); border:1px solid var(--border); border-radius:6px; padding:7px 10px;">
-                    <span style="font-size:13px;">${esc(ch)}</span>
+                <div id="chapter-row-${idx}" style="display:flex; align-items:center; justify-content:space-between; gap:6px; background:var(--card-bg); border:1px solid var(--border); border-radius:6px; padding:7px 10px;">
+                    <span id="chapter-row-label-${idx}" style="font-size:13px; flex:1;">${esc(ch)}</span>
+                    <button onclick="startRenameChapter(${idx})" style="background:none; border:none; color:var(--primary); cursor:pointer; font-size:13px;" title="تعديل اسم الفصل"><i class="fa-solid fa-pen"></i></button>
                     <button onclick="deleteChapter(${idx})" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:13px;" title="حذف الفصل"><i class="fa-solid fa-trash"></i></button>
                 </div>`).join('');
+        }
+
+        // ✅ [جديد] تعديل اسم الفصل — تعديل مضمّن بمكان البطاقة نفسها بدل نافذة prompt تقليدية
+        function startRenameChapter(index) {
+            const labelEl = document.getElementById(`chapter-row-label-${index}`);
+            const rowEl = document.getElementById(`chapter-row-${index}`);
+            if (!labelEl || !rowEl) return;
+            const currentName = labelEl.textContent;
+            rowEl.innerHTML = `
+                <input type="text" id="chapter-rename-input-${index}" class="search-box" value="${esc(currentName)}" style="flex:1; margin:0; padding:6px 8px; font-size:13px;">
+                <button onclick="saveRenameChapter(${index})" style="background:none; border:none; color:var(--success); cursor:pointer; font-size:14px;" title="حفظ"><i class="fa-solid fa-check"></i></button>
+                <button onclick="renderChaptersManageList()" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:14px;" title="إلغاء"><i class="fa-solid fa-xmark"></i></button>
+            `;
+            const inputEl = document.getElementById(`chapter-rename-input-${index}`);
+            if (inputEl) { inputEl.focus(); inputEl.select(); }
+        }
+
+        // يعدّل اسم الفصل في قايمة الفصول المسجّلة، وبيحدّث كل الأسئلة (والكويزات) اللي متوسّمة بالاسم القديم
+        // لنفس الاسم الجديد تلقائياً — عشان محدش يفضل "يتيم" بفصل مش موجود بعد التعديل (نفس مشكلة عدم التطابق في CSV)
+        function saveRenameChapter(index) {
+            const subject = document.getElementById('chapter-manage-subject').value;
+            const chapters = _getChaptersForSubject(subject);
+            const oldName = chapters[index];
+            const newName = (document.getElementById(`chapter-rename-input-${index}`)?.value || '').trim();
+
+            if (!newName) { showToast("⚠️ اكتب اسم صالح للفصل.", "error"); return; }
+            if (newName === oldName) { renderChaptersManageList(); return; }
+            if (chapters.includes(newName)) { showToast("⚠️ فيه فصل تاني بنفس الاسم ده بالفعل.", "error"); return; }
+
+            const updated = [...chapters];
+            updated[index] = newName;
+
+            showModal({
+                icon: '✏️', title: 'تعديل اسم الفصل',
+                message: `هيتم تحديث كل الأسئلة المتوسّمة بـ"${oldName}" لتصبح "${newName}" تلقائياً.`,
+                confirmText: 'نعم، عدّل', cancelText: 'إلغاء',
+                onConfirm: () => {
+                    const batch = db.batch();
+                    batch.set(db.collection("questions").doc("--metadata--"), { chapters: { [subject]: updated } }, { merge: true });
+
+                    db.collection("questions").where("subject", "==", subject).where("chapter", "==", oldName).get()
+                      .then(snap => {
+                        snap.forEach(doc => batch.update(doc.ref, { chapter: newName }));
+                        return db.collection("quizzes").where("subject", "==", subject).where("chapter", "==", oldName).get();
+                      })
+                      .then(quizSnap => {
+                        quizSnap.forEach(doc => batch.update(doc.ref, { chapter: newName }));
+                        return batch.commit();
+                      })
+                      .then(() => {
+                        cachedSubjectChapters[subject] = updated;
+                        _invalidateQuestionCache(subject);
+                        renderChaptersManageList();
+                        populateChapterDropdownForForm();
+                        showToast(`✅ اتعدّل اسم الفصل لـ"${newName}" في كل الأسئلة المرتبطة.`);
+                        logAdminAction("تعديل اسم فصل", `${fixedSubjects[subject]}: ${oldName} ← ${newName}`);
+                      })
+                      .catch(err => showToast("❌ فشل التعديل: " + err.message, "error"));
+                }
+            });
         }
 
         function addNewChapter() {
@@ -7565,15 +7746,23 @@ html, body {
             const removedName = chapters[index];
             const updated = chapters.filter((_, i) => i !== index);
 
-            db.collection("questions").doc("--metadata--").set({
-                chapters: { [subject]: updated }
-            }, { merge: true }).then(() => {
-                cachedSubjectChapters[subject] = updated;
-                renderChaptersManageList();
-                populateChapterDropdownForForm();
-                showToast("🗑️ اتحذف الفصل. الأسئلة اللي كانت متوسّمة بيه هتفضل موجودة بس بدون فصل محدد.");
-                logAdminAction("حذف فصل", `${fixedSubjects[subject]}: ${removedName}`);
-            }).catch(err => showToast("❌ فشل الحذف: " + err.message, "error"));
+            // ✅ [جديد] تأكيد قبل الحذف — كان بيتنفذ فوراً من غير أي تأكيد
+            showModal({
+                icon: '🗑️', title: 'حذف الفصل',
+                message: `هيتم حذف فصل "${removedName}" من قايمة الفصول. الأسئلة اللي كانت متوسّمة بيه هتفضل موجودة بس من غير فصل محدد (مش هتتحذف).`,
+                confirmText: 'نعم، احذف', cancelText: 'إلغاء',
+                onConfirm: () => {
+                    db.collection("questions").doc("--metadata--").set({
+                        chapters: { [subject]: updated }
+                    }, { merge: true }).then(() => {
+                        cachedSubjectChapters[subject] = updated;
+                        renderChaptersManageList();
+                        populateChapterDropdownForForm();
+                        showToast("🗑️ اتحذف الفصل. الأسئلة اللي كانت متوسّمة بيه هتفضل موجودة بس بدون فصل محدد.");
+                        logAdminAction("حذف فصل", `${fixedSubjects[subject]}: ${removedName}`);
+                    }).catch(err => showToast("❌ فشل الحذف: " + err.message, "error"));
+                }
+            });
         }
 
         // بيملأ قايمة اختيار الفصل بنموذج إضافة/تعديل السؤال حسب المادة المختارة حالياً
