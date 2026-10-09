@@ -1576,6 +1576,14 @@ html, body {
                     <div class="arena-question-text" id="quiz-arena-question-text">جاري التحميل...</div>
                     <div id="quiz-arena-options-box"></div>
 
+                    <!-- ✅ [جديد] الشرح بيظهر فوراً بعد الإجابة زي البنك العام بالظبط — مش بس وقت المراجعة بعد الكويز -->
+                    <div id="quiz-arena-explanation-box" class="explanation-box" style="display:none;">
+                        <strong style="color:#b91c1c; font-size:13px;">
+                            <i class="fa-solid fa-circle-info"></i> الشرح:
+                        </strong>
+                        <p id="quiz-arena-explanation-text" style="margin:6px 0 0 0; font-size:14px;"></p>
+                    </div>
+
                     <button id="quiz-arena-next-btn" class="btn-launch" style="display:none; background:linear-gradient(135deg,#dc2626,#b91c1c); margin-top:16px;" onclick="quizArenaAdvance()">
                         التالي <i class="fa-solid fa-arrow-left"></i>
                     </button>
@@ -8196,6 +8204,18 @@ html, body {
                 }
                 box.appendChild(node);
             });
+
+            // ✅ [جديد] الشرح بيظهر فوراً مع الإجابة — زي البنك العام بالظبط، مش بس وقت المراجعة بعد الكويز
+            const expBox = document.getElementById('quiz-arena-explanation-box');
+            const expText = document.getElementById('quiz-arena-explanation-text');
+            if (expBox && expText) {
+                if (isAnswered) {
+                    expText.innerText = q.explanation || 'لا يوجد توضيح مُسجل لهذا السؤال.';
+                    expBox.style.display = 'block';
+                } else {
+                    expBox.style.display = 'none';
+                }
+            }
 
             const nextBtn = document.getElementById('quiz-arena-next-btn');
             nextBtn.style.display = isAnswered ? 'block' : 'none';
