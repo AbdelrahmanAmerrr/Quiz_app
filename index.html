@@ -2400,6 +2400,7 @@ html, body {
                                 <button type="button" class="quiz-add-mode-btn active" id="quiz-mode-btn-bank" onclick="switchQuizAddMode('bank')">🔍 من البنك</button>
                                 <button type="button" class="quiz-add-mode-btn" id="quiz-mode-btn-ai" onclick="switchQuizAddMode('ai')">🤖 من صورة (AI)</button>
                                 <button type="button" class="quiz-add-mode-btn" id="quiz-mode-btn-manual" onclick="switchQuizAddMode('manual')">✏️ يدوي</button>
+                                <button type="button" class="quiz-add-mode-btn" id="quiz-mode-btn-csv" onclick="switchQuizAddMode('csv')">📄 CSV</button>
                             </div>
 
                             <div id="quiz-add-mode-bank">
@@ -2423,6 +2424,16 @@ html, body {
                                 <input type="text" id="quiz-new-q-answer" class="search-box" placeholder="الإجابة الصحيحة (يجب مطابقة أحد الخيارات حرفياً)" style="margin-bottom:6px;">
                                 <textarea id="quiz-new-q-exp" class="search-box" placeholder="شرح الإجابة (اختياري)" style="min-height:35px; margin-bottom:8px;"></textarea>
                                 <button class="ban-btn ban-inactive" style="background:var(--bg-gradient); border:1px solid var(--border); width:100%;" onclick="addCustomQuestionToQuizBuilder()"><i class="fa-solid fa-plus"></i> أضف هذا السؤال للكويز</button>
+                            </div>
+
+                            <div id="quiz-add-mode-csv" style="display:none;">
+                                <input type="file" id="quizCsvFileInput" accept=".csv" style="display:none;" onchange="document.getElementById('quizCsvFileName').innerText = this.files[0] ? this.files[0].name : 'اضغط لاختيار ملف CSV';">
+                                <label for="quizCsvFileInput" class="file-label" style="display:block; margin-bottom:8px;">
+                                    <i class="fa-solid fa-file-excel file-icon"></i>
+                                    <span id="quizCsvFileName" style="font-weight:bold; display:block;">اضغط لاختيار ملف CSV</span>
+                                    <small style="color:var(--text-muted); display:block;">نفس ترتيب رفع البنك العادي: Question, A, B, C, D, Answer, Explanation</small>
+                                </label>
+                                <button class="btn-launch" style="background:var(--success); width:100%;" onclick="importCsvIntoQuizBuilder()"><i class="fa-solid fa-upload"></i> استورد الأسئلة من الملف</button>
                             </div>
                         </div>
 
@@ -6763,7 +6774,7 @@ html, body {
 
         // ✅ [تبسيط] تبديل طريقة إضافة السؤال (بنك / AI / يدوي) — واحدة ظاهرة بس في كل مرة بدل عرضهم مع بعض
         function switchQuizAddMode(mode) {
-            ['bank', 'ai', 'manual'].forEach(m => {
+            ['bank', 'ai', 'manual', 'csv'].forEach(m => {
                 document.getElementById(`quiz-add-mode-${m}`).style.display = (m === mode) ? 'block' : 'none';
                 document.getElementById(`quiz-mode-btn-${m}`).classList.toggle('active', m === mode);
             });
@@ -6843,6 +6854,44 @@ html, body {
             showToast("✅ اتضاف للكويز");
         }
 
+        // ✅ [جديد] استيراد أسئلة CSV مباشرة لقائمة بناء الكويز — نفس صيغة وتحقق رفع البنك العام بالظبط،
+        // لكن بدون أي خطوة مراجعة منفصلة (الأسئلة أصلاً بتتراجع في قائمة "أسئلة الكويز الحالي" نفسها بعد الإضافة)
+        function importCsvIntoQuizBuilder() {
+            const fileInput = document.getElementById('quizCsvFileInput');
+            if (!fileInput.files.length) { showToast("اختار ملف CSV أولاً.", "error"); return; }
+
+            Papa.parse(fileInput.files[0], {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    const rows = results.data.filter(q => q.Question && q.A && q.B && q.Answer);
+                    if (rows.length === 0) {
+                        showToast("لم نجد أسئلة صالحة — تأكد من أعمدة Question, A, B, Answer على الأقل.", "error");
+                        return;
+                    }
+
+                    let addedCount = 0, skippedMismatch = 0;
+                    rows.forEach(q => {
+                        const options = [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== "");
+                        const answer = String(q.Answer).trim();
+                        if (!options.map(o => o.trim()).includes(answer)) { skippedMismatch++; return; }
+                        quizBuilderQuestions.push({
+                            question: q.Question,
+                            options: options,
+                            answer: answer,
+                            explanation: q.Explanation || ''
+                        });
+                        addedCount++;
+                    });
+
+                    renderQuizBuilderQuestionsList();
+                    fileInput.value = '';
+                    document.getElementById('quizCsvFileName').innerText = 'اضغط لاختيار ملف CSV';
+                    showToast(`✅ اتضاف ${addedCount} سؤال للكويز من الملف` + (skippedMismatch > 0 ? ` (تم تجاهل ${skippedMismatch} — الإجابة مش مطابقة لأحد الخيارات)` : ''));
+                }
+            });
+        }
+
         function removeQuizBuilderQuestion(idx) {
             quizBuilderQuestions.splice(idx, 1);
             renderQuizBuilderQuestionsList();
@@ -6904,6 +6953,8 @@ html, body {
             document.getElementById('quiz-publish-checkbox').checked = false;
             document.getElementById('quiz-bank-search').value = '';
             document.getElementById('quiz-bank-search-results').innerHTML = '';
+            document.getElementById('quizCsvFileInput').value = '';
+            document.getElementById('quizCsvFileName').innerText = 'اضغط لاختيار ملف CSV';
             document.getElementById('quiz-builder-title').innerHTML = '<i class="fa-solid fa-plus"></i> إنشاء كويز جديد';
             document.getElementById('quiz-builder-cancel-btn').style.display = 'none';
             switchQuizAddMode('bank');
