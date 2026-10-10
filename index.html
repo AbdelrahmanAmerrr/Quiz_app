@@ -1168,6 +1168,27 @@ html, body {
             .app-layout { max-width: 1000px !important; padding: 0 30px !important; }
             #view-arena.card { padding: 32px; }
         }
+
+        /* ═══ شارة المراجعة الحرة ═══ */
+        .picker-badge.free-review {
+            background: var(--primary-light); color: var(--text-muted);
+            border: 1px solid var(--border);
+        }
+
+        /* ═══ [Android] توافق الأجهزة الضيقة وبدون تغيير شكل الآيفون/الشاشات العادية ═══ */
+        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+        body { min-height: 100vh; min-height: 100dvh; }
+        .subject-card h4 { line-height: 1.35; }
+        @media (max-width: 380px) {
+            .card { padding: 12px; }
+            .subject-grid { gap: 8px; }
+            .subject-card { padding: 12px 6px; gap: 6px; }
+            .subject-card i { font-size: 22px; }
+            .subject-card h4 { font-size: 13.5px !important; margin: 2px 0 0 0 !important; }
+            .subject-card .q-count-badge { font-size: 10.5px; padding: 2px 6px; }
+            .picker-bank-title { font-size: 19px; }
+            .picker-badge { font-size: 12px; padding: 6px 12px; }
+        }
     </style>
 
 </head>
@@ -3495,7 +3516,11 @@ html, body {
             if (!badge || !currentUser) return;
             const used      = (currentUser.subjectAttemptsCount?.[activeCategory]) || 0;
             const remaining = Math.max(0, MAX_XP_ATTEMPTS_PER_SUB - used);
-            if (remaining > 0) {
+            if (!bankXpSystemEnabled) {
+                // مراجعة حرة (مفتاح الأدمن مطفي): لا محاولات رسمية ولا XP
+                badge.className = 'picker-badge free-review';
+                badge.innerHTML = `<i class="fa-solid fa-book-open"></i> مراجعة حرة — محاولات غير محدودة`;
+            } else if (remaining > 0) {
                 badge.className = 'picker-badge has-attempts';
                 badge.innerHTML = `<i class="fa-solid fa-shield-halved"></i> تبقّى لك ${remaining} محاولة رسمية في هذا الاختبار`;
             } else {
