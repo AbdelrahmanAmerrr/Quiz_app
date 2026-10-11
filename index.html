@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - النظام الأكاديمي المطور</title>
+    <title>AmerQuiz - نظام الامتحانات والمراجعة</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -1205,6 +1205,7 @@ html, body {
     <header>
         <div class="brand-wrap" onclick="showDashboardTab('dash')"><div class="logo-badge">A</div><span class="brand-name">Amer<span>Quiz</span></span></div>
         <div style="display: flex; align-items: center; gap: 15px;">
+            <span id="header-social-link" style="display:contents;"></span>
             <button onclick="toggleTheme()" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
             <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
         </div>
@@ -1322,9 +1323,6 @@ html, body {
                             <i class="fa-solid fa-play"></i> بدء التحدي الآن
                         </button>
                     </div>
-
-                    <!-- زر لينك خارجي (واتساب/إنستجرام..) — بيظهر بس لو الأدمن حط لينك من تاب الأدوات -->
-                    <div id="home-social-link"></div>
                 </div>
 
                 <div id="profile-subtab-container" class="hidden-tab">
@@ -2287,12 +2285,12 @@ html, body {
 
                     <!-- زر لينك اختياري للطلاب (واتساب / إنستجرام / أي لينك) — لو فاضي مفيش حاجة بتظهر -->
                     <div style="border:2px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:18px; background:var(--bg-gradient);">
-                        <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-link"></i> زر لينك للطلاب (واتساب / إنستجرام)</h4>
+                        <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-link"></i> أيقونة لينك بالأعلى (واتساب / إنستجرام)</h4>
                         <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 12px;">
-                            حط لينك (لازم يبدأ بـ https://) وهيظهر زر للطلاب في الصفحة الرئيسية وشاشة نتيجة الكويز. سيبه فاضي واضغط حفظ لو عايز تخفيه.
+                            حط لينك (لازم يبدأ بـ https://) وهتظهر أيقونة دائرية صغيرة في أعلى الموقع لكل الطلاب، والأيقونة بتتغير حسب اللينك (واتساب / إنستجرام / غيره). اكتب كلمة تظهر تحتها (مثل: لينك الجروب أو المتجر) أو سيبها فاضية. امسح اللينك واضغط حفظ لو عايز تخفيها.
                         </p>
                         <input type="url" id="admin-social-url" dir="ltr" placeholder="https://chat.whatsapp.com/..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
-                        <input type="text" id="admin-social-label" maxlength="40" placeholder="نص الزر (اختياري)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
+                        <input type="text" id="admin-social-label" maxlength="40" placeholder="الكلمة اللي تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
                         <button class="btn-launch" onclick="saveSocialLink()"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
                     </div>
 
@@ -5397,28 +5395,31 @@ html, body {
         function _socialLinkMeta(url) {
             const u = String(url).toLowerCase();
             if (u.includes('wa.me') || u.includes('whatsapp.com')) {
-                return { icon: 'fa-brands fa-whatsapp', text: 'تواصل معنا على واتساب', style: 'background:#25D366; color:#fff; border:none;' };
+                return { icon: 'fa-brands fa-whatsapp', text: 'تواصل معنا على واتساب', style: 'background:#25D366; color:#fff;' };
             }
             if (u.includes('instagram.com') || u.includes('instagr.am')) {
-                return { icon: 'fa-brands fa-instagram', text: 'تابعنا على إنستجرام', style: 'background:linear-gradient(45deg,#f09433,#dc2743,#bc1888); color:#fff; border:none;' };
+                return { icon: 'fa-brands fa-instagram', text: 'تابعنا على إنستجرام', style: 'background:linear-gradient(45deg,#f09433,#dc2743,#bc1888); color:#fff;' };
             }
-            return { icon: 'fa-solid fa-link', text: 'فتح الرابط', style: 'background:var(--bg-gradient); color:var(--text-main); border:1px solid var(--border);' };
+            return { icon: 'fa-solid fa-link', text: 'فتح الرابط', style: 'background:var(--primary); color:#fff;' };
         }
 
-        // بيرجّع HTML الزر، أو نص فاضي لو مفيش لينك صالح (https بس، عشان الأمان)
+        // أيقونة دائرية صغيرة بالهيدر + كلمة اختيارية تحتها (مثل: لينك الجروب، المتجر) — https بس للأمان
         function socialLinkHtml() {
             const url = (socialLink && socialLink.url) ? String(socialLink.url).trim() : '';
             if (!/^https:\/\//i.test(url)) return '';
             const m = _socialLinkMeta(url);
-            const label = (socialLink.label || '').trim() || m.text;
-            return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"
-                        style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; padding:12px; border-radius:12px; text-decoration:none; font-weight:800; font-size:14px; ${m.style}">
-                        <i class="${m.icon}"></i> ${esc(label)}
+            const label = (socialLink.label || '').trim();
+            return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(label)}"
+                        style="display:flex; flex-direction:column; align-items:center; gap:2px; text-decoration:none; flex-shrink:0;">
+                        <span style="width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; ${m.style}">
+                            <i class="${m.icon}"></i>
+                        </span>
+                        ${label ? `<span style="font-size:9.5px; font-weight:700; color:var(--text-muted); max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.2;">${esc(label)}</span>` : ''}
                     </a>`;
         }
 
         function renderHomeSocialLink() {
-            const el = document.getElementById('home-social-link');
+            const el = document.getElementById('header-social-link');
             if (el) el.innerHTML = socialLinkHtml();
         }
 
@@ -8527,7 +8528,6 @@ html, body {
                         <button class="btn-launch" style="background:linear-gradient(135deg,#dc2626,#b91c1c); flex:1;" onclick="showQuizReview()"><i class="fa-solid fa-list-check"></i> مراجعة الإجابات</button>
                         <button class="btn-launch" style="background:var(--bg-gradient); color:var(--text-main); border:1px solid var(--border); flex:1;" onclick="showView('view-dashboard')"><i class="fa-solid fa-house"></i> الرئيسية</button>
                     </div>
-                    ${socialLinkHtml()}
                 </div>
                 <div id="quiz-result-review" style="display:none;"></div>
             `;
