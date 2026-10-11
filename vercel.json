@@ -1,0 +1,10 @@
+{
+  "functions": {
+    "api/generate-questions.js": {
+      "maxDuration": 30
+    }
+  },
+  "rewrites": [
+    { "source": "/admin", "destination": "/index.html" }
+  ]
+}
