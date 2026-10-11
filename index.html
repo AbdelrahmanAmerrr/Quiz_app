@@ -8145,10 +8145,59 @@ html, body {
             `).join('');
         }
 
+        // ✅ [أمان] المحاولة الرسمية بتتسجل بمجرد البداية (مستند quizAttempts بحالة completed:false).
+        // الخروج/قفل التاب/الريفريش بعد كده = محاولة مستهلكة، فمفيش حيلة "اتفرج على الإجابات واخرج وارجع".
+        let quizAttemptOfficial  = false;  // هل الجلسة الحالية هي المحاولة الرسمية (اللي بتاخد XP)؟
+        let quizSessionFinalized = false;  // هل اتسجّلت نتيجتها فعلاً؟
+        let quizStarting         = false;  // يمنع الضغط المزدوج أثناء التسجيل
+
+        function _quizUid() {
+            return currentUser ? currentUser.uid : (auth.currentUser ? auth.currentUser.uid : null);
+        }
+
         function startQuizFromCard(quizId) {
             const quiz = cachedHomeQuizzes.find(q => q.uid === quizId);
             if (!quiz || !quiz.questions || quiz.questions.length === 0) { showToast("تعذّر تحميل الكويز.", "error"); return; }
+            if (quizStarting) return;
 
+            const uid = _quizUid();
+            if (!uid) { _beginQuizArena(quiz, false); return; }
+
+            quizStarting = true;
+            const attemptRef = db.collection("users").doc(uid).collection("quizAttempts").doc(quizId);
+            attemptRef.get().then(snap => {
+                quizStarting = false;
+                // موجود قبل كده (مكتملة أو متروكة) = تدريب بدون XP ولا تسجيل
+                if (snap.exists) { _beginQuizArena(quiz, false); return; }
+
+                showModal({
+                    icon: '⚡', title: 'بدء الكويز',
+                    message: 'للكويز ده محاولة رسمية واحدة بس. المحاولة بتتسجّل بمجرد ما تبدأ، ولو خرجت في النص أو قفلت الصفحة بتتحسب بنتيجتك الحالية ومش بتقدر تاخد XP تاني. تبدأ دلوقتي؟',
+                    confirmText: 'ابدأ', cancelText: 'تراجع', type: 'warning',
+                    onConfirm: () => {
+                        quizStarting = true;
+                        attemptRef.set({
+                            completed: false,
+                            total: quiz.questions.length,
+                            startedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }).then(() => {
+                            quizStarting = false;
+                            _beginQuizArena(quiz, true);
+                        }).catch(() => {
+                            quizStarting = false;
+                            showToast("تعذّر بدء الكويز، تأكد من الاتصال وحاول تاني.", "error");
+                        });
+                    }
+                });
+            }).catch(() => {
+                quizStarting = false;
+                showToast("تعذّر بدء الكويز، تأكد من الاتصال وحاول تاني.", "error");
+            });
+        }
+
+        function _beginQuizArena(quiz, official) {
+            quizAttemptOfficial  = official;
+            quizSessionFinalized = false;
             activeQuizData = quiz;
             quizArenaQuestions = quiz.questions.map(q => ({
                 ...q,
@@ -8277,56 +8326,84 @@ html, body {
             }
         }
 
-        function exitQuizArena() {
+        function _quizCorrectCount() {
+            let c = 0;
+            quizArenaQuestions.forEach((q, i) => {
+                const ans = quizArenaAnswers[i];
+                if (ans !== undefined && ans !== null && String(ans).trim() === String(q.answer).trim()) c++;
+            });
+            return c;
+        }
+
+        function _leaveQuizArena() {
             stopQuizTimer();
             activeQuizData = null;
             quizArenaQuestions = [];
+            quizAttemptOfficial = false;
+            quizSessionFinalized = false;
             showView('view-dashboard');
+        }
+
+        function exitQuizArena() {
+            // محاولة رسمية لسه ما اتسجّلتش نتيجتها = الخروج بيقفلها بالنتيجة الحالية (الأسئلة المتبقية غلط)
+            if (quizAttemptOfficial && !quizSessionFinalized && activeQuizData) {
+                showModal({
+                    icon: '⚠️', title: 'إنهاء الكويز؟',
+                    message: 'محاولتك الرسمية اتسجّلت بالفعل. لو خرجت دلوقتي هتتحسب نتيجتك الحالية والأسئلة اللي ما جاوبتهاش تتحسب غلط، ومش هتقدر تاخد XP للكويز ده تاني.',
+                    confirmText: 'إنهاء وخروج', cancelText: 'كمّل الكويز', type: 'warning',
+                    onConfirm: () => {
+                        stopQuizTimer();
+                        _commitQuizAttempt(_quizCorrectCount())
+                            .then(xp => showToast(xp > 0 ? `✅ اتسجّلت نتيجتك (+${xp} XP)` : "✅ اتسجّلت نتيجتك."))
+                            .catch(() => showToast("⚠️ تعذّر حفظ النتيجة، تأكد من الاتصال.", "error"))
+                            .finally(_leaveQuizArena);
+                    }
+                });
+                return;
+            }
+            _leaveQuizArena();
+        }
+
+        // يقفل المحاولة الرسمية: تحديث مستند المحاولة + XP/النشاط في batch واحد (يا الاتنين يا ولا واحد)
+        function _commitQuizAttempt(correctCount) {
+            quizSessionFinalized = true;
+            const uid = _quizUid();
+            const quizId = activeQuizData.uid;
+            const xpEarned = Math.min(450, correctCount * (activeQuizData.xpPerCorrect || 0));
+            const attemptRef = db.collection("users").doc(uid).collection("quizAttempts").doc(quizId);
+            const userRef = db.collection("users").doc(uid);
+
+            const batch = db.batch();
+            batch.update(attemptRef, {
+                completed: true, correctCount, xpEarned,
+                completedAt: firebase.firestore.FieldValue.serverTimestamp()
+            });
+            // lastActivityAt: عشان طالب نشط بالكويزات بس يظهر في فلتر "الشهر الحالي" بلوحة الأوائل
+            const userUpdate = { lastActivityAt: firebase.firestore.FieldValue.serverTimestamp() };
+            if (xpEarned > 0) userUpdate.xp = firebase.firestore.FieldValue.increment(xpEarned);
+            batch.update(userRef, userUpdate);
+
+            return batch.commit().then(() => {
+                if (currentUser) currentUser.xp = (currentUser.xp || 0) + xpEarned;
+                return xpEarned;
+            }).catch(err => { quizSessionFinalized = false; throw err; });
         }
 
         function finishQuizArena() {
             stopQuizTimer();
-            let correctCount = 0;
-            quizArenaQuestions.forEach((q, i) => {
-                const ans = quizArenaAnswers[i];
-                if (ans !== undefined && ans !== null && String(ans).trim() === String(q.answer).trim()) correctCount++;
-            });
+            const correctCount = _quizCorrectCount();
 
-            const quizId = activeQuizData.uid;
-            const uid = currentUser ? currentUser.uid : (auth.currentUser ? auth.currentUser.uid : null);
-            if (!uid) { renderQuizArenaResult(correctCount, 0, false); return; }
-
-            const attemptRef = db.collection("users").doc(uid).collection("quizAttempts").doc(quizId);
-
-            attemptRef.get().then(snap => {
-                const alreadyAttempted = snap.exists;
-                const xpEarned = alreadyAttempted ? 0 : (correctCount * (activeQuizData.xpPerCorrect || 0));
-
-                if (alreadyAttempted) {
-                    renderQuizArenaResult(correctCount, 0, true);
-                    return;
-                }
-
-                const tasks = [
-                    attemptRef.set({
-                        correctCount, total: quizArenaQuestions.length,
-                        xpEarned, completedAt: firebase.firestore.FieldValue.serverTimestamp()
-                    })
-                ];
-                // ✅ [إصلاح] الكويزات كانت بتاخد XP لكن ملهاش أي أثر على lastActivityAt — طالب نشط بالكويزات
-                // بس كان بيختفي من فلتر "الشهر الحالي" بلوحة الأوائل. بيتسجل مرة واحدة بس (أول محاولة حقيقية)
-                const userUpdate = { lastActivityAt: firebase.firestore.FieldValue.serverTimestamp() };
-                if (xpEarned > 0) userUpdate.xp = firebase.firestore.FieldValue.increment(xpEarned);
-                tasks.push(db.collection("users").doc(uid).update(userUpdate));
-
-                Promise.all(tasks).then(() => {
-                    renderQuizArenaResult(correctCount, xpEarned, false);
-                    if (typeof currentUser === 'object' && currentUser) currentUser.xp = (currentUser.xp || 0) + xpEarned;
-                }).catch(() => {
-                    // غالباً محاولة تانية اتسجلت في نفس اللحظة على جهاز تاني — القاعدة منعت الكتابة، نعرض النتيجة من غير XP
-                    renderQuizArenaResult(correctCount, 0, true);
+            // جلسة تدريبية (محاولة سابقة موجودة) أو اتقفلت قبل كده
+            if (!quizAttemptOfficial || quizSessionFinalized) {
+                renderQuizArenaResult(correctCount, 0, true);
+                return;
+            }
+            _commitQuizAttempt(correctCount)
+                .then(xp => renderQuizArenaResult(correctCount, xp, false))
+                .catch(() => {
+                    showToast("⚠️ تعذّر حفظ النتيجة، تأكد من الاتصال.", "error");
+                    renderQuizArenaResult(correctCount, 0, false);
                 });
-            }).catch(() => renderQuizArenaResult(correctCount, 0, false));
         }
 
         // ✅ [جديد] شاشة النتيجة بقت فيها إحصائيات (صحيح/غلط/بدون إجابة/نسبة النجاح) + زرار مراجعة إجابات كامل
