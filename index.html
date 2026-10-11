@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - نظام الامتحانات والمراجعة</title>
+    <title>AmerQuiz - النظام الأكاديمي المطور</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -1322,6 +1322,9 @@ html, body {
                             <i class="fa-solid fa-play"></i> بدء التحدي الآن
                         </button>
                     </div>
+
+                    <!-- زر لينك خارجي (واتساب/إنستجرام..) — بيظهر بس لو الأدمن حط لينك من تاب الأدوات -->
+                    <div id="home-social-link"></div>
                 </div>
 
                 <div id="profile-subtab-container" class="hidden-tab">
@@ -1612,7 +1615,7 @@ html, body {
 
                 <div id="quiz-arena-result-box" style="display:none;"></div>
 
-                <button onclick="exitQuizArena()" style="background:none; border:none; color:var(--text-muted); font-size:12px; text-decoration:underline; cursor:pointer; display:block; margin:16px auto 0;">
+                <button id="quiz-arena-exit-btn" onclick="exitQuizArena()" style="background:none; border:none; color:var(--text-muted); font-size:12px; text-decoration:underline; cursor:pointer; display:block; margin:16px auto 0;">
                     <i class="fa-solid fa-xmark"></i> إنهاء والخروج
                 </button>
             </div>
@@ -2282,6 +2285,17 @@ html, body {
                         </div>
                     </div>
 
+                    <!-- زر لينك اختياري للطلاب (واتساب / إنستجرام / أي لينك) — لو فاضي مفيش حاجة بتظهر -->
+                    <div style="border:2px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:18px; background:var(--bg-gradient);">
+                        <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-link"></i> زر لينك للطلاب (واتساب / إنستجرام)</h4>
+                        <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 12px;">
+                            حط لينك (لازم يبدأ بـ https://) وهيظهر زر للطلاب في الصفحة الرئيسية وشاشة نتيجة الكويز. سيبه فاضي واضغط حفظ لو عايز تخفيه.
+                        </p>
+                        <input type="url" id="admin-social-url" dir="ltr" placeholder="https://chat.whatsapp.com/..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
+                        <input type="text" id="admin-social-label" maxlength="40" placeholder="نص الزر (اختياري)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
+                        <button class="btn-launch" onclick="saveSocialLink()"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
+                    </div>
+
                     <div class="tools-grid">
                         <!-- Backup -->
                         <div class="tool-card">
@@ -2535,6 +2549,7 @@ html, body {
         let activeCategory = "databases";
         let isPracticeMode = false;
         let bankXpSystemEnabled = true; // ✅ [جديد] مفتاح عام من الأدمن: البنك العادي شغال بنظام XP وحد المحاولات، ولا مفتوح للمراجعة الحرة (مراجعة أيام المذاكرة، XP وقت الامتحانات)
+        let socialLink = { url: '', label: '' }; // زر لينك اختياري (واتساب/إنستجرام/أي موقع) من تاب الأدوات
         let aiChatEnabled = true; // ✅ [جديد] مفتاح عام من الأدمن: إظهار أو إخفاء مساعد الذكاء الاصطناعي في صفحة المراجعة للطلاب كلهم
         let currentQuestions = [];
         let cachedAdminQuestions = [];
@@ -2713,6 +2728,8 @@ html, body {
                     // افتراضي true (نفس السلوك القديم) لو الحقل مش موجود أصلاً — توافق كامل مع أي بيانات سابقة
                     bankXpSystemEnabled = data.bankXpEnabled !== false;
                     aiChatEnabled = data.aiChatEnabled !== false; // ✅ [جديد] نفس الفكرة لمفتاح إظهار/إخفاء شات الذكاء الاصطناعي
+                    socialLink = { url: data.socialLinkUrl || '', label: data.socialLinkLabel || '' };
+                    renderHomeSocialLink();
                     _applySubjectCounts();
                 } else {
                     rebuildMetadataCounts();
@@ -5363,12 +5380,65 @@ html, body {
                     ? '🎯 نظام الدرجات الرسمي شغال (XP + حد 3 محاولات)'
                     : '📖 مراجعة حرة شغالة (بلا حدود، من غير XP)';
 
+                const sUrlEl = document.getElementById('admin-social-url');
+                const sLabelEl = document.getElementById('admin-social-label');
+                if (sUrlEl) sUrlEl.value = data.socialLinkUrl || '';
+                if (sLabelEl) sLabelEl.value = data.socialLinkLabel || '';
+
                 if (aiLabelEl && aiToggleEl) {
                     const aiEnabled = data.aiChatEnabled !== false;
                     aiToggleEl.checked = aiEnabled;
                     aiLabelEl.innerHTML = aiEnabled ? '🟢 ظاهر للطلاب' : '⚪ مخفي عن الطلاب';
                 }
             }).catch(() => { labelEl.innerText = 'تعذّر تحميل الحالة.'; });
+        }
+
+        // ─── زر اللينك الاختياري (واتساب / إنستجرام / أي لينك) ───
+        function _socialLinkMeta(url) {
+            const u = String(url).toLowerCase();
+            if (u.includes('wa.me') || u.includes('whatsapp.com')) {
+                return { icon: 'fa-brands fa-whatsapp', text: 'تواصل معنا على واتساب', style: 'background:#25D366; color:#fff; border:none;' };
+            }
+            if (u.includes('instagram.com') || u.includes('instagr.am')) {
+                return { icon: 'fa-brands fa-instagram', text: 'تابعنا على إنستجرام', style: 'background:linear-gradient(45deg,#f09433,#dc2743,#bc1888); color:#fff; border:none;' };
+            }
+            return { icon: 'fa-solid fa-link', text: 'فتح الرابط', style: 'background:var(--bg-gradient); color:var(--text-main); border:1px solid var(--border);' };
+        }
+
+        // بيرجّع HTML الزر، أو نص فاضي لو مفيش لينك صالح (https بس، عشان الأمان)
+        function socialLinkHtml() {
+            const url = (socialLink && socialLink.url) ? String(socialLink.url).trim() : '';
+            if (!/^https:\/\//i.test(url)) return '';
+            const m = _socialLinkMeta(url);
+            const label = (socialLink.label || '').trim() || m.text;
+            return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer"
+                        style="display:flex; align-items:center; justify-content:center; gap:8px; margin-top:14px; padding:12px; border-radius:12px; text-decoration:none; font-weight:800; font-size:14px; ${m.style}">
+                        <i class="${m.icon}"></i> ${esc(label)}
+                    </a>`;
+        }
+
+        function renderHomeSocialLink() {
+            const el = document.getElementById('home-social-link');
+            if (el) el.innerHTML = socialLinkHtml();
+        }
+
+        function saveSocialLink() {
+            const url   = (document.getElementById('admin-social-url').value || '').trim();
+            const label = (document.getElementById('admin-social-label').value || '').trim();
+            if (url && !/^https:\/\/[^\s]+$/i.test(url)) {
+                showToast("❌ اللينك لازم يبدأ بـ https:// وميكونش فيه مسافات.", "error");
+                return;
+            }
+            const FV = firebase.firestore.FieldValue;
+            const payload = url
+                ? { socialLinkUrl: url, socialLinkLabel: label ? label : FV.delete() }
+                : { socialLinkUrl: FV.delete(), socialLinkLabel: FV.delete() };
+            db.collection("questions").doc("--metadata--").set(payload, { merge: true }).then(() => {
+                socialLink = { url, label: url ? label : '' };
+                renderHomeSocialLink();
+                showToast(url ? "✅ تم حفظ اللينك" : "✅ تم إخفاء زر اللينك");
+                logAdminAction("تحديث زر اللينك", url ? "تفعيل" : "إخفاء");
+            }).catch(err => showToast("❌ فشل الحفظ: " + err.message, "error"));
         }
 
         function toggleAiChatFeature(enabled) {
@@ -8211,6 +8281,7 @@ html, body {
             document.getElementById('quiz-arena-question-wrap').style.display = 'block';
             document.getElementById('quiz-arena-result-box').style.display = 'none';
             document.getElementById('quiz-arena-result-box').innerHTML = '';
+            document.getElementById('quiz-arena-exit-btn').style.display = 'block';
 
             showView('view-quiz-arena');
             renderQuizArenaQuestion();
@@ -8411,6 +8482,9 @@ html, body {
             document.getElementById('quiz-arena-question-wrap').style.display = 'none';
             const resultBox = document.getElementById('quiz-arena-result-box');
             resultBox.style.display = 'block';
+            // زر الرئيسية في شاشة النتيجة بيعمل نفس المهمة، فمفيش داعي لزر الخروج هنا
+            const exitBtnEl = document.getElementById('quiz-arena-exit-btn');
+            if (exitBtnEl) exitBtnEl.style.display = 'none';
 
             const total = quizArenaQuestions.length;
             let wrongCount = 0;
@@ -8453,6 +8527,7 @@ html, body {
                         <button class="btn-launch" style="background:linear-gradient(135deg,#dc2626,#b91c1c); flex:1;" onclick="showQuizReview()"><i class="fa-solid fa-list-check"></i> مراجعة الإجابات</button>
                         <button class="btn-launch" style="background:var(--bg-gradient); color:var(--text-main); border:1px solid var(--border); flex:1;" onclick="showView('view-dashboard')"><i class="fa-solid fa-house"></i> الرئيسية</button>
                     </div>
+                    ${socialLinkHtml()}
                 </div>
                 <div id="quiz-result-review" style="display:none;"></div>
             `;
