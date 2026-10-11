@@ -1236,7 +1236,7 @@ html, body {
 
                     <input type="text" id="reg-student-name" placeholder="اكتب اسمك الثلاثي بدقة..." class="reg-name-input" style="width:100%; padding:14px; border-radius:8px; border:2px solid var(--border); box-sizing:border-box; font-size:16px; background: var(--card-bg); color: var(--text-main); transition:border-color .15s; margin-top:18px;">
                     <button id="btn-manual-register" class="btn-launch" onclick="handleStudentRegistration()" style="margin-top: 20px;"><i class="fa-solid fa-arrow-left-to-bracket"></i> دخول سريع بالمنصة</button>
-                    <p style="text-align: center; margin-top: 18px;"><a href="#" onclick="toggleLoginForm('admin')" style="color:var(--text-muted); text-decoration:none; font-weight:600; font-size:12px; opacity:0.7;"><i class="fa-solid fa-lock"></i> دخول إدارة المنصة</a></p>
+                    <p id="register-admin-link" style="text-align: center; margin-top: 18px; display:none;"><a href="#" onclick="toggleLoginForm('admin')" style="color:var(--text-muted); text-decoration:none; font-weight:600; font-size:12px; opacity:0.7;"><i class="fa-solid fa-lock"></i> دخول إدارة المنصة</a></p>
                 </div>
             </div>
 
@@ -1245,7 +1245,7 @@ html, body {
                 <div class="admin-form-group"><input type="email" id="admin-email" placeholder="البريد الإلكتروني للمشرف..."></div>
                 <div class="admin-form-group"><input type="password" id="admin-pass" placeholder="كلمة المرور..."></div>
                 <button class="btn-launch" style="background: var(--warning);" onclick="handleAdminLogin()">تسجيل الدخول للإدارة</button>
-                <p style="text-align: center; margin-top: 15px;"><a href="#" onclick="toggleLoginForm('student')" style="color:var(--text-muted); text-decoration:none;">العودة للطلاب</a></p>
+                <p style="text-align: center; margin-top: 15px;"><a href="/" style="color:var(--text-muted); text-decoration:none;">العودة للطلاب</a></p>
             </div>
 
             <div class="card" id="view-dashboard" style="display: none;">
@@ -2283,15 +2283,29 @@ html, body {
                         </div>
                     </div>
 
-                    <!-- زر لينك اختياري للطلاب (واتساب / إنستجرام / أي لينك) — لو فاضي مفيش حاجة بتظهر -->
+                    <!-- أيقونات لينكات اختيارية بالهيدر (حتى 4) — الفاضي مبيظهرش -->
                     <div style="border:2px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:18px; background:var(--bg-gradient);">
-                        <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-link"></i> أيقونة لينك بالأعلى (واتساب / إنستجرام)</h4>
+                        <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-link"></i> أيقونات اللينكات بالأعلى</h4>
                         <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 12px;">
-                            حط لينك (لازم يبدأ بـ https://) وهتظهر أيقونة دائرية صغيرة في أعلى الموقع لكل الطلاب، والأيقونة بتتغير حسب اللينك (واتساب / إنستجرام / غيره). اكتب كلمة تظهر تحتها (مثل: لينك الجروب أو المتجر) أو سيبها فاضية. امسح اللينك واضغط حفظ لو عايز تخفيها.
+                            ضيف لحد 4 لينكات (واتساب، إنستجرام، تيليجرام، تيك توك، فيسبوك، يوتيوب، أو أي موقع). كل لينك بيظهر كأيقونة دائرية صغيرة في أعلى الموقع، وتقدر تكتب كلمة تحتها (مثل: لينك الجروب، المتجر). اللينك لازم يبدأ بـ https://. الخانة الفاضية مبتظهرش، وتقدر تغيّرهم في أي وقت.
                         </p>
-                        <input type="url" id="admin-social-url" dir="ltr" placeholder="https://chat.whatsapp.com/..." style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
-                        <input type="text" id="admin-social-label" maxlength="40" placeholder="الكلمة اللي تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:10px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
-                        <button class="btn-launch" onclick="saveSocialLink()"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
+                        <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
+                            <input type="url" id="admin-social-url-0" dir="ltr" placeholder="https://... (لينك 1)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <input type="text" id="admin-social-label-0" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                        </div>
+                        <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
+                            <input type="url" id="admin-social-url-1" dir="ltr" placeholder="https://... (لينك 2)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <input type="text" id="admin-social-label-1" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                        </div>
+                        <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
+                            <input type="url" id="admin-social-url-2" dir="ltr" placeholder="https://... (لينك 3)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <input type="text" id="admin-social-label-2" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                        </div>
+                        <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
+                            <input type="url" id="admin-social-url-3" dir="ltr" placeholder="https://... (لينك 4)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <input type="text" id="admin-social-label-3" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                        </div>
+                        <button class="btn-launch" onclick="saveSocialLinks()"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
                     </div>
 
                     <div class="tools-grid">
@@ -2547,7 +2561,9 @@ html, body {
         let activeCategory = "databases";
         let isPracticeMode = false;
         let bankXpSystemEnabled = true; // ✅ [جديد] مفتاح عام من الأدمن: البنك العادي شغال بنظام XP وحد المحاولات، ولا مفتوح للمراجعة الحرة (مراجعة أيام المذاكرة، XP وقت الامتحانات)
-        let socialLink = { url: '', label: '' }; // زر لينك اختياري (واتساب/إنستجرام/أي موقع) من تاب الأدوات
+        let socialLinks = [];  // أيقونات لينكات اختيارية بالهيدر (واتساب/إنستجرام/..) من تاب الأدوات — [{url,label}]
+        // مسار الإدارة: /admin (أو #admin كبديل لو الريرايت مش متفعّل). غير كده، مفيش أي أثر لدخول الإدارة للطلاب
+        const IS_ADMIN_ROUTE = /^\/admin\/?$/i.test(location.pathname) || location.hash.toLowerCase() === '#admin';
         let aiChatEnabled = true; // ✅ [جديد] مفتاح عام من الأدمن: إظهار أو إخفاء مساعد الذكاء الاصطناعي في صفحة المراجعة للطلاب كلهم
         let currentQuestions = [];
         let cachedAdminQuestions = [];
@@ -2726,7 +2742,7 @@ html, body {
                     // افتراضي true (نفس السلوك القديم) لو الحقل مش موجود أصلاً — توافق كامل مع أي بيانات سابقة
                     bankXpSystemEnabled = data.bankXpEnabled !== false;
                     aiChatEnabled = data.aiChatEnabled !== false; // ✅ [جديد] نفس الفكرة لمفتاح إظهار/إخفاء شات الذكاء الاصطناعي
-                    socialLink = { url: data.socialLinkUrl || '', label: data.socialLinkLabel || '' };
+                    socialLinks = _parseSocialLinks(data);
                     renderHomeSocialLink();
                     _applySubjectCounts();
                 } else {
@@ -2901,7 +2917,7 @@ html, body {
 
                     // فحص الأدمن بدون إيقاف التحميل
                     db.collection("admins").doc(user.uid).get().then(snap => {
-                        if (snap.exists) document.getElementById('btn-goto-admin').style.display = "block";
+                        if (snap.exists && IS_ADMIN_ROUTE) document.getElementById('btn-goto-admin').style.display = "block";
                     }).catch(() => {});
 
                     if (cachedUid && cachedUid === user.uid) {
@@ -5378,10 +5394,13 @@ html, body {
                     ? '🎯 نظام الدرجات الرسمي شغال (XP + حد 3 محاولات)'
                     : '📖 مراجعة حرة شغالة (بلا حدود، من غير XP)';
 
-                const sUrlEl = document.getElementById('admin-social-url');
-                const sLabelEl = document.getElementById('admin-social-label');
-                if (sUrlEl) sUrlEl.value = data.socialLinkUrl || '';
-                if (sLabelEl) sLabelEl.value = data.socialLinkLabel || '';
+                const savedLinks = _parseSocialLinks(data);
+                for (let i = 0; i < SOCIAL_LINK_SLOTS; i++) {
+                    const u = document.getElementById('admin-social-url-' + i);
+                    const l = document.getElementById('admin-social-label-' + i);
+                    if (u) u.value = savedLinks[i] ? savedLinks[i].url : '';
+                    if (l) l.value = savedLinks[i] ? savedLinks[i].label : '';
+                }
 
                 if (aiLabelEl && aiToggleEl) {
                     const aiEnabled = data.aiChatEnabled !== false;
@@ -5391,54 +5410,74 @@ html, body {
             }).catch(() => { labelEl.innerText = 'تعذّر تحميل الحالة.'; });
         }
 
-        // ─── زر اللينك الاختياري (واتساب / إنستجرام / أي لينك) ───
-        function _socialLinkMeta(url) {
-            const u = String(url).toLowerCase();
-            if (u.includes('wa.me') || u.includes('whatsapp.com')) {
-                return { icon: 'fa-brands fa-whatsapp', text: 'تواصل معنا على واتساب', style: 'background:#25D366; color:#fff;' };
-            }
-            if (u.includes('instagram.com') || u.includes('instagr.am')) {
-                return { icon: 'fa-brands fa-instagram', text: 'تابعنا على إنستجرام', style: 'background:linear-gradient(45deg,#f09433,#dc2743,#bc1888); color:#fff;' };
-            }
-            return { icon: 'fa-solid fa-link', text: 'فتح الرابط', style: 'background:var(--primary); color:#fff;' };
+        // ─── أيقونات اللينكات الاختيارية بالهيدر ───
+        const SOCIAL_LINK_SLOTS = 4;
+
+        // يدعم الشكل القديم (socialLinkUrl/socialLinkLabel) والجديد (socialLinks) — https بس للأمان
+        function _parseSocialLinks(data) {
+            let list = Array.isArray(data.socialLinks) ? data.socialLinks : [];
+            if (list.length === 0 && data.socialLinkUrl) list = [{ url: data.socialLinkUrl, label: data.socialLinkLabel || '' }];
+            return list
+                .filter(x => x && /^https:\/\//i.test(String(x.url || '').trim()))
+                .slice(0, SOCIAL_LINK_SLOTS)
+                .map(x => ({ url: String(x.url).trim(), label: String(x.label || '').trim() }));
         }
 
-        // أيقونة دائرية صغيرة بالهيدر + كلمة اختيارية تحتها (مثل: لينك الجروب، المتجر) — https بس للأمان
-        function socialLinkHtml() {
-            const url = (socialLink && socialLink.url) ? String(socialLink.url).trim() : '';
-            if (!/^https:\/\//i.test(url)) return '';
-            const m = _socialLinkMeta(url);
-            const label = (socialLink.label || '').trim();
-            return `<a href="${esc(url)}" target="_blank" rel="noopener noreferrer" title="${esc(label)}"
-                        style="display:flex; flex-direction:column; align-items:center; gap:2px; text-decoration:none; flex-shrink:0;">
-                        <span style="width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:17px; ${m.style}">
-                            <i class="${m.icon}"></i>
-                        </span>
-                        ${label ? `<span style="font-size:9.5px; font-weight:700; color:var(--text-muted); max-width:64px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1.2;">${esc(label)}</span>` : ''}
-                    </a>`;
+        function _socialLinkMeta(url) {
+            const u = String(url).toLowerCase();
+            const has = (...k) => k.some(x => u.includes(x));
+            if (has('wa.me', 'whatsapp.com'))               return { icon: 'fa-brands fa-whatsapp',  color: '#25D366' };
+            if (has('instagram.com', 'instagr.am'))         return { icon: 'fa-brands fa-instagram', color: '#E1306C' };
+            if (has('t.me', 'telegram.me', 'telegram.org')) return { icon: 'fa-brands fa-telegram',  color: '#2AABEE' };
+            if (has('facebook.com', 'fb.com', 'fb.me'))     return { icon: 'fa-brands fa-facebook',  color: '#1877F2' };
+            if (has('tiktok.com'))                          return { icon: 'fa-brands fa-tiktok',    color: '#ff0050' };
+            if (has('youtube.com', 'youtu.be'))             return { icon: 'fa-brands fa-youtube',   color: '#FF0000' };
+            if (has('snapchat.com'))                        return { icon: 'fa-brands fa-snapchat',  color: '#FFC700' };
+            if (has('twitter.com', 'x.com'))                return { icon: 'fa-brands fa-twitter',   color: '#1DA1F2' };
+            return { icon: 'fa-solid fa-link', color: 'var(--primary)' };
+        }
+
+        // أيقونة دائرية صغيرة بإطار ذهبي (نفس هوية الموقع) + كلمة اختيارية تحتها
+        function socialLinksHtml() {
+            return (socialLinks || []).map(l => {
+                const m = _socialLinkMeta(l.url);
+                return `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(l.label)}"
+                            style="display:flex; flex-direction:column; align-items:center; gap:3px; text-decoration:none; flex-shrink:0;">
+                            <span style="width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--card-bg); border:1.5px solid var(--primary); color:${m.color};">
+                                <i class="${m.icon}"></i>
+                            </span>
+                            ${l.label ? `<span style="font-size:9px; font-weight:700; color:var(--text-muted); max-width:56px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1;">${esc(l.label)}</span>` : ''}
+                        </a>`;
+            }).join('');
         }
 
         function renderHomeSocialLink() {
             const el = document.getElementById('header-social-link');
-            if (el) el.innerHTML = socialLinkHtml();
+            if (el) el.innerHTML = socialLinksHtml();
         }
 
-        function saveSocialLink() {
-            const url   = (document.getElementById('admin-social-url').value || '').trim();
-            const label = (document.getElementById('admin-social-label').value || '').trim();
-            if (url && !/^https:\/\/[^\s]+$/i.test(url)) {
-                showToast("❌ اللينك لازم يبدأ بـ https:// وميكونش فيه مسافات.", "error");
-                return;
+        function saveSocialLinks() {
+            const list = [];
+            for (let i = 0; i < SOCIAL_LINK_SLOTS; i++) {
+                const url   = (document.getElementById('admin-social-url-' + i).value || '').trim();
+                const label = (document.getElementById('admin-social-label-' + i).value || '').trim();
+                if (!url) continue;
+                if (!/^https:\/\/[^\s]+$/i.test(url)) {
+                    showToast(`❌ اللينك رقم ${i + 1} لازم يبدأ بـ https:// وميكونش فيه مسافات.`, "error");
+                    return;
+                }
+                list.push({ url, label });
             }
             const FV = firebase.firestore.FieldValue;
-            const payload = url
-                ? { socialLinkUrl: url, socialLinkLabel: label ? label : FV.delete() }
-                : { socialLinkUrl: FV.delete(), socialLinkLabel: FV.delete() };
-            db.collection("questions").doc("--metadata--").set(payload, { merge: true }).then(() => {
-                socialLink = { url, label: url ? label : '' };
+            db.collection("questions").doc("--metadata--").set({
+                socialLinks: list,
+                socialLinkUrl: FV.delete(),     // تنظيف الشكل القديم
+                socialLinkLabel: FV.delete()
+            }, { merge: true }).then(() => {
+                socialLinks = list;
                 renderHomeSocialLink();
-                showToast(url ? "✅ تم حفظ اللينك" : "✅ تم إخفاء زر اللينك");
-                logAdminAction("تحديث زر اللينك", url ? "تفعيل" : "إخفاء");
+                showToast(list.length ? `✅ تم حفظ ${list.length} لينك` : "✅ تم إخفاء الأيقونات");
+                logAdminAction("تحديث لينكات الهيدر", list.length + " لينك");
             }).catch(err => showToast("❌ فشل الحفظ: " + err.message, "error"));
         }
 
@@ -8606,6 +8645,8 @@ html, body {
         }
 
         function showView(viewId) {
+            // على مسار /admin: شاشة تسجيل الطالب الجديد تتبدّل بنموذج دخول الإدارة
+            if (viewId === 'view-register' && IS_ADMIN_ROUTE) viewId = 'view-admin-login';
             const views = ['view-loading', 'view-register', 'view-admin-login', 'view-dashboard', 'view-chapter-picker', 'view-count-picker', 'view-arena', 'view-quiz-arena', 'view-review', 'view-result', 'view-admin-panel'];
             views.forEach(v => {
                 const el = document.getElementById(v);
