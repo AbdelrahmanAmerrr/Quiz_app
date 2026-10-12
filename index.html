@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - نظام الامتحانات والمراجعة</title>
+    <title>AmerQuiz - النظام الأكاديمي المطور</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -2292,18 +2292,50 @@ html, body {
                         <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
                             <input type="url" id="admin-social-url-0" dir="ltr" placeholder="https://... (لينك 1)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
                             <input type="text" id="admin-social-label-0" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                                <img id="admin-social-logo-prev-0" alt="" style="display:none; width:34px; height:34px; border-radius:50%; object-fit:cover; border:1.5px solid var(--primary);">
+                                <label style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px dashed var(--primary); border-radius:8px; font-size:12.5px; font-weight:700; color:var(--text-main); cursor:pointer;">
+                                    <i class="fa-solid fa-image"></i> رفع لوجو بدل الأيقونة (اختياري)
+                                    <input type="file" accept="image/*" style="display:none;" onchange="pickSocialLogo(0, this)">
+                                </label>
+                                <button type="button" id="admin-social-logo-rm-0" onclick="removeSocialLogo(0)" style="display:none; background:none; border:none; color:var(--danger); font-weight:700; font-size:12.5px; cursor:pointer;">إزالة</button>
+                            </div>
                         </div>
                         <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
                             <input type="url" id="admin-social-url-1" dir="ltr" placeholder="https://... (لينك 2)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
                             <input type="text" id="admin-social-label-1" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                                <img id="admin-social-logo-prev-1" alt="" style="display:none; width:34px; height:34px; border-radius:50%; object-fit:cover; border:1.5px solid var(--primary);">
+                                <label style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px dashed var(--primary); border-radius:8px; font-size:12.5px; font-weight:700; color:var(--text-main); cursor:pointer;">
+                                    <i class="fa-solid fa-image"></i> رفع لوجو بدل الأيقونة (اختياري)
+                                    <input type="file" accept="image/*" style="display:none;" onchange="pickSocialLogo(1, this)">
+                                </label>
+                                <button type="button" id="admin-social-logo-rm-1" onclick="removeSocialLogo(1)" style="display:none; background:none; border:none; color:var(--danger); font-weight:700; font-size:12.5px; cursor:pointer;">إزالة</button>
+                            </div>
                         </div>
                         <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
                             <input type="url" id="admin-social-url-2" dir="ltr" placeholder="https://... (لينك 3)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
                             <input type="text" id="admin-social-label-2" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                                <img id="admin-social-logo-prev-2" alt="" style="display:none; width:34px; height:34px; border-radius:50%; object-fit:cover; border:1.5px solid var(--primary);">
+                                <label style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px dashed var(--primary); border-radius:8px; font-size:12.5px; font-weight:700; color:var(--text-main); cursor:pointer;">
+                                    <i class="fa-solid fa-image"></i> رفع لوجو بدل الأيقونة (اختياري)
+                                    <input type="file" accept="image/*" style="display:none;" onchange="pickSocialLogo(2, this)">
+                                </label>
+                                <button type="button" id="admin-social-logo-rm-2" onclick="removeSocialLogo(2)" style="display:none; background:none; border:none; color:var(--danger); font-weight:700; font-size:12.5px; cursor:pointer;">إزالة</button>
+                            </div>
                         </div>
                         <div style="background:var(--card-bg); border-radius:10px; padding:10px; margin-bottom:8px;">
                             <input type="url" id="admin-social-url-3" dir="ltr" placeholder="https://... (لينك 4)" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; margin-bottom:6px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
                             <input type="text" id="admin-social-label-3" maxlength="20" placeholder="الكلمة تحت الأيقونة (اختياري) — مثل: لينك الجروب" style="width:100%; padding:9px; border:1px solid var(--border); border-radius:8px; background:var(--bg-gradient); color:var(--text-main); box-sizing:border-box;">
+                            <div style="display:flex; align-items:center; gap:8px; margin-top:8px;">
+                                <img id="admin-social-logo-prev-3" alt="" style="display:none; width:34px; height:34px; border-radius:50%; object-fit:cover; border:1.5px solid var(--primary);">
+                                <label style="display:inline-flex; align-items:center; gap:6px; padding:7px 12px; border:1px dashed var(--primary); border-radius:8px; font-size:12.5px; font-weight:700; color:var(--text-main); cursor:pointer;">
+                                    <i class="fa-solid fa-image"></i> رفع لوجو بدل الأيقونة (اختياري)
+                                    <input type="file" accept="image/*" style="display:none;" onchange="pickSocialLogo(3, this)">
+                                </label>
+                                <button type="button" id="admin-social-logo-rm-3" onclick="removeSocialLogo(3)" style="display:none; background:none; border:none; color:var(--danger); font-weight:700; font-size:12.5px; cursor:pointer;">إزالة</button>
+                            </div>
                         </div>
                         <button class="btn-launch" onclick="saveSocialLinks()"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
                     </div>
@@ -5400,6 +5432,8 @@ html, body {
                     const l = document.getElementById('admin-social-label-' + i);
                     if (u) u.value = savedLinks[i] ? savedLinks[i].url : '';
                     if (l) l.value = savedLinks[i] ? savedLinks[i].label : '';
+                    adminSocialLogos[i] = savedLinks[i] ? (savedLinks[i].logo || '') : '';
+                    _setLogoPreview(i);
                 }
 
                 if (aiLabelEl && aiToggleEl) {
@@ -5412,6 +5446,44 @@ html, body {
 
         // ─── أيقونات اللينكات الاختيارية بالهيدر ───
         const SOCIAL_LINK_SLOTS = 4;
+        const adminSocialLogos = ['', '', '', ''];   // لوجو كل خانة (data URL مصغّر)
+
+        function _setLogoPreview(i) {
+            const img = document.getElementById('admin-social-logo-prev-' + i);
+            const rm  = document.getElementById('admin-social-logo-rm-' + i);
+            if (!img || !rm) return;
+            if (adminSocialLogos[i]) { img.src = adminSocialLogos[i]; img.style.display = 'block'; rm.style.display = 'inline'; }
+            else { img.removeAttribute('src'); img.style.display = 'none'; rm.style.display = 'none'; }
+        }
+
+        function removeSocialLogo(i) { adminSocialLogos[i] = ''; _setLogoPreview(i); }
+
+        // بيصغّر الصورة لمربع 96×96 (قص من النص) ويخزّنها جوه نفس مستند الإعدادات — من غير Firebase Storage
+        function pickSocialLogo(i, input) {
+            const file = input.files && input.files[0];
+            input.value = '';
+            if (!file) return;
+            if (!/^image\//.test(file.type)) { showToast("❌ اختار ملف صورة.", "error"); return; }
+            const reader = new FileReader();
+            reader.onload = () => {
+                const img = new Image();
+                img.onload = () => {
+                    const size = 96, c = document.createElement('canvas');
+                    c.width = c.height = size;
+                    const side = Math.min(img.width, img.height);
+                    c.getContext('2d').drawImage(img, (img.width - side) / 2, (img.height - side) / 2, side, side, 0, 0, size, size);
+                    let url = c.toDataURL('image/webp', 0.85);
+                    if (!url.startsWith('data:image/webp')) url = c.toDataURL('image/png');
+                    if (url.length > 60000) url = c.toDataURL('image/jpeg', 0.8);
+                    adminSocialLogos[i] = url;
+                    _setLogoPreview(i);
+                    showToast("✅ تم تجهيز اللوجو — اضغط حفظ.");
+                };
+                img.onerror = () => showToast("❌ تعذّر قراءة الصورة.", "error");
+                img.src = reader.result;
+            };
+            reader.readAsDataURL(file);
+        }
 
         // يدعم الشكل القديم (socialLinkUrl/socialLinkLabel) والجديد (socialLinks) — https بس للأمان
         function _parseSocialLinks(data) {
@@ -5420,7 +5492,11 @@ html, body {
             return list
                 .filter(x => x && /^https:\/\//i.test(String(x.url || '').trim()))
                 .slice(0, SOCIAL_LINK_SLOTS)
-                .map(x => ({ url: String(x.url).trim(), label: String(x.label || '').trim() }));
+                .map(x => ({
+                    url: String(x.url).trim(),
+                    label: String(x.label || '').trim(),
+                    logo: /^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+\/=]+$/.test(String(x.logo || '')) ? String(x.logo) : ''
+                }));
         }
 
         function _socialLinkMeta(url) {
@@ -5443,8 +5519,8 @@ html, body {
                 const m = _socialLinkMeta(l.url);
                 return `<a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer" title="${esc(l.label)}"
                             style="display:flex; flex-direction:column; align-items:center; gap:3px; text-decoration:none; flex-shrink:0;">
-                            <span style="width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--card-bg); border:1.5px solid var(--primary); color:${m.color};">
-                                <i class="${m.icon}"></i>
+                            <span style="width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:16px; background:var(--card-bg); border:1.5px solid var(--primary); color:${m.color}; overflow:hidden;">
+                                ${l.logo ? `<img src="${esc(l.logo)}" alt="" style="width:100%; height:100%; object-fit:cover; display:block;">` : `<i class="${m.icon}"></i>`}
                             </span>
                             ${l.label ? `<span style="font-size:9px; font-weight:700; color:var(--text-muted); max-width:56px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; line-height:1;">${esc(l.label)}</span>` : ''}
                         </a>`;
@@ -5466,7 +5542,7 @@ html, body {
                     showToast(`❌ اللينك رقم ${i + 1} لازم يبدأ بـ https:// وميكونش فيه مسافات.`, "error");
                     return;
                 }
-                list.push({ url, label });
+                list.push({ url, label, logo: adminSocialLogos[i] || '' });
             }
             const FV = firebase.firestore.FieldValue;
             db.collection("questions").doc("--metadata--").set({
