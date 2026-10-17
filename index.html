@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - نظام الامتحانات والمراجعة</title>
+    <title>AmerQuiz - نطام الامتحانات والمراجعة</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -225,8 +225,8 @@ html, body {
             font-size: 16px; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,0.35);
         }
         .home-quiz-card-body { flex: 1; min-width: 0; }
-        .home-quiz-card-title { font-weight: 800; font-size: 14.5px; }
-        .home-quiz-card-meta { font-size: 11.5px; opacity: 0.9; margin-top: 3px; }
+        .home-quiz-card-title { font-weight: 800; font-size: 16.5px; }
+        .home-quiz-card-meta { font-size: 12px; opacity: 0.92; margin-top: 4px; }
         .home-quiz-card i.fa-chevron-left { opacity: 0.85; font-size: 14px; }
 
         /* ✅ [جديد] توهج + وميض خفيف للمؤقت الدائري داخل الكويز في آخر 5 ثوانٍ (كلاس مستقل عن مؤقت الامتحان الأساسي) */
@@ -8323,8 +8323,8 @@ html, body {
                 <div class="home-quiz-card" onclick="startQuizFromCard('${q.uid}')">
                     <div class="home-quiz-card-icon"><i class="fa-solid fa-bolt"></i></div>
                     <div class="home-quiz-card-body">
-                        <div class="home-quiz-card-title">${esc(q.title)}</div>
-                        <div class="home-quiz-card-meta">${fixedSubjects[q.subject] || ''}${q.chapter ? ' · ' + esc(q.chapter) : ''} · ${(q.questions || []).length} سؤال</div>
+                        <div class="home-quiz-card-title">${esc(fixedSubjects[q.subject] || q.title)}</div>
+                        <div class="home-quiz-card-meta">${esc(q.title)}${q.chapter ? ' · ' + esc(q.chapter) : ''} · ${(q.questions || []).length} سؤال</div>
                     </div>
                     <i class="fa-solid fa-chevron-left"></i>
                 </div>
