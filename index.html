@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - نطام الامتحانات والمراجعة</title>
+    <title>AmerQuiz - نظام الامتحانات والمراجعة</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -5010,7 +5010,7 @@ html, body {
                                 <img src="${esc(avatarSrc)}">
                                 <span>${esc(u.name)}</span>
                             </div>
-                            <span><strong>${u.xp || 0}</strong> <small style="color:var(--text-muted)">XP</small> (Lvl ${u.level || 1})</span>
+                            <span style="display:flex; align-items:center; gap:6px; white-space:nowrap; flex-shrink:0;"><span><strong>${u.xp || 0}</strong> <small style="color:var(--text-muted)">XP</small></span><span style="background:var(--primary-light); color:var(--primary); font-size:11px; font-weight:800; padding:2px 8px; border-radius:99px;">Lv ${_levelFromXP(u.xp)}</span></span>
                         </div>
                     `;
                 });
@@ -5154,7 +5154,7 @@ html, body {
                         uid:            u.uid,
                         name:           u.name      || "طالب مجهول",
                         xp:             u.xp        || 0,
-                        level:          u.level     || 1,
+                        level:          _levelFromXP(u.xp),
                         avatar:         avatar,
                         createdAt:      u.createdAt      || null,
                         lastActivityAt: u.lastActivityAt || null,
