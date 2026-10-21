@@ -1189,6 +1189,18 @@ html, body {
             .picker-bank-title { font-size: 19px; }
             .picker-badge { font-size: 12px; padding: 6px 12px; }
         }
+        /* ═══ [Android] تبويبات الطالب تتظبط على عرض الشاشة بدل ما تتقص وتحتاج سحب ═══ */
+        .student-tabs .nav-tab-link {
+            flex: 1 1 auto; flex-shrink: 1; min-width: 0; text-align: center;
+            padding: 10px clamp(6px, 2.2vw, 16px);
+            font-size: clamp(11.5px, 3.3vw, 13px);
+        }
+        /* ═══ شيل وميض اللمس الأزرق/الأخضر على أندرويد + منع تحديد النص بالضغط على الأزرار والشرائح ═══ */
+        * { -webkit-tap-highlight-color: transparent; }
+        button, .chapter-chip, .nav-tab-link, .tab-btn, .subject-card {
+            -webkit-user-select: none; user-select: none;
+            -webkit-touch-callout: none; touch-action: manipulation;
+        }
     </style>
 
 </head>
@@ -1249,7 +1261,7 @@ html, body {
             </div>
 
             <div class="card" id="view-dashboard" style="display: none;">
-                <div class="nav-tabs">
+                <div class="nav-tabs student-tabs">
                     <div id="tab-link-dash" class="nav-tab-link active" onclick="showDashboardTab('dash')"><i class="fa-solid fa-house-chimney fa-sm"></i> الرئيسية</div>
                     <div id="tab-link-profile" class="nav-tab-link" onclick="showDashboardTab('profile')"><i class="fa-solid fa-circle-user fa-sm"></i> الملف الشخصي</div>
                     <div id="tab-link-leaders" class="nav-tab-link" onclick="showDashboardTab('leaders')"><i class="fa-solid fa-ranking-star fa-sm"></i> لوحة الأوائل</div>
@@ -2604,7 +2616,8 @@ html, body {
 
         let score = 0;
         let timerInterval;
-        let timeRemaining = 30;
+        const BANK_QUESTION_SECONDS = 45;   // مدة السؤال في البنك العام
+        let timeRemaining = BANK_QUESTION_SECONDS;
         let hasAnsweredCurrent = false;
         let subjectCounts = {};
         // ✅ [FIX] رقم إصدار لكل مادة — يُستخدم لإبطال كاش الأسئلة عند الطلاب فور أي تعديل/حذف من الأدمن
@@ -3763,7 +3776,7 @@ html, body {
             showView('view-arena');
             qIndex = 0;
             score = 0;
-            timeRemaining = 30;
+            timeRemaining = BANK_QUESTION_SECONDS;
             // ✅ [UX-2] تصفير الـ Streak عند بدء اختبار جديد
             streakCount = 0;
             const sb = document.getElementById('streak-badge');
@@ -4028,7 +4041,7 @@ html, body {
                 renderFrozenAnsweredQuestionUI(dynamicLog, activeQ, box);
             } else {
                 hasAnsweredCurrent = false;
-                if (!isResumedFirstLoad) { timeRemaining = 30; }
+                if (!isResumedFirstLoad) { timeRemaining = BANK_QUESTION_SECONDS; }
                 // ✅ [UX-NEW] تسجيل وقت بداية السؤال — لحساب متوسط زمن الحل لاحقاً
                 questionStartTime = Date.now();
                 updateCircularTimerUI();
@@ -4084,7 +4097,7 @@ html, body {
             const circleFill = document.getElementById('arena-circle-fill');
             // r=20 → circumference = 2π×20 ≈ 125.6 → نستخدم 126
             const C = 126;
-            const strokeOffset = C - (timeRemaining / 30) * C;
+            const strokeOffset = C - (timeRemaining / BANK_QUESTION_SECONDS) * C;
             circleFill.style.strokeDasharray  = C;
             circleFill.style.strokeDashoffset = strokeOffset;
             // ✅ [UX-NEW] تفعيل حالة التحذير البصري (نبضة حمراء) في آخر 5 ثوانٍ
@@ -4106,7 +4119,7 @@ html, body {
             const cleanChosen = chosen ? chosen.toString().trim() : "";
             const isCorrect = (cleanChosen === cleanAnswer);
 
-            // ✅ [UX-NEW] حساب زمن حل هذا السؤال بالثواني (محدود بـ 30 ثانية كحد أقصى للمؤقت)
+            // ✅ [UX-NEW] حساب زمن حل هذا السؤال بالثواني (محدود بـ 45 ثانية كحد أقصى للمؤقت)
             const timeSpentSec = questionStartTime > 0
                 ? Math.min(30, Math.max(0, Math.round((Date.now() - questionStartTime) / 1000)))
                 : null;
