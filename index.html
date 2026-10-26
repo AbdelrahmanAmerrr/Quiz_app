@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - نظام الامتحانات والمراجعة</title>
+    <title>AmerQuiz - النظام الأكاديمي المطور</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -2240,7 +2240,15 @@ html, body {
                 <div id="tab-reports" class="admin-tab-content hidden-tab">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; flex-wrap:wrap; gap:8px;">
                         <h3 style="margin:0;">🚩 بلاغات الطلاب عن الأسئلة</h3>
-                        <div style="display:flex; gap:6px;">
+                        <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                            <button onclick="setReportsView(false)" id="view-reports-pending"
+                                    class="ban-btn ban-active" style="font-size:12px; padding:6px 12px;">
+                                <i class="fa-solid fa-hourglass-half"></i> المعلّقة
+                            </button>
+                            <button onclick="setReportsView(true)" id="view-reports-resolved"
+                                    class="ban-btn ban-inactive" style="font-size:12px; padding:6px 12px;">
+                                <i class="fa-solid fa-check"></i> المحلولة
+                            </button>
                             <button onclick="loadAdminReports('date')" id="sort-reports-date"
                                     class="ban-btn ban-inactive" style="font-size:12px; padding:6px 12px;">
                                 <i class="fa-solid fa-clock"></i> الأحدث
@@ -5628,6 +5636,7 @@ html, body {
 
         function openAdminPanel() {
             showView('view-admin-panel');
+            refreshReportsBadge();
             resetQuestionForm();
             switchAdminTab('tab-upload');
             document.getElementById('admin-search-input').value = "";
@@ -6055,72 +6064,94 @@ html, body {
             });
         }
 
-        function loadAdminReports(sortMode = 'count') {
+        // ─── بلاغات الطلاب (الأدمن) ───
+        let reportsSortMode = 'count';        // 'count' = الأكثر بلاغاً | 'date' = الأحدث
+        let reportsShowResolved = false;      // false = المعلّقة فقط (الافتراضي) | true = المحلولة
+        let reportGroupsState = [];           // آخر مجموعات اتعرضت (للوصول لمعرّفات البلاغات من الأزرار)
+
+        function _fmtReportDate(ts) {
+            if (!ts || !ts.toDate) return '—';
+            return ts.toDate().toLocaleString('ar-EG', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+        }
+
+        // شارة تاب البلاغات = عدد البلاغات المعلّقة فعلاً (مش كل البلاغات)، وتختفي لو صفر
+        function _setReportsBadge(pendingCount, capped) {
+            const badge = document.getElementById('reports-badge');
+            if (!badge) return;
+            if (pendingCount > 0) { badge.style.display = 'inline'; badge.textContent = capped ? pendingCount + '+' : pendingCount; }
+            else { badge.style.display = 'none'; }
+        }
+
+        function refreshReportsBadge() {
+            db.collection("admin_reports").where("status", "==", "pending").limit(99).get()
+              .then(snap => _setReportsBadge(snap.size, snap.size >= 99))
+              .catch(() => {});
+        }
+
+        function setReportsView(showResolved) {
+            reportsShowResolved = !!showResolved;
+            loadAdminReports();
+        }
+
+        function loadAdminReports(sortMode) {
             const listEl = document.getElementById('admin-reports-list');
             if (!listEl) return;
+            if (sortMode === 'date' || sortMode === 'count') reportsSortMode = sortMode;
             listEl.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> جاري التحميل...</p>`;
 
-            // تحديث أزرار الفرز
-            const dateBtn  = document.getElementById('sort-reports-date');
-            const countBtn = document.getElementById('sort-reports-count');
-            if (dateBtn)  dateBtn.className  = `ban-btn ${sortMode === 'date'  ? 'ban-active' : 'ban-inactive'}` + ' ' + dateBtn.style.cssText;
-            if (countBtn) countBtn.className = `ban-btn ${sortMode === 'count' ? 'ban-active' : 'ban-inactive'}` + ' ' + countBtn.style.cssText;
+            // تحديث أزرار الفرز والعرض
+            const setBtn = (id, active) => { const el = document.getElementById(id); if (el) el.className = 'ban-btn ' + (active ? 'ban-active' : 'ban-inactive'); };
+            setBtn('sort-reports-date',  reportsSortMode === 'date');
+            setBtn('sort-reports-count', reportsSortMode === 'count');
+            setBtn('view-reports-pending',  !reportsShowResolved);
+            setBtn('view-reports-resolved', reportsShowResolved);
 
-            db.collection("admin_reports").orderBy("timestamp", "desc").limit(100).get()
+            const wantedStatus = reportsShowResolved ? 'resolved' : 'pending';
+            db.collection("admin_reports").where("status", "==", wantedStatus).limit(200).get()
               .then(snap => {
+                if (!reportsShowResolved) _setReportsBadge(snap.size, snap.size >= 200);
                 if (snap.empty) {
-                    listEl.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:30px;"><i class="fa-solid fa-check-circle" style="color:var(--success)"></i> لا توجد بلاغات معلقة.</p>`;
+                    reportGroupsState = [];
+                    listEl.innerHTML = `<p style="text-align:center;color:var(--text-muted);padding:30px;"><i class="fa-solid fa-check-circle" style="color:var(--success)"></i> ${reportsShowResolved ? 'لا توجد بلاغات محلولة.' : 'لا توجد بلاغات معلّقة 🎉'}</p>`;
                     return;
                 }
-                const badge = document.getElementById('reports-badge');
-                if (badge) { badge.style.display = 'inline'; badge.textContent = snap.size; }
 
-                // ✅ [إعادة تصميم] تجميع البلاغات في بطاقة واحدة لكل سؤال (مش بطاقة منفصلة لكل بلاغ) —
-                // عشان الأسئلة الأكثر بلاغاً "تتصدر" فعلياً بشكل واضح، مش مجرد تجاور بصري لبطاقات متكررة
-                const groups = {}; // key -> { questionId, questionText, correctAnswer, subject, reports: [...] }
+                // تجميع كل بلاغات نفس السؤال في بطاقة واحدة (الحالة واحدة في الصفحة، فمفيش خلط بين معلّق ومحلول)
+                const groups = {};
                 snap.forEach(doc => {
                     const r = { ...doc.data(), _id: doc.id };
-                    const key = r.questionId || r.questionText || r._id;
+                    const key = r.questionId && r.questionId !== 'unknown' ? r.questionId : (r.questionText || r._id);
                     if (!groups[key]) {
-                        groups[key] = {
-                            questionId:    r.questionId || null,
-                            questionText:  r.questionText,
-                            correctAnswer: r.correctAnswer,
-                            subject:       r.subject,
-                            reports:       []
-                        };
+                        groups[key] = { questionId: r.questionId || null, questionText: r.questionText, correctAnswer: r.correctAnswer, subject: r.subject, reports: [] };
                     }
                     groups[key].reports.push(r);
                 });
 
+                const tsOf = r => (r.timestamp && r.timestamp.toMillis) ? r.timestamp.toMillis() : 0;
                 let groupsArr = Object.values(groups);
-
-                // فرز حسب الوضع المختار — العدد (الافتراضي) أو تاريخ أحدث بلاغ في المجموعة
-                if (sortMode === 'count') {
-                    groupsArr.sort((a, b) => b.reports.length - a.reports.length);
-                } else {
-                    groupsArr.sort((a, b) => {
-                        const ta = a.reports[0]?.timestamp?.toMillis ? a.reports[0].timestamp.toMillis() : 0;
-                        const tb = b.reports[0]?.timestamp?.toMillis ? b.reports[0].timestamp.toMillis() : 0;
-                        return tb - ta;
-                    });
-                }
+                groupsArr.forEach(g => g.reports.sort((x, y) => tsOf(y) - tsOf(x)));   // الأحدث أولاً داخل كل مجموعة
+                groupsArr.forEach(g => { g.latest = tsOf(g.reports[0]); });
+                groupsArr.sort((x, y) => reportsSortMode === 'count'
+                    ? (y.reports.length - x.reports.length) || (y.latest - x.latest)
+                    : (y.latest - x.latest));
+                reportGroupsState = groupsArr;
 
                 listEl.innerHTML = '';
-                groupsArr.forEach(g => {
-                    const repCount   = g.reports.length;
-                    const pendingReports = g.reports.filter(r => r.status === 'pending');
-                    const isPending  = pendingReports.length > 0;
-                    const latestTs   = g.reports[0].timestamp ? new Date(g.reports[0].timestamp.toDate()).toLocaleDateString('ar-SA') : '—';
-                    const canEdit    = !!g.questionId && g.questionId !== 'unknown';
+                groupsArr.forEach((g, idx) => {
+                    const repCount = g.reports.length;
+                    const canEdit  = !!g.questionId && g.questionId !== 'unknown';
 
-                    // كل أسباب البلاغات المختلفة (لو موجودة) — تُعرض كقائمة مختصرة تحت السؤال
-                    const reasonsHtml = g.reports.filter(r => r.reason).slice(0, 5).map(r =>
-                        `<p style="margin:4px 0 0 0; font-size:12px; color:var(--text-main); background:var(--card-bg); border-right:3px solid var(--warning); padding:5px 9px; border-radius:4px;">💬 ${esc(r.reason)} <span style="color:var(--text-muted); font-size:10.5px;">— ${esc(r.reportedBy) || 'طالب'}</span></p>`
-                    ).join('');
+                    // مين بلّغ: اسم الطالب + وقت البلاغ + السبب (لو كتبه)
+                    const shown = g.reports.slice(0, 10);
+                    const reportersHtml = shown.map(r => `
+                        <div style="padding:6px 0; border-top:1px dashed var(--border); font-size:12px;">
+                            <span style="font-weight:700; color:var(--text-main);">👤 ${esc(r.reportedBy) || 'طالب'}</span>
+                            <span style="color:var(--text-muted); font-size:11px;"> · ${_fmtReportDate(r.timestamp)}</span>
+                            ${r.reason ? `<div style="margin-top:3px; background:var(--card-bg); border-right:3px solid var(--warning); padding:4px 8px; border-radius:4px;">💬 ${esc(r.reason)}</div>` : ''}
+                        </div>`).join('') + (repCount > shown.length ? `<div style="font-size:11px; color:var(--text-muted); padding-top:6px;">+ ${repCount - shown.length} بلاغ آخر</div>` : '');
 
                     const card = document.createElement('div');
-                    card.style.cssText = `background:var(--bg-gradient); border:1px solid ${isPending ? '#fca5a5' : 'var(--border)'}; border-radius:8px; padding:14px; direction:rtl;`;
+                    card.style.cssText = `background:var(--bg-gradient); border:1px solid ${reportsShowResolved ? 'var(--border)' : '#fca5a5'}; border-radius:8px; padding:14px; direction:rtl;`;
                     card.innerHTML = `
                         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">
                             <div style="flex:1; min-width:0;">
@@ -6130,45 +6161,40 @@ html, body {
                                 </p>
                                 <p style="margin:0;font-size:12px;color:var(--text-muted);">
                                     الإجابة: <strong>${esc(g.correctAnswer)||'—'}</strong> &nbsp;|&nbsp;
-                                    المادة: <strong>${esc(g.subject)||'—'}</strong> &nbsp;|&nbsp;
-                                    آخر بلاغ: ${latestTs}
+                                    المادة: <strong>${esc(g.subject)||'—'}</strong>
                                 </p>
-                                ${reasonsHtml}
+                                <details style="margin-top:8px;" ${repCount <= 2 ? 'open' : ''}>
+                                    <summary style="cursor:pointer; font-size:12px; font-weight:700; color:var(--primary);">👥 المُبلِّغون (${repCount})</summary>
+                                    ${reportersHtml}
+                                </details>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0; align-items:stretch;">
-                                <span style="font-size:11px;padding:3px 8px;border-radius:99px;text-align:center;background:${isPending?'#fee2e2':'#d1fae5'};color:${isPending?'#991b1b':'#065f46'};">
-                                    ${isPending ? '⏳ معلق' : '✅ تمت المراجعة'}
+                                <span style="font-size:11px;padding:3px 8px;border-radius:99px;text-align:center;background:${reportsShowResolved?'#d1fae5':'#fee2e2'};color:${reportsShowResolved?'#065f46':'#991b1b'};">
+                                    ${reportsShowResolved ? '✅ تمت المراجعة' : '⏳ معلق'}
                                 </span>
                                 ${canEdit ? `
                                 <button onclick="editQuestionInline('${esc(g.questionId)}')" style="font-size:11px;padding:4px 8px;border:1px solid var(--primary);background:none;color:var(--primary);border-radius:6px;cursor:pointer; white-space:nowrap;">✏️ تعديل السؤال</button>
                                 <button onclick="deleteQuestionInline('${esc(g.questionId)}')" style="font-size:11px;padding:4px 8px;border:1px solid var(--danger);background:none;color:var(--danger);border-radius:6px;cursor:pointer; white-space:nowrap;">🗑 حذف السؤال</button>
                                 ` : `<span style="font-size:10px; color:var(--text-muted); text-align:center;">السؤال محذوف بالفعل</span>`}
-                                ${isPending ? `<button onclick="resolveReportGroup(${JSON.stringify(pendingReports.map(r => r._id))}, this)" style="font-size:11px;padding:4px 8px;border:1px solid var(--success);background:none;color:var(--success);border-radius:6px;cursor:pointer; white-space:nowrap;">✔ تم الحل</button>` : ''}
+                                ${reportsShowResolved ? '' : `<button onclick="resolveReportGroupAt(${idx})" style="font-size:11px;padding:4px 8px;border:1px solid var(--success);background:none;color:var(--success);border-radius:6px;cursor:pointer; white-space:nowrap;">✔ تم الحل</button>`}
                             </div>
                         </div>`;
                     listEl.appendChild(card);
                 });
             }).catch(err => {
-                listEl.innerHTML = `<p style="color:var(--danger);text-align:center;">خطأ في التحميل: ${err.message}</p>`;
+                listEl.innerHTML = `<p style="color:var(--danger);text-align:center;">خطأ في التحميل: ${esc(err.message)}</p>`;
             });
         }
 
-        function resolveReport(reportId, btn) {
-            db.collection("admin_reports").doc(reportId).update({ status: "resolved" }).then(() => {
-                btn.closest('div[style]').querySelector('span').textContent = '✅ تمت المراجعة';
-                btn.remove();
-                showToast("✅ تم تحديث حالة البلاغ.");
-            }).catch(() => showToast("⚠️ فشل التحديث.", "error"));
-        }
-
-        // ✅ [جديد] تعليم كل البلاغات المعلّقة لنفس السؤال كـ"تم الحل" بضغطة واحدة (بطاقة البلاغات بقت مجمّعة لكل سؤال)
-        function resolveReportGroup(reportIds, btn) {
-            if (!reportIds || reportIds.length === 0) return;
+        // تعليم كل البلاغات المعلّقة لنفس السؤال "تم الحل" بضغطة واحدة
+        function resolveReportGroupAt(idx) {
+            const g = reportGroupsState[idx];
+            if (!g || !g.reports.length) return;
             const batch = db.batch();
-            reportIds.forEach(id => batch.update(db.collection("admin_reports").doc(id), { status: "resolved" }));
+            g.reports.forEach(r => batch.update(db.collection("admin_reports").doc(r._id), { status: "resolved" }));
             batch.commit().then(() => {
-                showToast(`✅ تم حل ${reportIds.length} بلاغ.`);
-                loadAdminReports(document.getElementById('sort-reports-count')?.classList.contains('ban-active') ? 'count' : 'date');
+                showToast(`✅ تم حل ${g.reports.length} بلاغ.`);
+                loadAdminReports();
             }).catch(() => showToast("⚠️ فشل التحديث.", "error"));
         }
 
