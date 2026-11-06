@@ -1223,6 +1223,21 @@ html, body {
         body[data-season] header::after {
             content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--season-grad);
         }
+        /* بطاقات المواد في الموسم: حواف بلون الموسم + شريط متحرك علوي + أيقونات وشارات بنفس اللون */
+        body[data-season] .subject-card {
+            position: relative; overflow: hidden;
+            border: 1.5px solid var(--season-accent);
+            box-shadow: 0 3px 12px var(--season-tint);
+        }
+        body[data-season] .subject-card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+            background: var(--season-grad); background-size: 200% 100%; animation: seasonShimmer 8s linear infinite;
+        }
+        body[data-season] .subject-card i { color: var(--season-accent); }
+        body[data-season] .subject-card .q-count-badge { background: var(--season-tint); color: var(--season-accent); }
+        body[data-season] .subject-card:hover,
+        body[data-season] .subject-card.selected { border-color: var(--season-accent); background: var(--season-tint); }
+        @media (prefers-reduced-motion: reduce) { body[data-season] .subject-card::before { animation: none; } }
         @keyframes seasonShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
         @keyframes seasonPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
         @media (prefers-reduced-motion: reduce) {
@@ -5528,9 +5543,9 @@ html, body {
         // ─── ثيم الموسم الدراسي ───
         let seasonCfg = null;   // {theme,title,subtitle,examDate}
         const SEASON_THEMES = {
-            final:   { emoji: '🔥', title: 'ليالي الفاينل',      subtitle: 'ذاكر دلوقتي وافرح يوم النتيجة',   grad: 'linear-gradient(90deg,#7f1d1d,#dc2626,#f97316,#dc2626,#7f1d1d)', glow: 'rgba(220,38,38,.35)' },
-            midterm: { emoji: '⚡', title: 'أجواء الميدترم',     subtitle: 'خطوة خطوة وهتعدّيها بإذن الله',   grad: 'linear-gradient(90deg,#1e3a8a,#6d28d9,#0ea5e9,#6d28d9,#1e3a8a)', glow: 'rgba(109,40,217,.35)' },
-            results: { emoji: '🎓', title: 'مبروك للناجحين',     subtitle: 'ربنا يوفّق الجميع في الترم الجاي', grad: 'linear-gradient(90deg,#065f46,#059669,#d4a017,#059669,#065f46)', glow: 'rgba(5,150,105,.35)' }
+            final:   { emoji: '🔥', title: 'ليالي الفاينل',      subtitle: 'ذاكر دلوقتي وافرح يوم النتيجة',   grad: 'linear-gradient(90deg,#7f1d1d,#dc2626,#f97316,#dc2626,#7f1d1d)', glow: 'rgba(220,38,38,.35)', accent: '#ef4444', tint: 'rgba(239,68,68,.12)' },
+            midterm: { emoji: '⚡', title: 'أجواء الميدترم',     subtitle: 'خطوة خطوة وهتعدّيها بإذن الله',   grad: 'linear-gradient(90deg,#1e3a8a,#6d28d9,#0ea5e9,#6d28d9,#1e3a8a)', glow: 'rgba(109,40,217,.35)', accent: '#8b5cf6', tint: 'rgba(139,92,246,.12)' },
+            results: { emoji: '🎓', title: 'مبروك للناجحين',     subtitle: 'ربنا يوفّق الجميع في الترم الجاي', grad: 'linear-gradient(90deg,#065f46,#059669,#d4a017,#059669,#065f46)', glow: 'rgba(5,150,105,.35)', accent: '#10b981', tint: 'rgba(16,185,129,.12)' }
         };
 
         // عدد الأيام المتبقية (بالتاريخ المحلي، من غير ساعات) — null لو مفيش تاريخ صالح
@@ -5571,6 +5586,8 @@ html, body {
             document.body.setAttribute('data-season', seasonCfg.theme);
             document.documentElement.style.setProperty('--season-grad', t.grad);
             document.documentElement.style.setProperty('--season-glow', t.glow);
+            document.documentElement.style.setProperty('--season-accent', t.accent);
+            document.documentElement.style.setProperty('--season-tint', t.tint);
 
             strip.innerHTML = `<div class="season-strip">${t.emoji} ${esc(title)}${count ? ' · ' + esc(count) : ''} ${t.emoji}</div>`;
             banner.innerHTML = `
