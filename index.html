@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - لبنوك الاسئلة والمراجعة </title>
+    <title>AmerQuiz - النظام الأكاديمي المطور</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -1201,6 +1201,33 @@ html, body {
             -webkit-user-select: none; user-select: none;
             -webkit-touch-callout: none; touch-action: manipulation;
         }
+        /* ═══ ثيم الموسم (فاينل / ميدترم / نتائج) ═══ */
+        #season-strip:empty, #season-banner:empty { display: none; }
+        .season-strip {
+            background: var(--season-grad); color: #fff; text-align: center;
+            font-size: 12.5px; font-weight: 800; padding: 6px 12px; letter-spacing: .2px;
+            background-size: 200% 100%; animation: seasonShimmer 6s linear infinite;
+        }
+        .season-banner {
+            position: relative; overflow: hidden; margin-top: 18px; padding: 16px 18px; border-radius: 16px; color: #fff;
+            background: var(--season-grad); background-size: 200% 100%; animation: seasonShimmer 8s linear infinite;
+            box-shadow: 0 8px 22px var(--season-glow);
+        }
+        .season-banner .sb-emoji { font-size: 30px; display: inline-block; animation: seasonPulse 1.8s ease-in-out infinite; }
+        .season-banner .sb-title { font-size: 19px; font-weight: 900; margin: 0; line-height: 1.3; }
+        .season-banner .sb-sub { font-size: 12.5px; opacity: .95; margin: 3px 0 0; }
+        .season-banner .sb-count {
+            display: inline-block; margin-top: 10px; background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.35);
+            padding: 4px 12px; border-radius: 99px; font-size: 12.5px; font-weight: 800;
+        }
+        body[data-season] header::after {
+            content: ''; position: absolute; left: 0; right: 0; bottom: -1px; height: 3px; background: var(--season-grad);
+        }
+        @keyframes seasonShimmer { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+        @keyframes seasonPulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.18); } }
+        @media (prefers-reduced-motion: reduce) {
+            .season-strip, .season-banner, .season-banner .sb-emoji { animation: none; }
+        }
     </style>
 
 </head>
@@ -1222,6 +1249,7 @@ html, body {
             <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
         </div>
     </header>
+    <div id="season-strip"></div>
 
     <div class="app-layout">
         
@@ -1308,6 +1336,9 @@ html, body {
                     <div id="resume-alert" class="resume-alert-box" style="display:none;">
                         <!-- مخفي — بقي للتوافقية فقط -->
                     </div>
+
+                    <!-- ثيم الموسم (فاينل/ميدترم..) — بيظهر بس لو الأدمن فعّله من تاب الأدوات -->
+                    <div id="season-banner"></div>
 
                     <!-- ✅ [جديد] كويزات خاطفة منشورة من الأدمن — منفصلة تماماً عن بنك الأسئلة، هوية بصرية عاجلة/حمراء -->
                     <div id="home-quizzes-section" style="display:none; margin-top:22px;">
@@ -2303,6 +2334,25 @@ html, body {
                         </div>
                     </div>
 
+                    <!-- أجواء الموسم: شعار بأعلى المنصة + بانر فوق المواد (فاينل / ميدترم / نتائج) -->
+                    <div style="border:2px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:18px; background:var(--bg-gradient);">
+                        <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-fire"></i> أجواء الموسم الدراسي</h4>
+                        <p style="font-size:12.5px; color:var(--text-muted); margin:0 0 12px;">
+                            اختر ثيم الموسم وهيظهر شريط بألوان الموسم أعلى المنصة وبانر فوق المواد. لو كتبت تاريخ الامتحان بيظهر عدّاد "باقي X يوم"، وبيختفي كل ده لوحده بعد التاريخ. اختار "بدون" وحفظ لو عايز تلغيه.
+                        </p>
+                        <select id="season-theme" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--card-bg); color:var(--text-main);">
+                            <option value="">بدون (إيقاف)</option>
+                            <option value="final">🔥 ليالي الفاينل</option>
+                            <option value="midterm">⚡ أجواء الميدترم</option>
+                            <option value="results">🎓 موسم النتائج والتهنئة</option>
+                        </select>
+                        <input type="text" id="season-title" maxlength="40" placeholder="العنوان (اختياري — الافتراضي حسب الثيم)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
+                        <input type="text" id="season-subtitle" maxlength="80" placeholder="السطر الثاني (اختياري)" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin-bottom:8px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
+                        <label style="font-size:12px; color:var(--text-muted);">تاريخ أول امتحان (اختياري — للعدّاد):</label>
+                        <input type="date" id="season-date" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:8px; margin:4px 0 10px; background:var(--card-bg); color:var(--text-main); box-sizing:border-box;">
+                        <button class="btn-launch" onclick="saveSeason()"><i class="fa-solid fa-floppy-disk"></i> حفظ</button>
+                    </div>
+
                     <!-- أيقونات لينكات اختيارية بالهيدر (حتى 4) — الفاضي مبيظهرش -->
                     <div style="border:2px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:18px; background:var(--bg-gradient);">
                         <h4 style="margin:0 0 6px 0;"><i class="fa-solid fa-link"></i> أيقونات اللينكات بالأعلى</h4>
@@ -2796,6 +2846,8 @@ html, body {
                     bankXpSystemEnabled = data.bankXpEnabled !== false;
                     aiChatEnabled = data.aiChatEnabled !== false; // ✅ [جديد] نفس الفكرة لمفتاح إظهار/إخفاء شات الذكاء الاصطناعي
                     socialLinks = _parseSocialLinks(data);
+                    seasonCfg = (data.season && data.season.theme) ? data.season : null;
+                    renderSeason();
                     renderHomeSocialLink();
                     _applySubjectCounts();
                 } else {
@@ -5447,6 +5499,14 @@ html, body {
                     ? '🎯 نظام الدرجات الرسمي شغال (XP + حد 3 محاولات)'
                     : '📖 مراجعة حرة شغالة (بلا حدود، من غير XP)';
 
+                const sc = data.season || {};
+                const stEl = document.getElementById('season-theme');
+                if (stEl) {
+                    stEl.value = sc.theme || '';
+                    document.getElementById('season-title').value    = sc.title    || '';
+                    document.getElementById('season-subtitle').value = sc.subtitle || '';
+                    document.getElementById('season-date').value     = sc.examDate || '';
+                }
                 const savedLinks = _parseSocialLinks(data);
                 for (let i = 0; i < SOCIAL_LINK_SLOTS; i++) {
                     const u = document.getElementById('admin-social-url-' + i);
@@ -5463,6 +5523,84 @@ html, body {
                     aiLabelEl.innerHTML = aiEnabled ? '🟢 ظاهر للطلاب' : '⚪ مخفي عن الطلاب';
                 }
             }).catch(() => { labelEl.innerText = 'تعذّر تحميل الحالة.'; });
+        }
+
+        // ─── ثيم الموسم الدراسي ───
+        let seasonCfg = null;   // {theme,title,subtitle,examDate}
+        const SEASON_THEMES = {
+            final:   { emoji: '🔥', title: 'ليالي الفاينل',      subtitle: 'ذاكر دلوقتي وافرح يوم النتيجة',   grad: 'linear-gradient(90deg,#7f1d1d,#dc2626,#f97316,#dc2626,#7f1d1d)', glow: 'rgba(220,38,38,.35)' },
+            midterm: { emoji: '⚡', title: 'أجواء الميدترم',     subtitle: 'خطوة خطوة وهتعدّيها بإذن الله',   grad: 'linear-gradient(90deg,#1e3a8a,#6d28d9,#0ea5e9,#6d28d9,#1e3a8a)', glow: 'rgba(109,40,217,.35)' },
+            results: { emoji: '🎓', title: 'مبروك للناجحين',     subtitle: 'ربنا يوفّق الجميع في الترم الجاي', grad: 'linear-gradient(90deg,#065f46,#059669,#d4a017,#059669,#065f46)', glow: 'rgba(5,150,105,.35)' }
+        };
+
+        // عدد الأيام المتبقية (بالتاريخ المحلي، من غير ساعات) — null لو مفيش تاريخ صالح
+        function _seasonDaysLeft(dateStr) {
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dateStr || ''))) return null;
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const target = new Date(y, m - 1, d);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            return Math.round((target - today) / 86400000);
+        }
+
+        function _seasonCountText(days) {
+            if (days === null) return '';
+            if (days > 10) return `باقي ${days} يوم`;
+            if (days > 2)  return `باقي ${days} أيام`;
+            if (days === 2) return 'باقي يومين';
+            if (days === 1) return 'بكرة الامتحان 💪';
+            if (days === 0) return 'النهاردة الامتحان — بالتوفيق 🤍';
+            return '';
+        }
+
+        function renderSeason() {
+            const strip = document.getElementById('season-strip');
+            const banner = document.getElementById('season-banner');
+            if (!strip || !banner) return;
+            const off = () => { strip.innerHTML = ''; banner.innerHTML = ''; document.body.removeAttribute('data-season'); };
+
+            if (!seasonCfg || !SEASON_THEMES[seasonCfg.theme]) { off(); return; }
+            const t = SEASON_THEMES[seasonCfg.theme];
+            const days = _seasonDaysLeft(seasonCfg.examDate);
+            if (days !== null && days < 0 && seasonCfg.theme !== 'results') { off(); return; }   // الامتحان عدّى — الثيم يختفي لوحده
+
+            const title = (seasonCfg.title || '').trim() || t.title;
+            const sub   = (seasonCfg.subtitle || '').trim() || t.subtitle;
+            const count = _seasonCountText(days);
+
+            document.body.setAttribute('data-season', seasonCfg.theme);
+            document.documentElement.style.setProperty('--season-grad', t.grad);
+            document.documentElement.style.setProperty('--season-glow', t.glow);
+
+            strip.innerHTML = `<div class="season-strip">${t.emoji} ${esc(title)}${count ? ' · ' + esc(count) : ''} ${t.emoji}</div>`;
+            banner.innerHTML = `
+                <div class="season-banner">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <span class="sb-emoji">${t.emoji}</span>
+                        <div style="flex:1; min-width:0;">
+                            <p class="sb-title">${esc(title)}</p>
+                            <p class="sb-sub">${esc(sub)}</p>
+                        </div>
+                    </div>
+                    ${count ? `<span class="sb-count">⏳ ${esc(count)}</span>` : ''}
+                </div>`;
+        }
+
+        function saveSeason() {
+            const theme = document.getElementById('season-theme').value;
+            const title = document.getElementById('season-title').value.trim();
+            const subtitle = document.getElementById('season-subtitle').value.trim();
+            const examDate = document.getElementById('season-date').value;
+            const FV = firebase.firestore.FieldValue;
+            const payload = theme
+                ? { season: { theme, title, subtitle, examDate } }
+                : { season: FV.delete() };
+            db.collection("questions").doc("--metadata--").set(payload, { merge: true }).then(() => {
+                seasonCfg = theme ? { theme, title, subtitle, examDate } : null;
+                renderSeason();
+                showToast(theme ? "✅ تم تفعيل أجواء الموسم" : "✅ تم إيقاف أجواء الموسم");
+                logAdminAction("تحديث أجواء الموسم", theme || "إيقاف");
+            }).catch(err => showToast("❌ فشل الحفظ: " + err.message, "error"));
         }
 
         // ─── أيقونات اللينكات الاختيارية بالهيدر ───
@@ -6813,31 +6951,72 @@ html, body {
                 header: true,
                 skipEmptyLines: true,
                 complete: function(results) {
-                    const registeredChapters = _getChaptersForSubject(selectedSubject);
+                    const validRows = results.data.filter(q => q.Question && q.A && q.B && q.Answer);
+                    if (validRows.length === 0) {
+                        showToast("لم نجد أسئلة صالحة، يرجى التأكد من العناوين الإجبارية بالأعمدة.", "error");
+                        return;
+                    }
 
-                    const rows = results.data
-                        .filter(q => q.Question && q.A && q.B && q.Answer)
-                        .map(q => {
+                    // تطبيع عربي بسيط عشان اختلافات الكتابة (أ/ا، ة/ه، ى/ي، مسافات، تشكيل) ما تتحسبش فصل جديد
+                    const norm = t => String(t || '').trim()
+                        .replace(/[\u064B-\u0652\u0640]/g, '')
+                        .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه')
+                        .replace(/\s+/g, ' ').toLowerCase();
+
+                    // أسماء الفصول اللي في الملف ومش مسجّلة (حتى بعد التطبيع) — بنسجّلها بضغطة واحدة
+                    const registered = _getChaptersForSubject(selectedSubject);
+                    const known = new Set(registered.map(norm));
+                    const newNames = [];
+                    validRows.forEach(q => {
+                        const raw = (q.Chapter || '').trim();
+                        if (raw && !known.has(norm(raw))) { known.add(norm(raw)); newNames.push(raw); }
+                    });
+
+                    const proceed = () => {
+                        const chapters = _getChaptersForSubject(selectedSubject);
+                        const byNorm = {};
+                        chapters.forEach(c => { byNorm[norm(c)] = c; });
+                        const rows = validRows.map(q => {
                             const rawChapter = (q.Chapter && q.Chapter.trim()) ? q.Chapter.trim() : '';
-                            // ⚠️ لو العمود فيه اسم فصل مكتوب لكن مش مطابق حرفياً لأي فصل مسجّل بالمادة،
-                            // منستخدموش كما هو (كان هيتحفظ فصل "يتيم" بصمت) — بنرجع للفصل الافتراضي ونعلّم البطاقة بتحذير
-                            const chapterMismatch = !!(rawChapter && !registeredChapters.includes(rawChapter));
+                            const matched = rawChapter ? byNorm[norm(rawChapter)] : null;   // الاسم المسجّل الفعلي
+                            const chapterMismatch = !!(rawChapter && !matched);
                             return {
                                 question: q.Question,
                                 options: [q.A, q.B, q.C || "", q.D || ""].filter(o => o !== ""),
                                 answer: q.Answer,
                                 explanation: q.Explanation || "",
-                                chapter: (rawChapter && !chapterMismatch) ? rawChapter : defaultChapter,
+                                chapter: matched || defaultChapter,
                                 chapterMismatch
                             };
                         });
+                        renderCsvReviewCards(rows, selectedSubject);
+                    };
 
-                    if (rows.length === 0) {
-                        showToast("لم نجد أسئلة صالحة، يرجى التأكد من العناوين الإجبارية بالأعمدة.", "error");
-                        return;
-                    }
+                    if (newNames.length === 0) { proceed(); return; }
 
-                    renderCsvReviewCards(rows, selectedSubject);
+                    showModal({
+                        icon: '📚', title: 'فصول جديدة في الملف',
+                        message: `الملف فيه <strong>${newNames.length}</strong> فصل مش مسجّل في مادة "${esc(fixedSubjects[selectedSubject] || '')}":<br><br>` +
+                                 newNames.map(n => `• ${esc(n)}`).join('<br>') +
+                                 `<br><br>أضيفهم تلقائياً للمادة وأوزّع الأسئلة عليهم؟`,
+                        confirmText: 'أيوه، أضفهم', cancelText: 'لأ، كمّل بدونهم', type: 'warning',
+                        onConfirm: () => {
+                            const updated = [...registered, ...newNames];
+                            db.collection("questions").doc("--metadata--").set({
+                                chapters: { [selectedSubject]: updated }
+                            }, { merge: true }).then(() => {
+                                cachedSubjectChapters[selectedSubject] = updated;
+                                try { renderChaptersManageList(); populateChapterDropdownForForm(); _populateCsvChapterSelect(); } catch (e) {}
+                                showToast(`✅ اتضافت ${newNames.length} فصول للمادة.`);
+                                logAdminAction("إضافة فصول من CSV", `${fixedSubjects[selectedSubject]}: ${newNames.join('، ')}`);
+                                proceed();
+                            }).catch(err => {
+                                showToast("❌ فشل إضافة الفصول: " + err.message, "error");
+                                proceed();
+                            });
+                        },
+                        onCancel: proceed
+                    });
                 }
             });
         }
