@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - النظام الأكاديمي المطور</title>
+    <title>AmerQuiz - نظام الامتحانات والكويزات</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -2244,6 +2244,22 @@ html, body {
                     <div style="margin-bottom: 10px; text-align: right;">
                         <button id="btn-bulk-delete-questions" class="ban-btn ban-active" style="display:none;" onclick="deleteSelectedQuestionsGroup()"><i class="fa-solid fa-trash"></i> حذف الأسئلة المحددة دفعة واحدة</button>
                     </div>
+
+                    <details style="margin-bottom:12px; border:1px solid var(--primary); border-radius:10px; padding:10px 12px; background:var(--primary-light);" ontoggle="if(this.open) updateVisualAutoInfo()">
+                        <summary style="cursor:pointer; font-weight:800; font-size:13.5px;">🎨 توليد الشروح المرئية تلقائياً</summary>
+                        <p style="font-size:12.5px; color:var(--text-muted); line-height:1.8; margin:8px 0;">
+                            بيولّد شرح مرئي مناسب لكل سؤال ناقص، من غير ما تراجع سؤال سؤال. الأسئلة اللي مفيهاش حاجة تتشرح بصرياً (تعريفات مثلاً) بتتخطّى ومش بتتكرر. اضغط الزرار بعد أي رفع أسئلة جديدة وهيشتغل على الجديد بس.
+                        </p>
+                        <select id="vs-auto-subject" class="search-box" style="margin-bottom:8px; height:45px;" onchange="updateVisualAutoInfo()">
+                            <option value="structured_programming">البرمجة الهيكلية</option>
+                            <option value="databases">قواعد البيانات</option>
+                            <option value="corporate_accounting">محاسبة شركات</option>
+                            <option value="operations_management">إدارة الانتاج والعمليات</option>
+                            <option value="economics_english">انجليزي اقتصاد</option>
+                        </select>
+                        <div id="vs-auto-info" style="font-size:12.5px; margin-bottom:8px; color:var(--text-muted);"></div>
+                        <button id="vs-auto-btn" class="ban-btn" style="background:var(--primary); color:#fff; width:100%;" onclick="autoGenerateVisuals()"><i class="fa-solid fa-wand-magic-sparkles"></i> ولّد الشروح المرئية الناقصة</button>
+                    </details>
 
                     <div style="max-height: 65vh; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; padding: 8px;" id="admin-questions-list">
                         جاري تحميل بنك الأسئلة...
@@ -9231,6 +9247,70 @@ html, body {
             if (r.err) { showToast('⚠️ ' + r.err, 'error'); return; }
             if (!r.v) { showToast('اكتب الشرح أو اختار قالب الأول.', 'error'); return; }
             openVisualSheet(r.v);
+        }
+
+        // ═══ توليد الشروح المرئية تلقائياً (أدمن) ═══
+        var VS_AUTO_BATCH = 8;       // أسئلة في النداء الواحد
+        var VS_AUTO_MAX_PER_RUN = 40; // أقصى عدد أسئلة في المرة الواحدة (تحكّم في الاستهلاك)
+        function _vsPendingForSubject(subject) {
+            return (cachedAdminQuestions || []).filter(function (q) { return q.subject === subject && !q.visual && !q.visualSkip; });
+        }
+        function updateVisualAutoInfo() {
+            var info = document.getElementById('vs-auto-info'); if (!info) return;
+            if (!cachedAdminQuestions || !cachedAdminQuestions.length) { info.textContent = 'افتح قائمة الأسئلة الأول (جاري التحميل...)'; return; }
+            var subject = document.getElementById('vs-auto-subject').value;
+            var all = cachedAdminQuestions.filter(function (q) { return q.subject === subject; });
+            var withV = all.filter(function (q) { return q.visual; }).length;
+            var skipped = all.filter(function (q) { return !q.visual && q.visualSkip; }).length;
+            info.textContent = 'إجمالي ' + all.length + ' سؤال · بشرح مرئي ' + withV + ' · متخطّى ' + skipped + ' · في الانتظار ' + _vsPendingForSubject(subject).length;
+        }
+        async function autoGenerateVisuals() {
+            var btn = document.getElementById('vs-auto-btn');
+            var subject = document.getElementById('vs-auto-subject').value;
+            var pending = _vsPendingForSubject(subject).slice(0, VS_AUTO_MAX_PER_RUN);
+            if (!pending.length) { showToast('✅ مفيش أسئلة ناقصة في المادة دي.'); return; }
+            var original = btn.innerHTML; btn.disabled = true;
+            var done = 0, skipped = 0, failed = 0, updates = [];
+            try {
+                var idToken = await firebase.auth().currentUser.getIdToken();
+                for (var i = 0; i < pending.length; i += VS_AUTO_BATCH) {
+                    var chunk = pending.slice(i, i + VS_AUTO_BATCH);
+                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + Math.min(i + VS_AUTO_BATCH, pending.length) + ' / ' + pending.length;
+                    try {
+                        var res = await fetch('/api/generate-visuals', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                            body: JSON.stringify({
+                                subject: subject,
+                                questions: chunk.map(function (q) { return { id: q.uid, question: q.question, options: q.options, answer: q.answer, explanation: q.explanation || '' }; })
+                            })
+                        });
+                        var data = await res.json();
+                        if (!res.ok) { failed += chunk.length; showToast('دفعة ' + (i / VS_AUTO_BATCH + 1) + ': ' + (data.error || 'فشل التوليد'), 'error'); continue; }
+                        var map = data.visuals || {};
+                        chunk.forEach(function (q) {
+                            var v = map[q.uid];
+                            if (v && !_vsValidate(v)) { updates.push({ q: q, data: { visual: v, visualAuto: true } }); done++; }
+                            else if (v === null || v === undefined) { updates.push({ q: q, data: { visualSkip: true } }); skipped++; }
+                            else { failed++; } // رجع شرح غير صالح: نسيبه للمحاولة الجاية
+                        });
+                    } catch (e) { failed += chunk.length; showToast('خطأ اتصال: ' + e.message, 'error'); }
+                }
+                // كتابة النتائج: كتابة واحدة لكل سؤال، في دفعات
+                for (var j = 0; j < updates.length; j += 400) {
+                    var batch = db.batch();
+                    updates.slice(j, j + 400).forEach(function (u) { batch.update(db.collection('questions').doc(u.q.uid), u.data); });
+                    await batch.commit();
+                }
+                updates.forEach(function (u) { Object.assign(u.q, u.data); });
+                if (done) { _invalidateQuestionCache(subject); } // تحديث كاش الطلاب مرة واحدة
+                logAdminAction('توليد شروح مرئية تلقائياً', (fixedSubjects[subject] || subject) + ': ' + done + ' شرح، ' + skipped + ' متخطّى');
+                showToast('✅ تم ' + done + ' شرح · متخطّى ' + skipped + (failed ? ' · فشل ' + failed : ''));
+            } catch (err) {
+                showToast('خطأ: ' + err.message, 'error');
+            } finally {
+                btn.disabled = false; btn.innerHTML = original; updateVisualAutoInfo();
+            }
         }
 
         function _syncThemeIcon() {
