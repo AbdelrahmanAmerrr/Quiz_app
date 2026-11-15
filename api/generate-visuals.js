@@ -21,11 +21,20 @@ const SUBJECT_LABELS = {
     economics_english: "انجليزي اقتصاد"
 };
 
+// توجيه إضافي لكل مادة: القوالب الأنسب + شدة الحذر في الأرقام
+const SUBJECT_HINTS = {
+    corporate_accounting: 'المادة محاسبة شركات (شركات الأشخاص والأموال). فضّل taccount وjournal وcalc وsplit وbars وlists وcards. الأرقام: استخدم أرقام السؤال فقط. أي رقم ناتج عن حساب لازم تراجعه مرتين (الجمع والطرح والنسب) وأن يكون صحيحاً 100% ويتوافق مع الإجابة الصحيحة؛ ولو لست متأكداً من حساب رجّع null بدل المخاطرة. في taccount ضع الجانب المدين في dr والدائن في cr، وفي journal اكتب "من ح/..." للمدين و"إلى ح/..." للدائن.',
+    operations_management: 'المادة إدارة الإنتاج والعمليات. فضّل cards وflow وcompare وlists وcalc وbars وtable. أي حساب أرقام لازم يكون صحيحاً 100% (راجعه مرتين) أو رجّع null.',
+    structured_programming: 'المادة برمجة هيكلية. فضّل code وflow وcells وcompare وtable. الأكواد بالإنجليزية كما هي.',
+    databases: 'المادة قواعد بيانات. فضّل table وjoin وflow وcompare وcode. الاستعلامات بالإنجليزية كما هي.',
+    economics_english: 'المادة إنجليزي اقتصاد. استخدم cards أو compare أو lists فقط لو في مفهوم يتشرح بصرياً، وإلا null.'
+};
+
 const MAX_QUESTIONS_PER_REQUEST = 10;
 const MAX_FIELD_LENGTH = 700;      // نقص أي نص سؤال/خيار/شرح طويل قبل ما يروح للذكاء الاصطناعي
 const MAX_VISUAL_JSON_LENGTH = 3000; // نفس حد الفرونت
 
-const VISUAL_TYPES = ['flow', 'cells', 'code', 'table', 'compare', 'join'];
+const VISUAL_TYPES = ['flow', 'cells', 'code', 'table', 'compare', 'join', 'cards', 'taccount', 'calc', 'bars', 'split', 'journal', 'lists'];
 const JOIN_KINDS = ['inner', 'left', 'right', 'full', 'left_only', 'right_only'];
 
 // نفس قواعد _vsValidate في الفرونت — الفحص على السيرفر هنا حماية إضافية قبل ما أي شيء يرجع للأدمن
@@ -39,6 +48,13 @@ function validateVisual(v) {
     if (v.type === 'table')   return Array.isArray(v.cols) && Array.isArray(v.rows) && v.cols.length <= 6 && v.rows.length <= 8;
     if (v.type === 'compare') return !!v.left && !!v.right;
     if (v.type === 'join')    return JOIN_KINDS.includes(v.kind);
+    if (v.type === 'cards')    return Array.isArray(v.items) && v.items.length >= 1 && v.items.length <= 8;
+    if (v.type === 'taccount') return Array.isArray(v.dr) && Array.isArray(v.cr) && v.dr.length <= 8 && v.cr.length <= 8 && (v.dr.length + v.cr.length) > 0;
+    if (v.type === 'calc')     return Array.isArray(v.rows) && v.rows.length >= 1 && v.rows.length <= 10;
+    if (v.type === 'bars')     return Array.isArray(v.items) && v.items.length >= 1 && v.items.length <= 6;
+    if (v.type === 'split')    return Array.isArray(v.parts) && v.parts.length >= 2 && v.parts.length <= 5;
+    if (v.type === 'journal')  return Array.isArray(v.lines) && v.lines.length >= 1 && v.lines.length <= 8;
+    if (v.type === 'lists')    return Array.isArray(v.groups) && v.groups.length >= 1 && v.groups.length <= 4;
     return false;
 }
 
@@ -104,6 +120,7 @@ module.exports = async (req, res) => {
 
         // ── ٣) الـ prompt ──
         const prompt = `أنت مصمم شروح مرئية لمنصة اختبارات جامعية. المادة: ${SUBJECT_LABELS[subject]}.
+توجيه خاص بالمادة: ${SUBJECT_HINTS[subject] || ''}
 لكل سؤال أدناه، قرر هل فيه "شرح مرئي" يفيد الطالب فعلاً في فهم المفهوم، واختر له القالب الأنسب. لو السؤال مجرد تعريف أو حفظ أو لا يستفيد من رسم، رجّع null بدل ما تفتعل شرحاً.
 
 القوالب المتاحة (استخدم هذه الحقول بالضبط، وبدون أي حقول أخرى):
@@ -119,11 +136,26 @@ module.exports = async (req, res) => {
 {"type":"compare","title":"...","left":{"h":"...","tone":"good أو bad أو محايد","items":["..."]},"right":{"h":"...","tone":"...","items":["..."]},"caption":"..."}
 6) join — مخطط JOIN في قواعد البيانات (kind واحد من: inner, left, right, full, left_only, right_only):
 {"type":"join","title":"...","kind":"inner","left":"اسم الجدول الأيسر","right":"اسم الجدول الأيمن","sql":"استعلام SQL قصير","caption":"..."}
+7) cards — بطاقات ملوّنة مرقّمة (أنواع، تصنيفات، خصائص):
+{"type":"cards","title":"...","sub":"سطر فرعي اختياري","items":[{"t":"العنوان","d":"وصف قصير"}],"hl":[رقم البطاقة المطلوبة (من 0)],"caption":"..."}
+8) taccount — حساب T (مدين/دائن). dr = الجانب المدين (منه)، cr = الجانب الدائن (له). v نص الرقم، hl:true لتمييز السطر المطلوب:
+{"type":"taccount","title":"ح/ اسم الحساب","sub":"سطر فرعي","dr":[{"t":"البند","v":"1,000"}],"cr":[{"t":"البند","v":"1,000","hl":true}],"drTot":"إجمالي المدين","crTot":"إجمالي الدائن","caption":"..."}
+9) calc — قائمة حساب سطر بسطر. op واحد من + أو - أو = ، b:true لسطر الإجمالي، hl:true للسطر المطلوب:
+{"type":"calc","title":"...","sub":"الأرقام بالجنيه","rows":[{"l":"البند","v":"60,000","op":"+","b":false,"hl":false}],"caption":"..."}
+10) bars — أشرطة مقارنة بين قيم رقمية. v رقم حقيقي (للتناسب)، s نص العرض، res نتيجة اختيارية (tone: bad لو سلبية):
+{"type":"bars","title":"...","items":[{"l":"الإيرادات","v":600,"s":"50 × 12 = 600"}],"res":{"t":"600 - 180 = 420 ربح","d":"شرح قصير","tone":"good"},"caption":"..."}
+11) split — شريط توزيع نسب أو حصص. v وزن الحصة (رقم)، n النص المعروض:
+{"type":"split","title":"...","label":"الباقي 24,000 بنسبة متساوية","parts":[{"l":"نصيب أ","v":1,"n":"12,000"},{"l":"نصيب ب","v":1,"n":"12,000"}],"caption":"..."}
+12) journal — قيد يومية. k إما dr (مدين) أو cr (دائن):
+{"type":"journal","title":"...","lines":[{"k":"dr","a":"من ح/ الصندوق","v":"5,000"},{"k":"cr","a":"إلى ح/ رأس المال","v":"5,000"}],"note":"البيان","caption":"..."}
+13) lists — مجموعات نقاط ✓ (خصائص أو شروط أو مقارنة نظريات):
+{"type":"lists","title":"...","groups":[{"h":"العنوان","sub":"سطر فرعي","items":["نقطة","نقطة"]}],"caption":"..."}
 
 القواعد الإلزامية:
 - الشرح لازم يتطابق تماماً مع الإجابة الصحيحة (answer) ولا يناقضها، ولا تخترع معلومات خارج السؤال وشرحه المرفق.
 - title وcaption بالعربية البسيطة وقصيرين. الأكواد وأسماء الدوال والمصطلحات التقنية تبقى بالإنجليزية كما هي.
-- خلّي الشرح صغيراً: flow بحد أقصى 6 خطوات، code بحد أقصى 8 أسطر، table بحد أقصى 5 صفوف و5 أعمدة، cells بحد أقصى 12 عنصراً.
+- خلّي الشرح صغيراً: flow بحد أقصى 6 خطوات، code بحد أقصى 8 أسطر، table بحد أقصى 5 صفوف و5 أعمدة، cells بحد أقصى 12 عنصراً، cards بحد أقصى 5 بطاقات، taccount بحد أقصى 5 بنود في كل جانب، calc بحد أقصى 8 أسطر.
+- لا تستخدم مصفوفات داخل مصفوفات في أي قالب (استخدم كائنات كما في الأشكال أعلاه).
 - لا تستخدم ردود طويلة؛ الشرح كله أقل من 1500 حرف.
 - نوّع القوالب حسب ما يناسب كل سؤال، ولا تستخدم نفس القالب لكل الأسئلة.
 
