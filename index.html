@@ -1308,6 +1308,62 @@ html, body {
         .vs-note { font-size:13px; padding:9px 12px; border-radius:10px; background:var(--primary-light); border-right:3px solid var(--primary); opacity:0; animation: vsPop .5s ease forwards; }
         .vs-caption { margin-top:14px; padding:12px 14px; border-radius:12px; border:1px solid var(--primary); background:var(--primary-light); font-size:13.5px; line-height:1.8; font-weight:600; opacity:0; animation: vsPop .5s ease 1s forwards; }
         @media (prefers-reduced-motion: reduce) { .vs-pop, .vs-chip, .vs-arrow, .vs-row, .vs-cell, .vs-code .ln, .vs-table tr, .vs-col, .vs-note, .vs-caption { animation-duration:.01s !important; animation-delay:0s !important; } }
+        .vs-c0 { --cc:#3b6bb5; } .vs-c1 { --cc:#2d6a4f; } .vs-c2 { --cc:#a8741a; } .vs-c3 { --cc:#8b2635; } .vs-c4 { --cc:#6d3fd1; }
+        body.dark-mode .vs-c0 { --cc:#6fa0e8; } body.dark-mode .vs-c1 { --cc:#4cc38a; } body.dark-mode .vs-c2 { --cc:#e0b04a; } body.dark-mode .vs-c3 { --cc:#e5738a; } body.dark-mode .vs-c4 { --cc:#a98bf0; }
+        .vs-sub { text-align:center; font-size:12px; color:var(--text-muted); margin:-12px 0 16px; }
+        .vs-card { display:flex; gap:12px; align-items:flex-start; padding:14px; margin-bottom:10px; border:2px solid var(--cc); border-radius:16px; background:var(--card-bg); background:color-mix(in srgb, var(--cc) 8%, var(--card-bg)); opacity:0; animation: vsPop .5s ease forwards; }
+        .vs-card.on { box-shadow:0 0 0 4px color-mix(in srgb, var(--cc) 22%, transparent); }
+        .vs-card .n { flex:none; width:38px; height:38px; border-radius:50%; background:color-mix(in srgb, var(--cc) 20%, var(--card-bg)); color:var(--cc); font-weight:800; display:flex; align-items:center; justify-content:center; }
+        .vs-card h4 { margin:0 0 4px; color:var(--cc); font-size:15px; }
+        .vs-card p { margin:0; font-size:13px; line-height:1.8; color:var(--text-muted); }
+        .vs-t { border:1.5px solid var(--border); border-radius:16px; padding:14px; margin-bottom:14px; background:var(--card-bg); }
+        .vs-t .acct { display:block; width:max-content; max-width:100%; margin:0 auto 4px; padding:7px 22px; border:2px solid var(--text-main); border-radius:12px; font-weight:800; font-size:15px; background:var(--primary-light); opacity:0; animation: vsPop .45s ease forwards; }
+        .vs-t .tsub { text-align:center; font-size:12px; color:var(--text-muted); margin-bottom:8px; }
+        .vs-tgrid { display:grid; grid-template-columns:1fr 1fr; border-top:2px solid var(--text-main); }
+        .vs-tcol { padding:8px 10px; min-width:0; }
+        .vs-tcol + .vs-tcol { border-right:2px solid var(--text-main); }
+        .vs-tcol .hd { font-weight:800; font-size:13px; margin-bottom:6px; }
+        .vs-tcol.dr .hd { color:var(--success); } .vs-tcol.cr .hd { color:var(--danger); }
+        .vs-tr { display:flex; justify-content:space-between; gap:8px; padding:6px 4px; font-size:13px; line-height:1.7; border-radius:8px; opacity:0; animation: vsPop .45s ease forwards; }
+        .vs-tr b { flex:none; direction:ltr; font-variant-numeric:tabular-nums; }
+        .vs-tcol.dr .vs-tr b { color:var(--success); } .vs-tcol.cr .vs-tr b { color:var(--danger); }
+        .vs-tr.on { border:2px solid var(--primary-dark); background:var(--primary-light); font-weight:800; }
+        .vs-ttot { display:grid; grid-template-columns:1fr 1fr; border-top:2px solid var(--text-main); font-weight:800; font-size:14px; direction:rtl; }
+        .vs-ttot span { padding:8px 14px; direction:ltr; }
+        .vs-calc { border:1.5px solid var(--border); border-radius:16px; padding:6px; margin-bottom:14px; background:var(--card-bg); }
+        .vs-cr { display:flex; align-items:center; gap:10px; padding:10px 12px; font-size:13.5px; border-radius:10px; opacity:0; animation: vsPop .45s ease forwards; }
+        .vs-cr .op { flex:none; width:18px; text-align:center; color:var(--text-muted); font-weight:800; }
+        .vs-cr .lb { flex:1; min-width:0; }
+        .vs-cr .vl { flex:none; direction:ltr; font-weight:800; font-variant-numeric:tabular-nums; }
+        .vs-cr.b { background:var(--primary-light); font-weight:800; }
+        .vs-cr.on { border:2px solid var(--primary-dark); background:var(--primary-light); }
+        .vs-bars { border:1.5px solid var(--border); border-radius:16px; padding:14px; margin-bottom:14px; background:var(--card-bg); }
+        .vs-bar { margin-bottom:14px; opacity:0; animation: vsPop .4s ease forwards; }
+        .vs-bar .top { display:flex; justify-content:space-between; gap:8px; font-weight:800; font-size:13px; margin-bottom:5px; color:var(--cc); }
+        .vs-bar .top span:last-child { direction:ltr; color:var(--text-main); }
+        .vs-bar .track { height:26px; border-radius:99px; background:var(--border); overflow:hidden; }
+        .vs-bar .fill { height:100%; border-radius:99px; background:color-mix(in srgb, var(--cc) 35%, var(--card-bg)); border:2px solid var(--cc); box-sizing:border-box; transform-origin:right; animation: vsGrow .9s cubic-bezier(.3,.8,.3,1) both; }
+        @keyframes vsGrow { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+        .vs-res { margin-top:6px; padding:12px; border:2px solid var(--success); border-radius:14px; text-align:center; background:var(--card-bg); background:color-mix(in srgb, var(--success) 9%, var(--card-bg)); opacity:0; animation: vsPop .5s ease .8s forwards; }
+        .vs-res b { display:block; font-size:16px; color:var(--success); direction:ltr; }
+        .vs-res.bad { border-color:var(--danger); } .vs-res.bad b { color:var(--danger); }
+        .vs-res small { color:var(--text-muted); font-size:12px; }
+        .vs-seg { display:flex; height:34px; border-radius:99px; overflow:hidden; border:2px solid var(--text-main); margin:10px 0 14px; direction:rtl; }
+        .vs-seg i { display:block; background:color-mix(in srgb, var(--cc) 30%, var(--card-bg)); transform-origin:right; animation: vsGrow .8s ease both; }
+        .vs-seg i + i { border-right:2px solid var(--cc); }
+        .vs-lg { display:flex; align-items:center; gap:8px; font-size:13px; padding:5px 2px; }
+        .vs-lg .sq { flex:none; width:14px; height:14px; border-radius:4px; border:2px solid var(--cc); background:color-mix(in srgb, var(--cc) 30%, var(--card-bg)); }
+        .vs-lg .lb { flex:1; color:var(--cc); font-weight:700; } .vs-lg .vl { direction:ltr; font-weight:800; }
+        .vs-j { border:1.5px solid var(--border); border-radius:16px; padding:12px 14px; margin-bottom:14px; background:var(--card-bg); }
+        .vs-jl { display:flex; justify-content:space-between; gap:10px; padding:8px 4px; font-weight:700; font-size:14px; opacity:0; animation: vsPop .45s ease forwards; }
+        .vs-jl.dr { color:var(--success); } .vs-jl.cr { color:var(--danger); padding-right:34px; }
+        .vs-jl b { direction:ltr; flex:none; }
+        .vs-jnote { font-size:12px; color:var(--text-muted); border-top:1px dashed var(--border); margin-top:6px; padding-top:8px; }
+        .vs-lst { border:2px solid var(--cc); border-radius:16px; padding:14px; margin-bottom:12px; background:var(--card-bg); background:color-mix(in srgb, var(--cc) 7%, var(--card-bg)); opacity:0; animation: vsPop .5s ease forwards; }
+        .vs-lst h4 { margin:0; color:var(--cc); font-size:15px; } .vs-lst .ls { font-size:12px; color:var(--text-muted); margin-bottom:10px; }
+        .vs-lst ul { list-style:none; margin:10px 0 0; padding:0; } .vs-lst li { display:flex; gap:10px; font-size:13px; line-height:1.8; padding:5px 0; }
+        .vs-lst li::before { content:'✓'; flex:none; color:var(--cc); font-weight:800; }
+        @media (prefers-reduced-motion: reduce) { .vs-card, .vs-tr, .vs-cr, .vs-bar, .vs-bar .fill, .vs-res, .vs-seg i, .vs-jl, .vs-lst, .vs-t .acct { animation-duration:.01s !important; animation-delay:0s !important; } }
     </style>
 
 </head>
@@ -2197,6 +2253,13 @@ html, body {
                                     <option value="table">جدول (table)</option>
                                     <option value="compare">مقارنة (compare)</option>
                                     <option value="join">JOIN قواعد بيانات (join)</option>
+                                    <option value="cards">بطاقات ملوّنة مرقّمة (cards)</option>
+                                    <option value="taccount">حساب T مدين/دائن (taccount)</option>
+                                    <option value="calc">قائمة حساب + و - و = (calc)</option>
+                                    <option value="bars">أشرطة مقارنة (bars)</option>
+                                    <option value="split">شريط توزيع نسب (split)</option>
+                                    <option value="journal">قيد يومية (journal)</option>
+                                    <option value="lists">قوائم نقاط ✓ (lists)</option>
                                 </select>
                                 <button type="button" class="ban-btn" style="background:var(--primary); color:#fff;" onclick="previewFormVisual()"><i class="fa-solid fa-eye"></i> معاينة</button>
                             </div>
@@ -9080,13 +9143,20 @@ html, body {
         var _THEME_SUN = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4.3\" fill=\"currentColor\"/><g stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\"><line x1=\"19.20\" y1=\"12.00\" x2=\"22.00\" y2=\"12.00\"/><line x1=\"17.09\" y1=\"17.09\" x2=\"19.07\" y2=\"19.07\"/><line x1=\"12.00\" y1=\"19.20\" x2=\"12.00\" y2=\"22.00\"/><line x1=\"6.91\" y1=\"17.09\" x2=\"4.93\" y2=\"19.07\"/><line x1=\"4.80\" y1=\"12.00\" x2=\"2.00\" y2=\"12.00\"/><line x1=\"6.91\" y1=\"6.91\" x2=\"4.93\" y2=\"4.93\"/><line x1=\"12.00\" y1=\"4.80\" x2=\"12.00\" y2=\"2.00\"/><line x1=\"17.09\" y1=\"6.91\" x2=\"19.07\" y2=\"4.93\"/></g></svg>";
         var _THEME_MOON = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z\"/></svg>";
         /* ═══════════ الشرح المرئي (Visual Explanation) ═══════════ */
-        var _VS_TYPES = ['flow','cells','code','table','compare','join'];
+        var _VS_TYPES = ['flow','cells','code','table','compare','join','cards','taccount','calc','bars','split','journal','lists'];
         var _VS_TEMPLATES = {
             flow:    { type:'flow', title:'دورة حياة الفورم', steps:[{t:'Load',d:'تحميل الفورم في الذاكرة'},{t:'Shown',d:'ظهور الفورم بعد تحميله'},{t:'Activated',d:'تنشيط نافذة الفورم'}], active:1, caption:'اكتب الخلاصة اللي الطالب يحفظها هنا' },
             cells:   { type:'cells', title:'خانات المصفوفة Pay(50)', cells:['0','1','2','…','49','50'], hl:[5], caption:'المصفوفة بتبدأ من 0، فـ Pay(50) فيها 51 خانة' },
             code:    { type:'code', title:'تتبّع الكود', lines:['Dim Pay(50) As String','Pay(0) = "Ali"'], hl:[0], notes:[{l:0,t:'تعريف مصفوفة فيها 51 خانة من 0 إلى 50'}], caption:'الخلاصة هنا' },
             table:   { type:'table', title:'جدول الطلاب', name:'Students', cols:['ID','Name','Dept'], rows:[['1','Ali','IT'],['2','Sara','HR'],['3','Omar','IT']], hr:[0,2], caption:'WHERE Dept = \'IT\' بيرجّع الصفوف المظلّلة' },
             compare: { type:'compare', title:'الفرق بين الخاصيتين', left:{h:'Enabled = False',tone:'bad',items:['الزر ظاهر','لا يستجيب للضغط']}, right:{h:'Visible = False',tone:'bad',items:['الزر مخفي تماماً']}, caption:'الخلاصة هنا' },
+            cards:   { type:'cards', title:'أنواع الشركات', items:[{t:'شركات المساهمة',d:'رأس مال كبير وأسهم قابلة للتداول'},{t:'شركات التوصية بالأسهم',d:'شريك متضامن + شريك موصي'},{t:'الشركات ذات المسؤولية المحدودة',d:'من 2 إلى 50 شريكاً'}], hl:[0], caption:'الخلاصة هنا' },
+            taccount:{ type:'taccount', title:'ح/ إعادة التقدير', sub:'بأرقام المثال', dr:[{t:'نقص العقار',v:'1,000'},{t:'نقص الأثاث',v:'2,000'}], cr:[{t:'زيادة الآلات',v:'1,000'},{t:'رصيد مدين (خسارة)',v:'2,000',hl:true}], drTot:'3,000', crTot:'3,000', caption:'الخلاصة هنا' },
+            calc:    { type:'calc', title:'توزيع الأرباح', sub:'الأرقام بالجنيه', rows:[{l:'صافي الربح',v:'60,000'},{l:'فائدة المسحوبات',v:'1,200',op:'+'},{l:'الجانب الدائن',v:'61,200',op:'=',b:true},{l:'الاحتياطي',v:'6,000',op:'-'},{l:'الباقي',v:'55,200',op:'=',b:true,hl:true}], caption:'الخلاصة هنا' },
+            bars:    { type:'bars', title:'الإيرادات والتكاليف', items:[{l:'الإيرادات',v:600,s:'50 × 12 = 600'},{l:'التكاليف',v:180,s:'15 × 12 = 180'}], res:{t:'600 - 180 = 420 ربح',d:'الإيرادات أكبر من التكاليف'}, caption:'الخلاصة هنا' },
+            split:   { type:'split', title:'توزيع الباقي', label:'الباقي 24,000 بنسبة متساوية', parts:[{l:'نصيب أ',v:1,n:'12,000'},{l:'نصيب ب',v:1,n:'12,000'}], caption:'الخلاصة هنا' },
+            journal: { type:'journal', title:'قيد اليومية', lines:[{k:'dr',a:'من ح/ الصندوق',v:'5,000'},{k:'cr',a:'إلى ح/ رأس المال',v:'5,000'}], note:'إثبات رأس المال النقدي', caption:'الخلاصة هنا' },
+            lists:   { type:'lists', title:'مقارنة النظريتين', groups:[{h:'نظرية الملكية المشتركة',sub:'ظهرت مع شركات الأشخاص',items:['الذمة واحدة','الشركاء مسؤولون عن الالتزامات']},{h:'نظرية الشخصية المعنوية',sub:'ظهرت مع شركات الأموال',items:['ذمة مستقلة','للشركة حق التقاضي']}], caption:'الخلاصة هنا' },
             join:    { type:'join', title:'INNER JOIN', kind:'inner', left:'Students', right:'Courses', sql:'SELECT * FROM Students s\nINNER JOIN Courses c ON s.CID = c.ID;', caption:'INNER JOIN بيرجّع المشترك بين الجدولين بس' }
         };
 
@@ -9100,6 +9170,13 @@ html, body {
             if (v.type === 'table' && (!Array.isArray(v.cols) || !Array.isArray(v.rows) || v.cols.length > 6 || v.rows.length > 8)) return 'table يحتاج cols (حتى 6) وrows (حتى 8).';
             if (v.type === 'compare' && (!v.left || !v.right)) return 'compare يحتاج left وright.';
             if (v.type === 'join' && ['inner','left','right','full','left_only','right_only'].indexOf(v.kind) < 0) return 'kind لازم يكون: inner / left / right / full / left_only / right_only.';
+            if (v.type === 'cards' && (!Array.isArray(v.items) || !v.items.length || v.items.length > 8)) return 'cards يحتاج items من 1 إلى 8.';
+            if (v.type === 'taccount' && (!Array.isArray(v.dr) || !Array.isArray(v.cr) || v.dr.length > 8 || v.cr.length > 8 || !(v.dr.length + v.cr.length))) return 'taccount يحتاج dr وcr (حتى 8 لكل جانب).';
+            if (v.type === 'calc' && (!Array.isArray(v.rows) || !v.rows.length || v.rows.length > 10)) return 'calc يحتاج rows من 1 إلى 10.';
+            if (v.type === 'bars' && (!Array.isArray(v.items) || !v.items.length || v.items.length > 6)) return 'bars يحتاج items من 1 إلى 6.';
+            if (v.type === 'split' && (!Array.isArray(v.parts) || v.parts.length < 2 || v.parts.length > 5)) return 'split يحتاج parts من 2 إلى 5.';
+            if (v.type === 'journal' && (!Array.isArray(v.lines) || !v.lines.length || v.lines.length > 8)) return 'journal يحتاج lines من 1 إلى 8.';
+            if (v.type === 'lists' && (!Array.isArray(v.groups) || !v.groups.length || v.groups.length > 4)) return 'lists يحتاج groups من 1 إلى 4.';
             return null;
         }
 
@@ -9183,6 +9260,54 @@ html, body {
                         (Array.isArray(col.items) ? col.items : []).map(function (it) { return '<li dir="auto">' + esc(it) + '</li>'; }).join('') + '</ul></div>';
                 });
                 h += '</div>';
+            } else if (v.type === 'cards') {
+                if (v.sub) h += '<div class="vs-sub">' + esc(v.sub) + '</div>';
+                v.items.forEach(function (it, k) {
+                    h += '<div class="vs-card vs-c' + (k % 5) + (hl.indexOf(k) >= 0 ? ' on' : '') + '" ' + _vsD(k, 0, 0.2) + '><div class="n">' + (k + 1) + '</div><div><h4>' + esc(it.t) + '</h4>' + (it.d ? '<p>' + esc(it.d) + '</p>' : '') + '</div></div>';
+                });
+            } else if (v.type === 'taccount') {
+                var side = function (arr, cls, hd, base) {
+                    var o = '<div class="vs-tcol ' + cls + '"><div class="hd">' + hd + '</div>';
+                    arr.forEach(function (r, k) { o += '<div class="vs-tr' + (r.hl ? ' on' : '') + '" ' + _vsD(k, base, 0.15) + '><span>' + esc(r.t) + '</span>' + (r.v != null && r.v !== '' ? '<b>' + esc(r.v) + '</b>' : '') + '</div>'; });
+                    return o + '</div>';
+                };
+                h += '<div class="vs-t">' + (v.acct || v.title ? '<span class="acct">' + esc(v.acct || v.title) + '</span>' : '') + (v.sub ? '<div class="vs-sub" style="margin:0 0 10px;">' + esc(v.sub) + '</div>' : '') +
+                    '<div class="vs-tgrid">' + side(v.dr, 'dr', 'منه (مدين)', 0.3) + side(v.cr, 'cr', 'له (دائن)', 0.6) + '</div>' +
+                    ((v.drTot || v.crTot) ? '<div class="vs-ttot"><span>' + esc(v.drTot || '') + '</span><span>' + esc(v.crTot || '') + '</span></div>' : '') + '</div>';
+            } else if (v.type === 'calc') {
+                if (v.sub) h += '<div class="vs-sub">' + esc(v.sub) + '</div>';
+                h += '<div class="vs-calc">';
+                v.rows.forEach(function (r, k) {
+                    h += '<div class="vs-cr' + (r.b ? ' b' : '') + (r.hl ? ' on' : '') + '" ' + _vsD(k, 0, 0.2) + '><span class="op">' + esc(r.op || '') + '</span><span class="lb">' + esc(r.l) + '</span><span class="vl">' + esc(r.v) + '</span></div>';
+                });
+                h += '</div>';
+            } else if (v.type === 'bars') {
+                var mx = Math.max.apply(null, v.items.map(function (b) { return Number(b.v) || 0; })) || 1;
+                h += '<div class="vs-bars">';
+                v.items.forEach(function (b, k) {
+                    var w = Math.max(4, Math.round(((Number(b.v) || 0) / mx) * 100));
+                    h += '<div class="vs-bar vs-c' + (k % 5) + '" ' + _vsD(k, 0, 0.35) + '><div class="top"><span>' + esc(b.l) + '</span><span>' + esc(b.s != null ? b.s : b.v) + '</span></div><div class="track"><div class="fill" style="width:' + w + '%; animation-delay:' + (k * 0.35 + 0.15).toFixed(2) + 's"></div></div></div>';
+                });
+                if (v.res) h += '<div class="vs-res' + (v.res.tone === 'bad' ? ' bad' : '') + '"><b>' + esc(v.res.t) + '</b>' + (v.res.d ? '<small>' + esc(v.res.d) + '</small>' : '') + '</div>';
+                h += '</div>';
+            } else if (v.type === 'split') {
+                h += '<div class="vs-bars">' + (v.label ? '<div style="font-weight:800;font-size:14px;">' + esc(v.label) + '</div>' : '') + '<div class="vs-seg">';
+                v.parts.forEach(function (pt, k) { h += '<i class="vs-c' + (k % 5) + '" style="flex:' + (Math.max(0.01, Number(pt.v) || 1)) + '"></i>'; });
+                h += '</div>';
+                v.parts.forEach(function (pt, k) { h += '<div class="vs-lg vs-c' + (k % 5) + '"><span class="sq"></span><span class="lb">' + esc(pt.l) + '</span><span class="vl">' + esc(pt.n != null ? pt.n : pt.v) + '</span></div>'; });
+                h += '</div>';
+            } else if (v.type === 'journal') {
+                h += '<div class="vs-j">';
+                v.lines.forEach(function (ln, k) {
+                    h += '<div class="vs-jl ' + (ln.k === 'cr' ? 'cr' : 'dr') + '" ' + _vsD(k, 0, 0.3) + '><span>' + esc(ln.a) + '</span>' + (ln.v != null && ln.v !== '' ? '<b>' + esc(ln.v) + '</b>' : '') + '</div>';
+                });
+                if (v.note) h += '<div class="vs-jnote">' + esc(v.note) + '</div>';
+                h += '</div>';
+            } else if (v.type === 'lists') {
+                v.groups.forEach(function (g, k) {
+                    h += '<div class="vs-lst vs-c' + (k % 5) + '" ' + _vsD(k, 0, 0.3) + '><h4>' + esc(g.h) + '</h4>' + (g.sub ? '<div class="ls">' + esc(g.sub) + '</div>' : '') + '<ul>' +
+                        (Array.isArray(g.items) ? g.items : []).map(function (it) { return '<li>' + esc(it) + '</li>'; }).join('') + '</ul></div>';
+                });
             } else if (v.type === 'join') {
                 var id = 'vsj' + Math.floor(Math.random() * 1e6), k = v.kind;
                 var fillL = (k === 'left' || k === 'full' || k === 'left_only'), fillR = (k === 'right' || k === 'full' || k === 'right_only');
