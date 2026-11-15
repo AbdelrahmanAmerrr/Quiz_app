@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AmerQuiz - نظام الامتحانات والكويزات</title>
+    <title>AmerQuiz - النظام الأكاديمي المطور</title>
     
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- خطوط الهوية البصرية الجديدة -->
@@ -1247,8 +1247,13 @@ html, body {
         ::view-transition-old(root), ::view-transition-new(root) { animation: none; mix-blend-mode: normal; }
         ::view-transition-old(root) { z-index: 1; }
         ::view-transition-new(root) { z-index: 2; }
-        #theme-toggle-btn i { display: inline-block; }
-        #theme-toggle-btn.spin i { animation: themeIconPop .5s ease; }
+        /* ليل -> نهار: الطبقة الليلية (القديمة) فوق وبتتسحب لجوه الأيقونة */
+        html.vt-to-light::view-transition-old(root) { z-index: 2; }
+        html.vt-to-light::view-transition-new(root) { z-index: 1; }
+        #theme-toggle-btn svg { width: 1em; height: 1em; display: block; }
+        #theme-toggle-btn.is-sun { color: #f5b301 !important; }
+        #theme-toggle-btn { display:flex; align-items:center; justify-content:center; }
+        #theme-toggle-btn.spin svg { animation: themeIconPop .5s ease; }
         @keyframes themeIconPop { 0% { transform: scale(.4) rotate(-90deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
     </style>
 
@@ -1268,7 +1273,7 @@ html, body {
         <div class="brand-wrap" onclick="showDashboardTab('dash')"><div class="logo-badge">A</div><span class="brand-name">Amer<span>Quiz</span></span></div>
         <div style="display: flex; align-items: center; gap: 15px;">
             <span id="header-social-link" style="display:contents;"></span>
-            <button id="theme-toggle-btn" onclick="toggleTheme(event)" aria-label="تبديل الوضع الليلي" style="background:none; border:none; color:var(--text-main); font-size:20px; cursor:pointer;"><i class="fa-solid fa-moon"></i></button>
+            <button id="theme-toggle-btn" onclick="toggleTheme(event)" aria-label="تبديل الوضع الليلي" style="background:none; border:none; color:var(--text-main); font-size:22px; cursor:pointer; padding:2px;"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z"/></svg></button>
             <button id="btn-goto-admin" onclick="showAdminLogin()" style="background:var(--warning); color:white; border:none; padding:6px 12px; border-radius:8px; font-weight:bold; cursor:pointer; display:none;">لوحة التحكم ⚙️</button>
         </div>
     </header>
@@ -8978,10 +8983,13 @@ html, body {
             }
         }
 
+        var _THEME_SUN = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4.3\" fill=\"currentColor\"/><g stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\"><line x1=\"19.20\" y1=\"12.00\" x2=\"22.00\" y2=\"12.00\"/><line x1=\"17.09\" y1=\"17.09\" x2=\"19.07\" y2=\"19.07\"/><line x1=\"12.00\" y1=\"19.20\" x2=\"12.00\" y2=\"22.00\"/><line x1=\"6.91\" y1=\"17.09\" x2=\"4.93\" y2=\"19.07\"/><line x1=\"4.80\" y1=\"12.00\" x2=\"2.00\" y2=\"12.00\"/><line x1=\"6.91\" y1=\"6.91\" x2=\"4.93\" y2=\"4.93\"/><line x1=\"12.00\" y1=\"4.80\" x2=\"12.00\" y2=\"2.00\"/><line x1=\"17.09\" y1=\"6.91\" x2=\"19.07\" y2=\"4.93\"/></g></svg>";
+        var _THEME_MOON = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z\"/></svg>";
         function _syncThemeIcon() {
             var b = document.getElementById('theme-toggle-btn'); if (!b) return;
             var dark = document.body.classList.contains('dark-mode');
-            b.innerHTML = '<i class="fa-solid ' + (dark ? 'fa-sun' : 'fa-moon') + '"></i>';
+            b.innerHTML = dark ? _THEME_SUN : _THEME_MOON;
+            b.classList.toggle('is-sun', dark);
         }
         function _applyTheme() {
             var dark = document.body.classList.toggle('dark-mode');
@@ -8995,17 +9003,23 @@ html, body {
             if (!document.startViewTransition || reduce) { _applyTheme(); return; }
             var btn = document.getElementById('theme-toggle-btn');
             var r = btn ? btn.getBoundingClientRect() : { left: innerWidth / 2, top: 0, width: 0, height: 0 };
-            var x = (ev && ev.clientX) || (r.left + r.width / 2);
-            var y = (ev && ev.clientY) || (r.top + r.height / 2);
+            var x = r.left + r.width / 2, y = r.top + r.height / 2;
             var radius = Math.hypot(Math.max(x, innerWidth - x), Math.max(y, innerHeight - y));
+            var toLight = document.body.classList.contains('dark-mode');
+            var root = document.documentElement;
+            root.classList.toggle('vt-to-light', toLight);
             var t;
-            try { t = document.startViewTransition(_applyTheme); } catch (e) { _applyTheme(); return; }
+            try { t = document.startViewTransition(_applyTheme); } catch (e) { root.classList.remove('vt-to-light'); _applyTheme(); return; }
+            var full = 'circle(' + radius + 'px at ' + x + 'px ' + y + 'px)';
+            var zero = 'circle(0px at ' + x + 'px ' + y + 'px)';
             t.ready.then(function () {
-                document.documentElement.animate(
-                    { clipPath: ['circle(0px at ' + x + 'px ' + y + 'px)', 'circle(' + radius + 'px at ' + x + 'px ' + y + 'px)'] },
-                    { duration: 650, easing: 'cubic-bezier(.4,0,.2,1)', pseudoElement: '::view-transition-new(root)' }
+                root.animate(
+                    { clipPath: toLight ? [full, zero] : [zero, full] },
+                    { duration: 650, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'forwards',
+                      pseudoElement: toLight ? '::view-transition-old(root)' : '::view-transition-new(root)' }
                 );
             }).catch(function () {});
+            t.finished.finally(function () { root.classList.remove('vt-to-light'); });
         }
     </script>
 
