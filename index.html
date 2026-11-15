@@ -8461,7 +8461,7 @@ html, body {
                 explanation: exp,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
-            if (_vsr.v) payload.visual = _vsr.v;
+            if (_vsr.v) payload.visual = _vsToStore(_vsr.v);
             else if (qId) payload.visual = firebase.firestore.FieldValue.delete();
 
             if (qId) {
@@ -8545,7 +8545,7 @@ html, body {
             document.getElementById('form-q-opt4').value = q.options[3] || "";
             document.getElementById('form-q-answer').value = q.answer;
             document.getElementById('form-q-exp').value = q.explanation || "";
-            document.getElementById('form-q-visual').value = q.visual ? JSON.stringify(q.visual, null, 1) : "";
+            document.getElementById('form-q-visual').value = q.visual ? JSON.stringify(_vsFromStore(q.visual), null, 1) : "";
             document.getElementById('btn-cancel-edit').style.display = "block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -9103,6 +9103,25 @@ html, body {
             return null;
         }
 
+        // Firestore مش بيقبل مصفوفة جوه مصفوفة، فصفوف الجدول بتتخزّن كـ [{c:[...]}] وبتتحوّل تاني عند العرض
+        function _vsToStore(v) {
+            if (v && v.type === 'table' && Array.isArray(v.rows)) {
+                var c = JSON.parse(JSON.stringify(v));
+                c.rows = c.rows.map(function (r) { return Array.isArray(r) ? { c: r } : r; });
+                return c;
+            }
+            return v;
+        }
+        function _vsFromStore(v) {
+            if (v && v.type === 'table' && Array.isArray(v.rows)) {
+                var c = JSON.parse(JSON.stringify(v));
+                c.rows = c.rows.map(function (r) { return (r && Array.isArray(r.c)) ? r.c : r; });
+                return c;
+            }
+            return v;
+        }
+        function _vsRowCells(r) { return Array.isArray(r) ? r : ((r && r.c) || []); }
+
         function _vsD(i, base, step) { return 'style="animation-delay:' + ((base || 0) + i * (step || 0.15)).toFixed(2) + 's"'; }
 
         function _vsRender(v) {
@@ -9152,7 +9171,7 @@ html, body {
                 h += '</tr></thead><tbody>';
                 v.rows.forEach(function (r, k) {
                     h += '<tr class="' + (hr.indexOf(k) >= 0 ? 'on' : '') + '" ' + _vsD(k, 0.1, 0.18) + '>';
-                    v.cols.forEach(function (c, j) { h += '<td dir="auto"' + (hc.indexOf(j) >= 0 ? ' class="hc"' : '') + '>' + esc(r[j] == null ? '' : r[j]) + '</td>'; });
+                    var rc = _vsRowCells(r); v.cols.forEach(function (c, j) { h += '<td dir="auto"' + (hc.indexOf(j) >= 0 ? ' class="hc"' : '') + '>' + esc(rc[j] == null ? '' : rc[j]) + '</td>'; });
                     h += '</tr>';
                 });
                 h += '</tbody></table></div>';
@@ -9290,7 +9309,7 @@ html, body {
                         var map = data.visuals || {};
                         chunk.forEach(function (q) {
                             var v = map[q.uid];
-                            if (v && !_vsValidate(v)) { updates.push({ q: q, data: { visual: v, visualAuto: true } }); done++; }
+                            if (v && !_vsValidate(v)) { updates.push({ q: q, data: { visual: _vsToStore(v), visualAuto: true } }); done++; }
                             else if (v === null) { updates.push({ q: q, data: { visualSkip: true } }); skipped++; }
                             else { failed++; } // مفيش رد على السؤال أو الشرح غير صالح: نسيبه للمحاولة الجاية
                         });
