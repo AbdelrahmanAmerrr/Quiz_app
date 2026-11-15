@@ -1255,6 +1255,59 @@ html, body {
         #theme-toggle-btn { display:flex; align-items:center; justify-content:center; }
         #theme-toggle-btn.spin svg { animation: themeIconPop .5s ease; }
         @keyframes themeIconPop { 0% { transform: scale(.4) rotate(-90deg); opacity: 0; } 100% { transform: scale(1) rotate(0); opacity: 1; } }
+        /* ═══ الشرح المرئي ═══ */
+        .vs-open-btn { display:inline-flex; align-items:center; gap:7px; margin-top:12px; padding:9px 16px; border-radius:99px; border:1px solid var(--primary); background:var(--primary-light); color:var(--primary-dark); font:inherit; font-weight:700; font-size:13.5px; cursor:pointer; }
+        body.dark-mode .vs-open-btn { color: var(--primary); }
+        #visual-sheet { position:fixed; inset:0; z-index:10050; background:var(--bg-main); display:none; flex-direction:column; }
+        #visual-sheet.open { display:flex; animation: vsIn .3s cubic-bezier(.4,0,.2,1); }
+        @keyframes vsIn { from { opacity:0; transform:translateY(28px); } to { opacity:1; transform:none; } }
+        .vs-head { display:flex; align-items:center; gap:10px; padding:calc(env(safe-area-inset-top,0px) + 10px) 14px 10px; border-bottom:1px solid var(--border); background:var(--card-bg); }
+        .vs-head .vs-h-txt { flex:1; min-width:0; }
+        .vs-head .vs-h-sub { font-size:11px; color:var(--text-muted); }
+        .vs-head .vs-h-title { font-weight:800; font-size:15px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .vs-ibtn { width:38px; height:38px; border-radius:50%; border:1px solid var(--border); background:none; color:var(--text-main); font-size:16px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+        #vs-body { flex:1; overflow-y:auto; padding:22px 16px calc(env(safe-area-inset-bottom,0px) + 28px); max-width:600px; width:100%; margin:0 auto; box-sizing:border-box; }
+        .vs-title { text-align:center; font-weight:800; font-size:17px; margin:6px 0 20px; }
+        .vs-pop { opacity:0; animation: vsPop .5s cubic-bezier(.2,.9,.3,1.2) forwards; }
+        @keyframes vsPop { from { opacity:0; transform:translateY(10px) scale(.92); } to { opacity:1; transform:none; } }
+        .vs-flow { display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+        .vs-chip { padding:9px 16px; border-radius:10px; border:1.5px solid var(--border); background:var(--card-bg); font-weight:700; font-size:14px; opacity:0; animation: vsPop .5s ease forwards; }
+        .vs-chip.on { border-color:var(--primary); background:var(--primary-light); box-shadow:0 0 0 3px var(--primary-light); }
+        .vs-arrow { color:var(--text-muted); font-size:20px; opacity:0; animation: vsPop .4s ease forwards; }
+        .vs-list { display:flex; flex-direction:column; gap:8px; }
+        .vs-row { display:flex; gap:12px; align-items:center; padding:11px 14px; border:1px solid var(--border); border-radius:10px; background:var(--card-bg); font-size:13.5px; opacity:0; animation: vsPop .5s ease forwards; }
+        .vs-row b { min-width:92px; font-family:monospace; font-size:13px; }
+        .vs-row.on { border-color:var(--primary); background:var(--primary-light); font-weight:700; }
+        .vs-cells { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; direction:ltr; margin:8px 0 22px; }
+        .vs-cell { display:flex; flex-direction:column; align-items:center; gap:5px; opacity:0; animation: vsPop .45s ease forwards; }
+        .vs-cell .box { min-width:46px; height:46px; padding:0 6px; box-sizing:border-box; border:2px solid var(--border); border-radius:8px; background:var(--card-bg); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
+        .vs-cell.on .box { border-color:var(--primary); background:var(--primary-light); box-shadow:0 0 0 3px var(--primary-light); }
+        .vs-cell .idx { font-size:11px; color:var(--text-muted); font-family:monospace; min-height:14px; }
+        .vs-cell.gap .box { border:none; background:none; font-size:20px; color:var(--text-muted); }
+        .vs-code { direction:ltr; text-align:left; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:13px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--card-bg); margin-bottom:16px; }
+        .vs-code .ln { display:flex; gap:10px; padding:7px 12px; opacity:0; animation: vsPop .4s ease forwards; white-space:pre-wrap; word-break:break-word; }
+        .vs-code .ln i { color:var(--text-muted); font-style:normal; min-width:18px; user-select:none; }
+        .vs-code .ln.on { background:var(--primary-light); box-shadow: inset 3px 0 0 var(--primary); font-weight:700; }
+        .vs-table-wrap { overflow-x:auto; margin-bottom:18px; }
+        .vs-tname { font-family:monospace; font-weight:800; margin-bottom:6px; direction:ltr; text-align:left; }
+        .vs-table { border-collapse:separate; border-spacing:0; width:100%; font-size:13px; border:1px solid var(--border); border-radius:10px; overflow:hidden; background:var(--card-bg); }
+        .vs-table th { background:var(--primary-light); font-weight:800; padding:9px 10px; border-bottom:1px solid var(--border); }
+        .vs-table td { padding:9px 10px; border-bottom:1px solid var(--border); text-align:center; }
+        .vs-table tr:last-child td { border-bottom:none; }
+        .vs-table tr { opacity:0; animation: vsPop .45s ease forwards; }
+        .vs-table tr.on td { background:var(--primary-light); font-weight:700; }
+        .vs-table .hc { background:var(--primary-light); font-weight:700; }
+        .vs-cmp { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+        .vs-col { border:1.5px solid var(--border); border-radius:12px; padding:12px; background:var(--card-bg); opacity:0; animation: vsPop .5s ease forwards; }
+        .vs-col h4 { margin:0 0 10px; font-size:14px; text-align:center; }
+        .vs-col.good { border-color:var(--success); } .vs-col.bad { border-color:var(--danger); }
+        .vs-col ul { margin:0; padding:0 18px 0 0; font-size:13px; line-height:1.9; }
+        .vs-join { display:block; margin:0 auto 14px; max-width:340px; width:100%; }
+        .vs-sql { direction:ltr; text-align:left; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:12.5px; padding:10px 12px; border:1px dashed var(--border); border-radius:10px; margin-bottom:14px; white-space:pre-wrap; background:var(--card-bg); }
+        .vs-notes { display:flex; flex-direction:column; gap:7px; margin-bottom:14px; }
+        .vs-note { font-size:13px; padding:9px 12px; border-radius:10px; background:var(--primary-light); border-right:3px solid var(--primary); opacity:0; animation: vsPop .5s ease forwards; }
+        .vs-caption { margin-top:14px; padding:12px 14px; border-radius:12px; border:1px solid var(--primary); background:var(--primary-light); font-size:13.5px; line-height:1.8; font-weight:600; opacity:0; animation: vsPop .5s ease 1s forwards; }
+        @media (prefers-reduced-motion: reduce) { .vs-pop, .vs-chip, .vs-arrow, .vs-row, .vs-cell, .vs-code .ln, .vs-table tr, .vs-col, .vs-note, .vs-caption { animation-duration:.01s !important; animation-delay:0s !important; } }
     </style>
 
 </head>
@@ -2133,6 +2186,22 @@ html, body {
                         <div class="admin-form-group"><input type="text" id="form-q-opt4" placeholder="الخيار الرابع..."></div>
                         <div class="admin-form-group"><input type="text" id="form-q-answer" placeholder="الإجابة الصحيحة (يجب أن تطابق نص الخيار تماماً)..."></div>
                         <div class="admin-form-group"><textarea id="form-q-exp" placeholder="التوضيح العلمي للاستفادة مابعد الحل..."></textarea></div>
+                        <details class="admin-form-group" style="border:1px dashed var(--border); border-radius:10px; padding:10px 12px;">
+                            <summary style="cursor:pointer; font-weight:700; font-size:13.5px;">🎨 الشرح المرئي (اختياري)</summary>
+                            <div style="display:flex; gap:8px; margin:10px 0;">
+                                <select id="form-q-visual-type" class="search-box" style="margin:0; flex:1;" onchange="_vsInsertTemplate()">
+                                    <option value="">إدراج قالب...</option>
+                                    <option value="flow">سلسلة خطوات (flow)</option>
+                                    <option value="cells">خانات/مصفوفة (cells)</option>
+                                    <option value="code">تتبّع كود (code)</option>
+                                    <option value="table">جدول (table)</option>
+                                    <option value="compare">مقارنة (compare)</option>
+                                    <option value="join">JOIN قواعد بيانات (join)</option>
+                                </select>
+                                <button type="button" class="ban-btn" style="background:var(--primary); color:#fff;" onclick="previewFormVisual()"><i class="fa-solid fa-eye"></i> معاينة</button>
+                            </div>
+                            <textarea id="form-q-visual" dir="ltr" rows="9" spellcheck="false" style="font-family:ui-monospace,Menlo,monospace; font-size:12px;" placeholder='{"type":"flow", ...}  — سيبه فاضي لو مفيش شرح مرئي'></textarea>
+                        </details>
                         <button class="btn-launch" style="background: var(--primary);" onclick="saveQuestionData()">حفظ السؤال بالسيرفر</button>
                         <button class="btn-launch" style="background: var(--danger); margin-top:10px; display:none;" id="btn-cancel-edit" onclick="resetQuestionForm()">إلغاء التعديل</button>
                     </div>
@@ -3766,6 +3835,7 @@ html, body {
                         options: d.options,
                         answer: d.answer,
                         explanation: d.explanation || '',
+                        ...(d.visual ? { visual: d.visual } : {}),
                         chapter: d.chapter || null, // ✅ [جديد] null = بدون فصل، بيظهر في "كل الفصول" فقط
                         // ✅ [تحسين] عشان نقدر نديله سياق اجتماعي في شات المراجعة ("أغلب زمايلك غلطوا فيه")
                         correctCount: d.correctCount || 0,
@@ -4172,6 +4242,7 @@ html, body {
             });
             
             document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل.";
+            _setArenaVisual(questionObj);
             const expBoxFrozen = document.getElementById('arena-explanation-box');
             expBoxFrozen.style.display = "block";
             _fadeInEl(expBoxFrozen);
@@ -4261,6 +4332,7 @@ html, body {
             }
 
             document.getElementById('arena-explanation-text').innerText = questionObj.explanation || "لا يوجد توضيح علمي مُسجل لهذا السؤال من قبل المشرف.";
+            _setArenaVisual(questionObj);
             const expBoxAnswered = document.getElementById('arena-explanation-box');
             expBoxAnswered.style.display = "block";
             _fadeInEl(expBoxAnswered);
@@ -8361,6 +8433,8 @@ html, body {
             const chapter = document.getElementById('form-q-chapter').value; // ✅ [جديد] فارغ = بدون فصل (توافق كامل مع الوضع الحالي)
 
             if(!text || !o1 || !o2 || !ans) { showToast("⚠️ يرجى ملء نص السؤال والخيارات والإجابة الصحيحة على الأقل.", "error"); return; }
+            const _vsr = _vsReadForm();
+            if (_vsr.err) { showToast("⚠️ الشرح المرئي: " + _vsr.err, "error"); return; }
 
             const payload = {
                 subject: subject,
@@ -8371,6 +8445,8 @@ html, body {
                 explanation: exp,
                 createdAt: firebase.firestore.FieldValue.serverTimestamp()
             };
+            if (_vsr.v) payload.visual = _vsr.v;
+            else if (qId) payload.visual = firebase.firestore.FieldValue.delete();
 
             if (qId) {
                 // تعديل: إيجاد السؤال القديم في الكاش لتحديث العداد إن تغيرت المادة
@@ -8453,6 +8529,7 @@ html, body {
             document.getElementById('form-q-opt4').value = q.options[3] || "";
             document.getElementById('form-q-answer').value = q.answer;
             document.getElementById('form-q-exp').value = q.explanation || "";
+            document.getElementById('form-q-visual').value = q.visual ? JSON.stringify(q.visual, null, 1) : "";
             document.getElementById('btn-cancel-edit').style.display = "block";
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
@@ -8493,6 +8570,7 @@ html, body {
             document.getElementById('form-q-opt4').value = "";
             document.getElementById('form-q-answer').value = "";
             document.getElementById('form-q-exp').value = "";
+            document.getElementById('form-q-visual').value = "";
             const chapterSel = document.getElementById('form-q-chapter');
             if (chapterSel) chapterSel.value = "";
             document.getElementById('btn-cancel-edit').style.display = "none";
@@ -8985,6 +9063,176 @@ html, body {
 
         var _THEME_SUN = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"12\" r=\"4.3\" fill=\"currentColor\"/><g stroke=\"currentColor\" stroke-width=\"2.1\" stroke-linecap=\"round\"><line x1=\"19.20\" y1=\"12.00\" x2=\"22.00\" y2=\"12.00\"/><line x1=\"17.09\" y1=\"17.09\" x2=\"19.07\" y2=\"19.07\"/><line x1=\"12.00\" y1=\"19.20\" x2=\"12.00\" y2=\"22.00\"/><line x1=\"6.91\" y1=\"17.09\" x2=\"4.93\" y2=\"19.07\"/><line x1=\"4.80\" y1=\"12.00\" x2=\"2.00\" y2=\"12.00\"/><line x1=\"6.91\" y1=\"6.91\" x2=\"4.93\" y2=\"4.93\"/><line x1=\"12.00\" y1=\"4.80\" x2=\"12.00\" y2=\"2.00\"/><line x1=\"17.09\" y1=\"6.91\" x2=\"19.07\" y2=\"4.93\"/></g></svg>";
         var _THEME_MOON = "<svg viewBox=\"0 0 24 24\" aria-hidden=\"true\"><path fill=\"currentColor\" d=\"M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.39 5.39 0 0 1-4.4 2.26 5.4 5.4 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z\"/></svg>";
+        /* ═══════════ الشرح المرئي (Visual Explanation) ═══════════ */
+        var _VS_TYPES = ['flow','cells','code','table','compare','join'];
+        var _VS_TEMPLATES = {
+            flow:    { type:'flow', title:'دورة حياة الفورم', steps:[{t:'Load',d:'تحميل الفورم في الذاكرة'},{t:'Shown',d:'ظهور الفورم بعد تحميله'},{t:'Activated',d:'تنشيط نافذة الفورم'}], active:1, caption:'اكتب الخلاصة اللي الطالب يحفظها هنا' },
+            cells:   { type:'cells', title:'خانات المصفوفة Pay(50)', cells:['0','1','2','…','49','50'], hl:[5], caption:'المصفوفة بتبدأ من 0، فـ Pay(50) فيها 51 خانة' },
+            code:    { type:'code', title:'تتبّع الكود', lines:['Dim Pay(50) As String','Pay(0) = "Ali"'], hl:[0], notes:[{l:0,t:'تعريف مصفوفة فيها 51 خانة من 0 إلى 50'}], caption:'الخلاصة هنا' },
+            table:   { type:'table', title:'جدول الطلاب', name:'Students', cols:['ID','Name','Dept'], rows:[['1','Ali','IT'],['2','Sara','HR'],['3','Omar','IT']], hr:[0,2], caption:'WHERE Dept = \'IT\' بيرجّع الصفوف المظلّلة' },
+            compare: { type:'compare', title:'الفرق بين الخاصيتين', left:{h:'Enabled = False',tone:'bad',items:['الزر ظاهر','لا يستجيب للضغط']}, right:{h:'Visible = False',tone:'bad',items:['الزر مخفي تماماً']}, caption:'الخلاصة هنا' },
+            join:    { type:'join', title:'INNER JOIN', kind:'inner', left:'Students', right:'Courses', sql:'SELECT * FROM Students s\nINNER JOIN Courses c ON s.CID = c.ID;', caption:'INNER JOIN بيرجّع المشترك بين الجدولين بس' }
+        };
+
+        function _vsValidate(v) {
+            if (!v || typeof v !== 'object' || Array.isArray(v)) return 'الشرح لازم يكون كائن JSON.';
+            if (_VS_TYPES.indexOf(v.type) < 0) return 'نوع الشرح غير معروف. المسموح: ' + _VS_TYPES.join(' / ');
+            if (JSON.stringify(v).length > 3000) return 'الشرح كبير (أكتر من 3000 حرف). اختصره.';
+            if (v.type === 'flow'  && (!Array.isArray(v.steps) || !v.steps.length || v.steps.length > 8)) return 'flow يحتاج steps من 1 إلى 8.';
+            if (v.type === 'cells' && (!Array.isArray(v.cells) || !v.cells.length || v.cells.length > 20)) return 'cells يحتاج cells من 1 إلى 20.';
+            if (v.type === 'code'  && (!Array.isArray(v.lines) || !v.lines.length || v.lines.length > 14)) return 'code يحتاج lines من 1 إلى 14.';
+            if (v.type === 'table' && (!Array.isArray(v.cols) || !Array.isArray(v.rows) || v.cols.length > 6 || v.rows.length > 8)) return 'table يحتاج cols (حتى 6) وrows (حتى 8).';
+            if (v.type === 'compare' && (!v.left || !v.right)) return 'compare يحتاج left وright.';
+            if (v.type === 'join' && ['inner','left','right','full','left_only','right_only'].indexOf(v.kind) < 0) return 'kind لازم يكون: inner / left / right / full / left_only / right_only.';
+            return null;
+        }
+
+        function _vsD(i, base, step) { return 'style="animation-delay:' + ((base || 0) + i * (step || 0.15)).toFixed(2) + 's"'; }
+
+        function _vsRender(v) {
+            var h = '', i;
+            var hl = Array.isArray(v.hl) ? v.hl : [];
+            if (v.type === 'flow') {
+                h += '<div class="vs-flow" dir="ltr">';
+                v.steps.forEach(function (s, k) {
+                    var o = (typeof s === 'string') ? { t: s } : s;
+                    if (k) h += '<span class="vs-arrow" ' + _vsD(k, -0.1, 0.22) + '>›</span>';
+                    h += '<div class="vs-chip' + (v.active === k ? ' on' : '') + '" ' + _vsD(k, 0, 0.22) + '>' + esc(o.t) + '</div>';
+                });
+                h += '</div>';
+                if (v.steps.some(function (s) { return s && typeof s === 'object' && s.d; })) {
+                    h += '<div class="vs-list">';
+                    v.steps.forEach(function (s, k) {
+                        if (s && typeof s === 'object' && s.d) h += '<div class="vs-row' + (v.active === k ? ' on' : '') + '" ' + _vsD(k, 0.6, 0.15) + '><b dir="ltr">' + esc(s.t) + '</b><span>' + esc(s.d) + '</span></div>';
+                    });
+                    h += '</div>';
+                }
+            } else if (v.type === 'cells') {
+                h += '<div class="vs-cells">';
+                v.cells.forEach(function (c, k) {
+                    var parts = String(c).split('|');
+                    var isGap = parts[0] === '…' || parts[0] === '...';
+                    h += '<div class="vs-cell' + (isGap ? ' gap' : '') + (hl.indexOf(k) >= 0 ? ' on' : '') + '" ' + _vsD(k, 0, 0.1) + '><div class="box">' + (isGap ? '…' : esc(parts.length > 1 ? parts[1] : '')) + '</div><div class="idx">' + (isGap ? '' : esc(parts[0])) + '</div></div>';
+                });
+                h += '</div>';
+            } else if (v.type === 'code') {
+                h += '<div class="vs-code">';
+                v.lines.forEach(function (ln, k) {
+                    h += '<div class="ln' + (hl.indexOf(k) >= 0 ? ' on' : '') + '" ' + _vsD(k, 0, 0.18) + '><i>' + (k + 1) + '</i><span>' + esc(ln) + '</span></div>';
+                });
+                h += '</div>';
+                if (Array.isArray(v.notes) && v.notes.length) {
+                    h += '<div class="vs-notes">';
+                    v.notes.forEach(function (n, k) {
+                        h += '<div class="vs-note" ' + _vsD(k, v.lines.length * 0.18 + 0.2, 0.25) + '>' + (typeof n.l === 'number' ? '<b dir="ltr">L' + (n.l + 1) + '</b> — ' : '') + esc(n.t) + '</div>';
+                    });
+                    h += '</div>';
+                }
+            } else if (v.type === 'table') {
+                var hr = Array.isArray(v.hr) ? v.hr : [], hc = Array.isArray(v.hc) ? v.hc : [];
+                if (v.name) h += '<div class="vs-tname">' + esc(v.name) + '</div>';
+                h += '<div class="vs-table-wrap"><table class="vs-table"><thead><tr>';
+                v.cols.forEach(function (c, k) { h += '<th' + (hc.indexOf(k) >= 0 ? ' class="hc"' : '') + '>' + esc(c) + '</th>'; });
+                h += '</tr></thead><tbody>';
+                v.rows.forEach(function (r, k) {
+                    h += '<tr class="' + (hr.indexOf(k) >= 0 ? 'on' : '') + '" ' + _vsD(k, 0.1, 0.18) + '>';
+                    v.cols.forEach(function (c, j) { h += '<td dir="auto"' + (hc.indexOf(j) >= 0 ? ' class="hc"' : '') + '>' + esc(r[j] == null ? '' : r[j]) + '</td>'; });
+                    h += '</tr>';
+                });
+                h += '</tbody></table></div>';
+            } else if (v.type === 'compare') {
+                h += '<div class="vs-cmp">';
+                [v.right, v.left].forEach(function (col, k) {
+                    if (!col) return;
+                    h += '<div class="vs-col ' + (col.tone === 'good' ? 'good' : col.tone === 'bad' ? 'bad' : '') + '" ' + _vsD(k, 0, 0.3) + '><h4 dir="auto">' + esc(col.h || '') + '</h4><ul>' +
+                        (Array.isArray(col.items) ? col.items : []).map(function (it) { return '<li dir="auto">' + esc(it) + '</li>'; }).join('') + '</ul></div>';
+                });
+                h += '</div>';
+            } else if (v.type === 'join') {
+                var id = 'vsj' + Math.floor(Math.random() * 1e6), k = v.kind;
+                var fillL = (k === 'left' || k === 'full' || k === 'left_only'), fillR = (k === 'right' || k === 'full' || k === 'right_only');
+                var inter = (k === 'inner' || k === 'left' || k === 'right' || k === 'full');
+                h += '<svg class="vs-join vs-pop" viewBox="0 0 300 170" role="img" aria-label="JOIN">' +
+                    '<defs><clipPath id="' + id + 'L"><circle cx="112" cy="85" r="62"/></clipPath></defs>' +
+                    '<circle cx="112" cy="85" r="62" fill="' + (fillL ? 'var(--primary)' : 'none') + '" fill-opacity=".38"/>' +
+                    '<circle cx="188" cy="85" r="62" fill="' + (fillR ? 'var(--primary)' : 'none') + '" fill-opacity=".38"/>' +
+                    (inter ? '<circle cx="188" cy="85" r="62" fill="var(--primary)" fill-opacity=".45" clip-path="url(#' + id + 'L)"/>' : '') +
+                    '<circle cx="112" cy="85" r="62" fill="none" stroke="var(--text-main)" stroke-width="2"/>' +
+                    '<circle cx="188" cy="85" r="62" fill="none" stroke="var(--text-main)" stroke-width="2"/>' +
+                    '<text x="72" y="90" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text-main)">' + esc(v.left || 'A') + '</text>' +
+                    '<text x="228" y="90" text-anchor="middle" font-size="14" font-weight="700" fill="var(--text-main)">' + esc(v.right || 'B') + '</text></svg>';
+                if (v.sql) h += '<div class="vs-sql">' + esc(v.sql) + '</div>';
+            }
+            return h;
+        }
+
+        function _vsEnsureSheet() {
+            var el = document.getElementById('visual-sheet');
+            if (el) return el;
+            el = document.createElement('div');
+            el.id = 'visual-sheet';
+            el.setAttribute('role', 'dialog');
+            el.innerHTML = '<div class="vs-head"><div class="vs-h-txt"><div class="vs-h-sub">الشرح المرئي</div><div class="vs-h-title" id="vs-h-title"></div></div>' +
+                '<button type="button" class="vs-ibtn" aria-label="إعادة" onclick="_vsPaint()"><i class="fa-solid fa-rotate-right"></i></button>' +
+                '<button type="button" class="vs-ibtn" aria-label="إغلاق" onclick="closeVisualSheet()"><i class="fa-solid fa-xmark"></i></button></div><div id="vs-body"></div>';
+            document.body.appendChild(el);
+            return el;
+        }
+        function _vsPaint() {
+            var v = window._vsCurrent; if (!v) return;
+            document.getElementById('vs-h-title').textContent = v.title || '';
+            var body = document.getElementById('vs-body');
+            body.innerHTML = (v.title ? '<div class="vs-title">' + esc(v.title) + '</div>' : '') + _vsRender(v) + (v.caption ? '<div class="vs-caption">💡 ' + esc(v.caption) + '</div>' : '');
+            body.scrollTop = 0;
+        }
+        function openVisualSheet(v) {
+            if (!v || _vsValidate(v)) return;
+            window._vsCurrent = v;
+            var el = _vsEnsureSheet();
+            el.classList.add('open');
+            document.body.style.overflow = 'hidden';
+            _vsPaint();
+        }
+        function closeVisualSheet() {
+            var el = document.getElementById('visual-sheet');
+            if (el) el.classList.remove('open');
+            document.body.style.overflow = '';
+        }
+        function _setArenaVisual(q) {
+            var box = document.getElementById('arena-explanation-box'); if (!box) return;
+            var b = document.getElementById('arena-visual-btn');
+            if (!b) {
+                b = document.createElement('button');
+                b.id = 'arena-visual-btn'; b.type = 'button'; b.className = 'vs-open-btn';
+                b.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> الشرح المرئي';
+                b.onclick = function () { openVisualSheet(window._arenaVisual); };
+                box.appendChild(b);
+            }
+            window._arenaVisual = (q && q.visual && !_vsValidate(q.visual)) ? q.visual : null;
+            b.style.display = window._arenaVisual ? 'inline-flex' : 'none';
+        }
+        // أدوات الأدمن
+        function _vsInsertTemplate() {
+            var sel = document.getElementById('form-q-visual-type'), ta = document.getElementById('form-q-visual');
+            if (!sel || !sel.value || !_VS_TEMPLATES[sel.value]) return;
+            ta.value = JSON.stringify(_VS_TEMPLATES[sel.value], null, 1);
+            sel.value = '';
+        }
+        function _vsReadForm() {
+            var raw = document.getElementById('form-q-visual').value.trim();
+            if (!raw) return { v: null };
+            var v;
+            try { v = JSON.parse(raw); } catch (e) { return { err: 'JSON غير صالح: ' + e.message }; }
+            var err = _vsValidate(v);
+            return err ? { err: err } : { v: v };
+        }
+        function previewFormVisual() {
+            var r = _vsReadForm();
+            if (r.err) { showToast('⚠️ ' + r.err, 'error'); return; }
+            if (!r.v) { showToast('اكتب الشرح أو اختار قالب الأول.', 'error'); return; }
+            openVisualSheet(r.v);
+        }
+
         function _syncThemeIcon() {
             var b = document.getElementById('theme-toggle-btn'); if (!b) return;
             var dark = document.body.classList.contains('dark-mode');
