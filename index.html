@@ -9291,8 +9291,8 @@ html, body {
                         chunk.forEach(function (q) {
                             var v = map[q.uid];
                             if (v && !_vsValidate(v)) { updates.push({ q: q, data: { visual: v, visualAuto: true } }); done++; }
-                            else if (v === null || v === undefined) { updates.push({ q: q, data: { visualSkip: true } }); skipped++; }
-                            else { failed++; } // رجع شرح غير صالح: نسيبه للمحاولة الجاية
+                            else if (v === null) { updates.push({ q: q, data: { visualSkip: true } }); skipped++; }
+                            else { failed++; } // مفيش رد على السؤال أو الشرح غير صالح: نسيبه للمحاولة الجاية
                         });
                     } catch (e) { failed += chunk.length; showToast('خطأ اتصال: ' + e.message, 'error'); }
                 }
