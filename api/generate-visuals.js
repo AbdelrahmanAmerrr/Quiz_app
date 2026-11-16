@@ -70,6 +70,27 @@ function validateVisual(v) {
     return false;
 }
 
+// يقرأ رد خطأ 429/503 من Gemini: كام ثانية ننتظر، وهل الحد يومي ولا بالدقيقة
+function parseQuotaError(errJson, status) {
+    let retryAfter = null;
+    let daily = false;
+    const details = errJson?.error?.details || [];
+    for (const d of details) {
+        if (d && d.retryDelay) {
+            const m = String(d.retryDelay).match(/([\d.]+)s/);
+            if (m) retryAfter = Math.ceil(parseFloat(m[1]));
+        }
+        if (d && Array.isArray(d.violations)) {
+            for (const vi of d.violations) {
+                if (/PerDay/i.test(String(vi.quotaId || '') + String(vi.quotaMetric || ''))) daily = true;
+            }
+        }
+    }
+    if (!daily && /per day|daily/i.test(String(errJson?.error?.message || ''))) daily = true;
+    if (retryAfter == null) retryAfter = status === 503 ? 20 : 60;
+    return { retryAfter, daily };
+}
+
 function clip(s) {
     return String(s == null ? '' : s).slice(0, MAX_FIELD_LENGTH);
 }
@@ -203,31 +224,57 @@ ${promptQuestions}
 أعد الإجابة بصيغة JSON فقط، بدون أي نص قبلها أو بعدها، وبدون backticks، مصفوفة بنفس عدد الأسئلة بالضبط:
 [{"i":0,"visual":{...} أو null},{"i":1,"visual":null}]`;
 
-        // ── ٤) نداء Gemini ──
-        const geminiResponse = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
-            {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 0.3, responseMimeType: 'application/json' }
-                })
-            }
-        );
+        // ── ٤) نداء Gemini مع بديل تلقائي ──
+        // لكل موديل حصة مجانية مستقلة: لو Flash وصل حده نجرّب Flash-Lite (حصته اليومية أكبر).
+        // المحاسبة بتفضل على Flash بس لأن فيها حسابات أرقام، والموديل الأخف أضعف فيها.
+        const MODELS = subject === 'corporate_accounting'
+            ? ['gemini-2.5-flash']
+            : ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
 
-        if (!geminiResponse.ok) {
-            let friendlyMsg = `فشل الاتصال بخدمة الذكاء الاصطناعي (رمز الخطأ: ${geminiResponse.status})`;
-            try {
-                const errJson = await geminiResponse.json();
-                const status = errJson?.error?.status;
-                if (geminiResponse.status === 429 || status === 'RESOURCE_EXHAUSTED') {
-                    friendlyMsg = '⏳ تم تجاوز الحد المجاني المسموح من Gemini مؤقتاً. انتظر دقيقة وحاول مرة أخرى.';
-                } else if (errJson?.error?.message) {
-                    friendlyMsg = 'فشل الاتصال بخدمة الذكاء الاصطناعي: ' + String(errJson.error.message).slice(0, 150);
+        let geminiResponse = null;
+        let usedModel = null;
+        let quotaInfo = null;
+
+        for (const model of MODELS) {
+            const r = await fetch(
+                `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: { temperature: 0.3, responseMimeType: 'application/json' }
+                    })
                 }
-            } catch (e) { /* الرد مش JSON صالح */ }
+            );
+            if (r.ok) { geminiResponse = r; usedModel = model; break; }
+
+            if (r.status === 429 || r.status === 503) {
+                // حد مؤقت أو ضغط على الخدمة: نقرأ المدة المقترحة ونوع الحد (دقيقة/يوم) ونجرّب الموديل التالي
+                let errJson = null;
+                try { errJson = await r.json(); } catch (e) { /* مش JSON */ }
+                quotaInfo = parseQuotaError(errJson, r.status);
+                continue;
+            }
+
+            // أي خطأ آخر (مفتاح غلط، طلب مرفوض...) مفيش فايدة من البديل
+            let friendlyMsg = `فشل الاتصال بخدمة الذكاء الاصطناعي (رمز الخطأ: ${r.status})`;
+            try {
+                const errJson = await r.json();
+                if (errJson?.error?.message) friendlyMsg = 'فشل الاتصال بخدمة الذكاء الاصطناعي: ' + String(errJson.error.message).slice(0, 150);
+            } catch (e) { /* مش JSON */ }
             return res.status(502).json({ error: friendlyMsg });
+        }
+
+        if (!geminiResponse) {
+            const q = quotaInfo || { retryAfter: 60, daily: false };
+            return res.status(429).json({
+                error: q.daily
+                    ? '⏳ خلصت الحصة اليومية المجانية من Gemini. بتتجدد منتصف الليل بتوقيت المحيط الهادئ (حوالي 10 صباحاً بتوقيت القاهرة). اللي اتولّد اتحفظ، كمّل بعدها.'
+                    : '⏳ تم تجاوز الحد المجاني المسموح من Gemini مؤقتاً (حد الدقيقة).',
+                retryAfter: q.retryAfter || 60,
+                daily: !!q.daily
+            });
         }
 
         const geminiData = await geminiResponse.json();
@@ -259,7 +306,7 @@ ${promptQuestions}
             // غير صالح: لا نضيفه، فالفرونت يحسبه فاشل ويسيبه للمرة الجاية
         }
 
-        return res.status(200).json({ visuals, subject });
+        return res.status(200).json({ visuals, subject, model: usedModel });
 
     } catch (err) {
         return res.status(500).json({ error: 'خطأ داخلي في الخادم: ' + err.message });
