@@ -1407,6 +1407,27 @@ html, body {
         .vs-mx b { display:block; color:var(--cc); font-size:14px; } .vs-mx small { color:var(--text-muted); font-size:12px; line-height:1.6; display:block; }
         .vs-mxl { text-align:center; font-size:12px; font-weight:800; color:var(--text-muted); margin:4px 0 12px; }
         @media (prefers-reduced-motion: reduce) { .vs-draw, .vs-fade, .vs-nest, .vs-fc, .vs-expr, .vs-pr, .vs-vl, .vs-lv, .vs-cyc .nd, .vs-tf, .vs-mx > div { animation-duration:.01s !important; animation-delay:0s !important; } }
+        /* قوالب بنص HTML بيلتف (بدل نص SVG اللي بيخرج برّه الشاشة) */
+        .vs-tl { margin-bottom:14px; } .vs-tl-arc .t { text-align:center; font-weight:700; font-size:12.5px; line-height:1.5; margin-bottom:2px; }
+        .vs-tl-arc svg { display:block; width:100%; height:30px; overflow:visible; }
+        .vs-tl .r { display:grid; text-align:center; }
+        .vs-tl .lb div { font-weight:800; font-size:12.5px; line-height:1.5; padding:0 3px; align-self:end; color:var(--cc, var(--text-main)); }
+        .vs-tl .dots { position:relative; height:24px; align-items:center; margin:4px 0; }
+        .vs-tl .dots::before { content:''; position:absolute; left:calc(50% / var(--n) - 14px); right:calc(50% / var(--n) - 14px); top:50%; height:3px; margin-top:-1.5px; border-radius:2px; background:var(--text-main); }
+        .vs-tl .dots div { display:flex; justify-content:center; position:relative; z-index:1; }
+        .vs-tl .dots i { width:10px; height:10px; border-radius:50%; background:var(--text-muted); display:block; }
+        .vs-tl .dots i.big { width:18px; height:18px; background:var(--cc); }
+        .vs-tl .yr div { font-size:11.5px; font-weight:600; color:var(--text-muted); line-height:1.5; padding:0 3px; }
+        .vs-tl .yr div[class*="vs-c"] { color:var(--cc); font-weight:800; font-size:13.5px; }
+        .vs-sc { position:relative; width:100%; max-width:380px; aspect-ratio:300/200; margin:0 auto 10px; }
+        .vs-sc svg { position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+        .vs-sc .pl { position:absolute; width:34%; transform:translateX(-50%); box-sizing:border-box; padding:7px 6px; border:2.5px solid var(--cc); border-radius:10px; background:var(--card-bg); text-align:center; line-height:1.5; }
+        .vs-sc .pl b { display:block; font-size:12px; color:var(--cc); } .vs-sc .pl small { display:block; font-size:11px; color:var(--text-muted); }
+        .vs-vn { position:relative; width:100%; max-width:380px; aspect-ratio:300/160; margin:0 auto 14px; }
+        .vs-vn svg { position:absolute; inset:0; width:100%; height:100%; }
+        .vs-vn .lbl { position:absolute; top:50%; width:24%; transform:translate(-50%,-50%); text-align:center; font-size:12px; font-weight:800; line-height:1.4; }
+        .vs-axl { max-width:380px; margin:0 auto 4px; font-size:12px; font-weight:700; text-align:start; direction:ltr; }
+        .vs-axl.x { text-align:end; margin:-8px auto 14px; }
     </style>
 
 </head>
@@ -9390,16 +9411,14 @@ html, body {
                 };
                 h += nest(v.box, 0, 0);
             } else if (v.type === 'timeline') {
-                var pts = v.points, n = pts.length, X = function (i) { return 34 + i * 232 / (n - 1); };
-                var tl = '<svg class="vs-svg" viewBox="0 0 300 140" dir="ltr"><path d="M20 82H282" pathLength="1" class="vs-draw" style="fill:none;stroke:var(--text-main);stroke-width:3;stroke-linecap:round"/>';
-                if (v.arc) tl += '<g class="vs-fade" style="animation-delay:1s"><path d="M' + X(0) + ' 50Q150 -6 ' + X(n - 1) + ' 50" style="fill:none;stroke:var(--text-main);stroke-width:2"/><text x="150" y="22" text-anchor="middle" style="font-size:12px;font-weight:700">' + esc(v.arc) + '</text></g>';
-                pts.forEach(function (pt, i) {
-                    var end = (i === 0 || i === n - 1 || pt.hl), cls = i === 0 ? 'vs-c0' : (i === n - 1 ? 'vs-c2' : (pt.hl ? 'vs-c4' : ''));
-                    tl += '<g class="vs-fade ' + cls + '" style="animation-delay:' + (i * 0.15).toFixed(2) + 's"><circle cx="' + X(i) + '" cy="82" r="' + (end ? 9 : 5) + '" style="fill:' + (cls ? 'var(--cc)' : 'var(--text-muted)') + '"/>' +
-                        '<text x="' + X(i) + '" y="' + (end ? 112 : 108) + '" text-anchor="middle" style="font-size:' + (end ? 15 : 11) + 'px;font-weight:' + (end ? 800 : 600) + ';' + (cls ? 'fill:var(--cc)' : '') + '">' + esc(pt.y) + '</text>' +
-                        (pt.l ? '<text x="' + X(i) + '" y="68" text-anchor="middle" style="font-size:12px;font-weight:800;' + (cls ? 'fill:var(--cc)' : '') + '">' + esc(pt.l) + '</text>' : '') + '</g>';
-                });
-                h += tl + '</svg>';
+                var pts = v.points, n = pts.length;
+                var cols = 'grid-template-columns:repeat(' + n + ',1fr);';
+                var tcls = function (i, pt) { return i === 0 ? 'vs-c0' : (i === n - 1 ? 'vs-c2' : (pt.hl ? 'vs-c4' : '')); };
+                h += '<div class="vs-tl" dir="ltr" style="--n:' + n + '">';
+                if (v.arc) h += '<div class="vs-tl-arc vs-fade" style="padding:0 ' + (50 / n).toFixed(2) + '%;animation-delay:1s"><div class="t" dir="auto">' + esc(v.arc) + '</div><svg viewBox="0 0 100 30" preserveAspectRatio="none"><path d="M0 30Q50 -12 100 30" vector-effect="non-scaling-stroke" style="fill:none;stroke:var(--text-main);stroke-width:2"/></svg></div>';
+                h += '<div class="r lb" style="' + cols + '">' + pts.map(function (pt, i) { return '<div class="' + tcls(i, pt) + '" dir="auto">' + (pt.l ? esc(pt.l) : '') + '</div>'; }).join('') + '</div>';
+                h += '<div class="r dots" style="' + cols + '">' + pts.map(function (pt, i) { var c = tcls(i, pt); return '<div class="' + c + ' vs-fade" style="animation-delay:' + (i * 0.15).toFixed(2) + 's"><i class="' + (c ? 'big' : '') + '"></i></div>'; }).join('') + '</div>';
+                h += '<div class="r yr" style="' + cols + '">' + pts.map(function (pt, i) { return '<div class="' + tcls(i, pt) + ' vs-fade" dir="auto" style="animation-delay:' + (i * 0.15 + 0.1).toFixed(2) + 's">' + esc(pt.y) + '</div>'; }).join('') + '</div></div>';
             } else if (v.type === 'formula') {
                 h += '<div class="vs-fg">';
                 v.parts.forEach(function (pt, k) {
@@ -9416,21 +9435,18 @@ html, body {
                 }
             } else if (v.type === 'scale') {
                 var th = (v.heavy === 'left' ? 10 : v.heavy === 'right' ? -10 : 0) * Math.PI / 180;
-                var dx = 98 * Math.cos(th), dy = 98 * Math.sin(th);
-                var lx = 150 - dx, ly = 52 + dy, rx = 150 + dx, ry = 52 - dy;
+                var dx = 96 * Math.cos(th), dy = 96 * Math.sin(th);
+                var lx = +(150 - dx).toFixed(1), ly = +(52 + dy).toFixed(1), rx = +(150 + dx).toFixed(1), ry = +(52 - dy).toFixed(1);
                 var plate = function (cx, cy, o, cc, d) {
-                    return '<g class="vs-fade vs-c' + cc + '" style="animation-delay:' + d + 's"><path d="M' + cx + ' ' + cy + 'V' + (cy + 26) + '" style="stroke:var(--text-main);stroke-width:2;fill:none"/>' +
-                        '<rect x="' + (cx - 52) + '" y="' + (cy + 26) + '" width="104" height="48" rx="8" style="fill:var(--card-bg);stroke:var(--cc);stroke-width:2.5"/>' +
-                        '<text x="' + cx + '" y="' + (cy + 47) + '" text-anchor="middle" style="font-size:12px;font-weight:800;fill:var(--cc)">' + esc(o.l || '') + '</text>' +
-                        '<text x="' + cx + '" y="' + (cy + 64) + '" text-anchor="middle" style="font-size:11px;fill:var(--text-muted)">' + esc(o.s || '') + '</text></g>';
+                    return '<div class="pl vs-c' + cc + ' vs-fade" style="left:' + (cx / 3).toFixed(2) + '%;top:' + ((cy + 26) / 2).toFixed(2) + '%;animation-delay:' + d + 's"><b dir="auto">' + esc(o.l || '') + '</b>' + (o.s ? '<small dir="auto">' + esc(o.s) + '</small>' : '') + '</div>';
                 };
-                h += '<svg class="vs-svg" viewBox="0 0 300 185" dir="ltr"><path d="M150 52V172M100 172H200" class="vs-draw" pathLength="1" style="stroke:var(--text-main);stroke-width:4;stroke-linecap:round;fill:none"/>' +
-                    '<path d="M' + lx.toFixed(1) + ' ' + ly.toFixed(1) + 'L' + rx.toFixed(1) + ' ' + ry.toFixed(1) + '" class="vs-draw" pathLength="1" style="stroke:var(--text-main);stroke-width:4;stroke-linecap:round;fill:none;animation-delay:.3s"/>' +
-                    '<circle cx="150" cy="52" r="6" style="fill:var(--text-main)"/>' + plate(+lx.toFixed(1), +ly.toFixed(1), v.left, 1, 0.8) + plate(+rx.toFixed(1), +ry.toFixed(1), v.right, 3, 1.0) + '</svg>';
+                h += '<div class="vs-sc"><svg viewBox="0 0 300 200"><path d="M150 52V186M100 186H200" class="vs-draw" pathLength="1" style="stroke:var(--text-main);stroke-width:4;stroke-linecap:round;fill:none"/>' +
+                    '<path d="M' + lx + ' ' + ly + 'L' + rx + ' ' + ry + '" class="vs-draw" pathLength="1" style="stroke:var(--text-main);stroke-width:4;stroke-linecap:round;fill:none;animation-delay:.3s"/>' +
+                    '<path d="M' + lx + ' ' + ly + 'V' + (ly + 26) + 'M' + rx + ' ' + ry + 'V' + (ry + 26) + '" class="vs-fade" style="stroke:var(--text-main);stroke-width:2;fill:none;animation-delay:.7s"/>' +
+                    '<circle cx="150" cy="52" r="6" style="fill:var(--text-main)"/></svg>' + plate(lx, ly, v.left, 1, 0.8) + plate(rx, ry, v.right, 3, 1.0) + '</div>';
                 if (v.res) h += '<div class="vs-res' + (v.res.tone === 'bad' ? ' bad' : '') + '" style="margin-bottom:12px;"><b dir="auto" style="direction:rtl;">' + esc(v.res.t) + '</b></div>';
             } else if (v.type === 'graph') {
-                var gs = '<svg class="vs-svg" viewBox="0 0 300 190" dir="ltr"><path d="M40 14V150H284" style="fill:none;stroke:var(--text-main);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"/>' +
-                    '<text x="46" y="12" style="font-size:11px;font-weight:700">' + esc(v.y || '') + '</text><text x="284" y="184" text-anchor="end" style="font-size:11px;font-weight:700">' + esc(v.x || '') + '</text>';
+                var gs = '<svg class="vs-svg" viewBox="0 0 300 172" dir="ltr"><path d="M40 14V150H284" style="fill:none;stroke:var(--text-main);stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round"/>';
                 var seg = function (ln) {
                     var sh = Number(ln.shift) || 0, a = sh * 12;
                     if (ln.dir === 'down') return [70 + a, 40, 250 + a, 130];
@@ -9452,14 +9468,14 @@ html, body {
                             '<text x="34" y="' + (ey + 4) + '" text-anchor="end" style="font-size:12px;font-weight:800">' + esc(v.eq.p || '') + '</text><text x="' + ex + '" y="166" text-anchor="middle" style="font-size:12px;font-weight:800">' + esc(v.eq.q || '') + '</text></g>';
                     }
                 }
-                h += gs + '</svg>';
+                h += (v.y ? '<div class="vs-axl" dir="auto">' + esc(v.y) + '</div>' : '') + gs + '</svg>' + (v.x ? '<div class="vs-axl x" dir="auto">' + esc(v.x) + '</div>' : '');
             } else if (v.type === 'pairs') {
                 v.items.forEach(function (it, k) {
                     h += '<div class="vs-pr vs-c' + (k % 5) + '" ' + _vsD(k, 0, 0.2) + '><div class="a" dir="auto">' + esc(it.a) + '</div><span class="ar">←</span><div class="b" dir="auto">' + esc(it.b) + '</div></div>';
                 });
             } else if (v.type === 'venn') {
-                h += '<svg class="vs-svg" viewBox="0 0 300 160" dir="ltr"><g class="vs-c0"><circle cx="115" cy="80" r="62" style="fill:var(--cc);fill-opacity:.22;stroke:var(--cc);stroke-width:2.5"/></g><g class="vs-c1"><circle cx="185" cy="80" r="62" style="fill:var(--cc);fill-opacity:.22;stroke:var(--cc);stroke-width:2.5"/></g>' +
-                    '<text x="82" y="84" text-anchor="middle" style="font-size:12px;font-weight:800">' + esc(v.left.h || '') + '</text><text x="150" y="84" text-anchor="middle" style="font-size:12px;font-weight:800">' + esc(v.both.h || '') + '</text><text x="218" y="84" text-anchor="middle" style="font-size:12px;font-weight:800">' + esc(v.right.h || '') + '</text></svg>';
+                h += '<div class="vs-vn"><svg viewBox="0 0 300 160"><g class="vs-c0"><circle cx="115" cy="80" r="62" style="fill:var(--cc);fill-opacity:.22;stroke:var(--cc);stroke-width:2.5"/></g><g class="vs-c1"><circle cx="185" cy="80" r="62" style="fill:var(--cc);fill-opacity:.22;stroke:var(--cc);stroke-width:2.5"/></g></svg>' +
+                    '<div class="lbl" style="left:27.3%" dir="auto">' + esc(v.left.h || '') + '</div><div class="lbl" style="left:50%" dir="auto">' + esc(v.both.h || '') + '</div><div class="lbl" style="left:72.7%" dir="auto">' + esc(v.right.h || '') + '</div></div>';
                 [[v.left, 0], [v.both, 2], [v.right, 1]].forEach(function (pr, k) {
                     var g = pr[0];
                     h += '<div class="vs-vl vs-c' + pr[1] + '" ' + _vsD(k, 0.3, 0.25) + '><h5 dir="auto">' + esc(g.h || '') + '</h5><ul>' + (Array.isArray(g.items) ? g.items : []).map(function (t) { return '<li dir="auto">' + esc(t) + '</li>'; }).join('') + '</ul></div>';
