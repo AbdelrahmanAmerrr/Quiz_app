@@ -9594,8 +9594,9 @@ html, body {
         }
 
         // ═══ توليد الشروح التفصيلية تلقائياً (أدمن) ═══
-        var VS_AUTO_BATCH = 8;       // أسئلة في النداء الواحد
-        var VS_AUTO_MAX_PER_RUN = 40; // أقصى عدد أسئلة في المرة الواحدة (تحكّم في الاستهلاك)
+        var VS_AUTO_BATCH = 8;        // أسئلة في النداء الواحد
+        var VS_AUTO_MAX_PER_RUN = 60; // أقصى عدد أسئلة في الضغطة الواحدة
+        var VS_AUTO_GAP_MS = 7000;    // فاصل بين النداءات (حد الدقيقة المجاني ~10 نداءات)
         function _vsPendingForSubject(subject) {
             return (cachedAdminQuestions || []).filter(function (q) { return q.subject === subject && !q.visual && !q.visualSkip; });
         }
@@ -9606,54 +9607,83 @@ html, body {
             var all = cachedAdminQuestions.filter(function (q) { return q.subject === subject; });
             var withV = all.filter(function (q) { return q.visual; }).length;
             var skipped = all.filter(function (q) { return !q.visual && q.visualSkip; }).length;
-            info.textContent = 'إجمالي ' + all.length + ' سؤال · بشرح تفصيلي ' + withV + ' · متخطّى ' + skipped + ' · في الانتظار ' + _vsPendingForSubject(subject).length;
+            var pend = _vsPendingForSubject(subject).length;
+            info.textContent = 'إجمالي ' + all.length + ' سؤال · بشرح تفصيلي ' + withV + ' · متخطّى ' + skipped + ' · في الانتظار ' + pend + (pend ? ' (حوالي ' + Math.ceil(pend / VS_AUTO_BATCH) + ' نداء)' : '');
         }
+        function _vsSleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
         async function autoGenerateVisuals() {
             var btn = document.getElementById('vs-auto-btn');
+            if (btn.disabled) return;
             var subject = document.getElementById('vs-auto-subject').value;
             var pending = _vsPendingForSubject(subject).slice(0, VS_AUTO_MAX_PER_RUN);
             if (!pending.length) { showToast('✅ مفيش أسئلة ناقصة في المادة دي.'); return; }
             var original = btn.innerHTML; btn.disabled = true;
-            var done = 0, skipped = 0, failed = 0, updates = [];
+            var done = 0, skipped = 0, failed = 0, stopReason = '';
+            var setBtn = function (txt) { btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + txt; };
             try {
                 var idToken = await firebase.auth().currentUser.getIdToken();
-                for (var i = 0; i < pending.length; i += VS_AUTO_BATCH) {
+                for (var i = 0; i < pending.length && !stopReason; i += VS_AUTO_BATCH) {
                     var chunk = pending.slice(i, i + VS_AUTO_BATCH);
-                    btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> ' + Math.min(i + VS_AUTO_BATCH, pending.length) + ' / ' + pending.length;
-                    try {
-                        var res = await fetch('/api/generate-visuals', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
-                            body: JSON.stringify({
-                                subject: subject,
-                                questions: chunk.map(function (q) { return { id: q.uid, question: q.question, options: q.options, answer: q.answer, explanation: q.explanation || '' }; })
-                            })
-                        });
-                        var data = await res.json();
-                        if (!res.ok) { failed += chunk.length; showToast('دفعة ' + (i / VS_AUTO_BATCH + 1) + ': ' + (data.error || 'فشل التوليد'), 'error'); continue; }
-                        var map = data.visuals || {};
-                        chunk.forEach(function (q) {
-                            var v = map[q.uid];
-                            if (v && !_vsValidate(v)) { updates.push({ q: q, data: { visual: _vsToStore(v), visualAuto: true } }); done++; }
-                            else if (v === null) { updates.push({ q: q, data: { visualSkip: true } }); skipped++; }
-                            else { failed++; } // مفيش رد على السؤال أو الشرح غير صالح: نسيبه للمحاولة الجاية
-                        });
-                    } catch (e) { failed += chunk.length; showToast('خطأ اتصال: ' + e.message, 'error'); }
+                    var data = null, attempt = 0;
+                    while (true) {
+                        setBtn(Math.min(i + VS_AUTO_BATCH, pending.length) + ' / ' + pending.length);
+                        var res, body = {};
+                        try {
+                            res = await fetch('/api/generate-visuals', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + idToken },
+                                body: JSON.stringify({
+                                    subject: subject,
+                                    questions: chunk.map(function (q) { return { id: q.uid, question: q.question, options: q.options, answer: q.answer, explanation: q.explanation || '' }; })
+                                })
+                            });
+                            try { body = await res.json(); } catch (e) { body = {}; }
+                        } catch (e) { res = null; body = { error: 'خطأ اتصال: ' + e.message }; }
+
+                        if (res && res.ok) { data = body; break; }
+                        if (res && res.status === 429) {
+                            if (body.daily) { stopReason = body.error || 'خلصت الحصة اليومية المجانية.'; break; }
+                            if (attempt < 2) { // حد الدقيقة: ننتظر المدة المقترحة وبعدين نعيد نفس الدفعة
+                                attempt++;
+                                var wait = Math.min(95, Math.max(5, Number(body.retryAfter) || 60)) + 2;
+                                for (var w = wait; w > 0; w--) { setBtn('انتظار ' + w + ' ثانية (حد Gemini)...'); await _vsSleep(1000); }
+                                continue;
+                            }
+                            stopReason = 'Gemini لسه واصل لحد الدقيقة. استنى شوية واضغط تاني.'; break;
+                        }
+                        if (res && (res.status === 401 || res.status === 403)) { stopReason = body.error || 'لا توجد صلاحية.'; break; }
+                        failed += chunk.length; // خطأ عابر: نعدّي الدفعة دي ونكمل
+                        showToast((body.error || 'فشل التوليد لدفعة') , 'error');
+                        break;
+                    }
+                    if (!data) continue;
+
+                    // حفظ الدفعة فوراً (علشان لو قفلت الصفحة أو وقفنا ما يضيعش اللي اتولّد)
+                    var map = data.visuals || {}, updates = [];
+                    chunk.forEach(function (q) {
+                        var v = map[q.uid];
+                        if (v && !_vsValidate(v)) { updates.push({ q: q, data: { visual: _vsToStore(v), visualAuto: true } }); done++; }
+                        else if (v === null) { updates.push({ q: q, data: { visualSkip: true } }); skipped++; }
+                        else { failed++; } // مفيش رد على السؤال أو الشرح غير صالح: يتحاول تاني
+                    });
+                    if (updates.length) {
+                        var batch = db.batch();
+                        updates.forEach(function (u) { batch.update(db.collection('questions').doc(u.q.uid), u.data); });
+                        await batch.commit();
+                        updates.forEach(function (u) { Object.assign(u.q, u.data); });
+                    }
+                    if (i + VS_AUTO_BATCH < pending.length && !stopReason) await _vsSleep(VS_AUTO_GAP_MS);
                 }
-                // كتابة النتائج: كتابة واحدة لكل سؤال، في دفعات
-                for (var j = 0; j < updates.length; j += 400) {
-                    var batch = db.batch();
-                    updates.slice(j, j + 400).forEach(function (u) { batch.update(db.collection('questions').doc(u.q.uid), u.data); });
-                    await batch.commit();
-                }
-                updates.forEach(function (u) { Object.assign(u.q, u.data); });
-                if (done) { _invalidateQuestionCache(subject); } // تحديث كاش الطلاب مرة واحدة
-                logAdminAction('توليد شروح تفصيلية تلقائياً', (fixedSubjects[subject] || subject) + ': ' + done + ' شرح، ' + skipped + ' متخطّى');
-                showToast('✅ تم ' + done + ' شرح · متخطّى ' + skipped + (failed ? ' · فشل ' + failed : ''));
             } catch (err) {
                 showToast('خطأ: ' + err.message, 'error');
             } finally {
+                try {
+                    if (done) { _invalidateQuestionCache(subject); } // تحديث كاش الطلاب مرة واحدة
+                    if (done || skipped) logAdminAction('توليد شروح تفصيلية تلقائياً', (fixedSubjects[subject] || subject) + ': ' + done + ' شرح، ' + skipped + ' متخطّى');
+                } catch (e) { /* لا شيء */ }
                 btn.disabled = false; btn.innerHTML = original; updateVisualAutoInfo();
+                var left = _vsPendingForSubject(subject).length;
+                showToast((stopReason ? '⏸️ وقفنا: ' + stopReason + ' — ' : '✅ ') + 'تم ' + done + ' شرح · متخطّى ' + skipped + (failed ? ' · فشل ' + failed : '') + (left ? ' · متبقّي ' + left : ''), stopReason || failed ? 'error' : undefined);
             }
         }
 
