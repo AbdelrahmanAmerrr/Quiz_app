@@ -70,6 +70,23 @@ function validateVisual(v) {
     return false;
 }
 
+// قايمة الموديلات بالترتيب (الأفضل جودة أولاً). لكل موديل حصة مجانية مستقلة، فكل موديل زيادة = سعة زيادة.
+// المحاسبة بتتجنّب موديلات Lite لأن فيها حسابات أرقام.
+// أسماء موديلات Gemini بتتغيّر كتير: لو واحد اتشال، السيرفر بيتخطّاه لوحده. وتقدر تغيّر القايمة من غير تعديل الكود
+// بمتغير البيئة GEMINI_VISUAL_MODELS في Vercel (أسماء مفصولة بفاصلة، مثال: gemini-3.5-flash,gemini-3.5-flash-lite).
+const DEFAULT_MODELS = ['gemini-2.5-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+
+function modelsFor(subject) {
+    const env = String(process.env.GEMINI_VISUAL_MODELS || '').split(',').map(x => x.trim()).filter(Boolean);
+    const list = env.length ? env : DEFAULT_MODELS;
+    return subject === 'corporate_accounting' ? list.filter(m => !/lite/i.test(m)) : list;
+}
+
+// ذاكرة مؤقتة (داخل نفس نسخة السيرفر فقط): موديل مستنفد أو غير متاح نتخطّاه لحد ما ينتهي وقته بدل ما نضيّع نداء عليه
+const deadUntil = new Map();
+function isDead(model) { return (deadUntil.get(model) || 0) > Date.now(); }
+function markDead(model, seconds) { deadUntil.set(model, Date.now() + seconds * 1000); }
+
 // يقرأ رد خطأ 429/503 من Gemini: كام ثانية ننتظر، وهل الحد يومي ولا بالدقيقة
 function parseQuotaError(errJson, status) {
     let retryAfter = null;
@@ -88,6 +105,7 @@ function parseQuotaError(errJson, status) {
     }
     if (!daily && /per day|daily/i.test(String(errJson?.error?.message || ''))) daily = true;
     if (retryAfter == null) retryAfter = status === 503 ? 20 : 60;
+    if (retryAfter > 600) daily = true; // انتظار بالساعات = حد يومي أو الموديل مش في الحصة المجانية
     return { retryAfter, daily };
 }
 
@@ -224,18 +242,21 @@ ${promptQuestions}
 أعد الإجابة بصيغة JSON فقط، بدون أي نص قبلها أو بعدها، وبدون backticks، مصفوفة بنفس عدد الأسئلة بالضبط:
 [{"i":0,"visual":{...} أو null},{"i":1,"visual":null}]`;
 
-        // ── ٤) نداء Gemini مع بديل تلقائي ──
-        // لكل موديل حصة مجانية مستقلة: لو Flash وصل حده نجرّب Flash-Lite (حصته اليومية أكبر).
-        // المحاسبة بتفضل على Flash بس لأن فيها حسابات أرقام، والموديل الأخف أضعف فيها.
-        const MODELS = subject === 'corporate_accounting'
-            ? ['gemini-2.5-flash']
-            : ['gemini-2.5-flash', 'gemini-2.5-flash-lite'];
-
+        // ── ٤) نداء Gemini مع بدائل تلقائية ──
+        const MODELS = modelsFor(subject);
         let geminiResponse = null;
         let usedModel = null;
-        let quotaInfo = null;
+        const quotaInfos = [];      // نتائج الموديلات اللي رفضت بسبب الحصة
+        let unavailableCount = 0;   // موديلات اتشالت أو مش متاحة
+        let lastHardError = null;   // خطأ حقيقي (مفتاح/طلب) مش حصة
 
         for (const model of MODELS) {
+            if (isDead(model)) {
+                // لسه مستنفد/غير متاح: نحسبه في الرد بدون نداء
+                const left = Math.ceil(((deadUntil.get(model) || 0) - Date.now()) / 1000);
+                quotaInfos.push({ retryAfter: left, daily: left > 600, skipped: true });
+                continue;
+            }
             const r = await fetch(
                 `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`,
                 {
@@ -249,31 +270,42 @@ ${promptQuestions}
             );
             if (r.ok) { geminiResponse = r; usedModel = model; break; }
 
+            let errJson = null;
+            try { errJson = await r.json(); } catch (e) { /* مش JSON */ }
+            const errMsg = String(errJson?.error?.message || '');
+
             if (r.status === 429 || r.status === 503) {
-                // حد مؤقت أو ضغط على الخدمة: نقرأ المدة المقترحة ونوع الحد (دقيقة/يوم) ونجرّب الموديل التالي
-                let errJson = null;
-                try { errJson = await r.json(); } catch (e) { /* مش JSON */ }
-                quotaInfo = parseQuotaError(errJson, r.status);
+                const q = parseQuotaError(errJson, r.status);
+                markDead(model, Math.min(q.retryAfter, 6 * 3600));
+                quotaInfos.push(q);
                 continue;
             }
-
-            // أي خطأ آخر (مفتاح غلط، طلب مرفوض...) مفيش فايدة من البديل
-            let friendlyMsg = `فشل الاتصال بخدمة الذكاء الاصطناعي (رمز الخطأ: ${r.status})`;
-            try {
-                const errJson = await r.json();
-                if (errJson?.error?.message) friendlyMsg = 'فشل الاتصال بخدمة الذكاء الاصطناعي: ' + String(errJson.error.message).slice(0, 150);
-            } catch (e) { /* مش JSON */ }
-            return res.status(502).json({ error: friendlyMsg });
+            // موديل اتشال أو الاسم غلط: نتخطّاه ونكمل بالباقي
+            if (r.status === 404 || /no longer available|not found|is not supported|deprecated/i.test(errMsg)) {
+                markDead(model, 6 * 3600);
+                unavailableCount++;
+                continue;
+            }
+            // خطأ حقيقي (مفتاح غلط، طلب مرفوض...): مفيش فايدة من باقي الموديلات
+            lastHardError = 'فشل الاتصال بخدمة الذكاء الاصطناعي' + (errMsg ? ': ' + errMsg.slice(0, 150) : ` (رمز الخطأ: ${r.status})`);
+            break;
         }
 
         if (!geminiResponse) {
-            const q = quotaInfo || { retryAfter: 60, daily: false };
+            if (lastHardError) return res.status(502).json({ error: lastHardError });
+            if (!quotaInfos.length) {
+                return res.status(502).json({ error: `لا يوجد موديل Gemini متاح حالياً (${unavailableCount} موديل غير متاح). حدّث قايمة الموديلات في GEMINI_VISUAL_MODELS.` });
+            }
+            const allDaily = quotaInfos.every(q => q.daily);
+            const retryAfter = allDaily
+                ? Math.max(...quotaInfos.map(q => q.retryAfter || 60))
+                : Math.min(...quotaInfos.filter(q => !q.daily).map(q => q.retryAfter || 60));
             return res.status(429).json({
-                error: q.daily
-                    ? '⏳ خلصت الحصة اليومية المجانية من Gemini. بتتجدد منتصف الليل بتوقيت المحيط الهادئ (حوالي 10 صباحاً بتوقيت القاهرة). اللي اتولّد اتحفظ، كمّل بعدها.'
+                error: allDaily
+                    ? '⏳ خلصت الحصة المجانية اليومية لكل موديلات Gemini المتاحة. بتتجدد منتصف الليل بتوقيت المحيط الهادئ (حوالي 10 صباحاً بتوقيت القاهرة). اللي اتولّد اتحفظ، كمّل بعدها.'
                     : '⏳ تم تجاوز الحد المجاني المسموح من Gemini مؤقتاً (حد الدقيقة).',
-                retryAfter: q.retryAfter || 60,
-                daily: !!q.daily
+                retryAfter,
+                daily: allDaily
             });
         }
 
